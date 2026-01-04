@@ -720,6 +720,8 @@ void GameInit(GameData *game)
     game->bossWarningTimer = 0.0f;
     game->bossWarningActive = false;
     game->bossKillsThisRun = 0;
+    game->selectedCharacter = CHARACTER_VANGUARD;
+    game->characterSelection = 0;
 
     // Load persistent unlocks
     UnlocksLoad(&game->unlocks);
@@ -763,11 +765,9 @@ void GameUpdate(GameData *game, float dt)
 
             if (IsKeyPressed(KEY_ENTER))
             {
-                // Start "Get Ready" transition
-                game->state = STATE_STARTING;
-                game->transitionTimer = 0.0f;
-                game->fadeAlpha = 0.0f;
-                // Music transition happens later when fading into game
+                // Go to character select
+                game->characterSelection = game->selectedCharacter;
+                game->state = STATE_CHARACTER_SELECT;
             }
             if (IsKeyPressed(KEY_TAB))
             {
@@ -794,6 +794,49 @@ void GameUpdate(GameData *game, float dt)
             }
 
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_L))
+            {
+                game->state = STATE_MENU;
+            }
+            break;
+
+        case STATE_CHARACTER_SELECT:
+            // Initialize and update starfield (shared with menu)
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            // Navigate with left/right or A/D
+            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
+            {
+                game->characterSelection--;
+                if (game->characterSelection < 0) game->characterSelection = CHARACTER_COUNT - 1;
+            }
+            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
+            {
+                game->characterSelection++;
+                if (game->characterSelection >= CHARACTER_COUNT) game->characterSelection = 0;
+            }
+
+            // Check if character is unlocked
+            if (IsKeyPressed(KEY_ENTER))
+            {
+                CharacterType selected = (CharacterType)game->characterSelection;
+                if (UnlocksHasCharacter(&game->unlocks, selected))
+                {
+                    game->selectedCharacter = selected;
+                    // Start "Get Ready" transition
+                    game->state = STATE_STARTING;
+                    game->transitionTimer = 0.0f;
+                    game->fadeAlpha = 0.0f;
+                }
+            }
+            if (IsKeyPressed(KEY_ESCAPE))
             {
                 game->state = STATE_MENU;
             }
@@ -870,7 +913,8 @@ void GameUpdate(GameData *game, float dt)
                 game->bossWarningTimer = 0.0f;
                 game->bossWarningActive = false;
                 game->bossKillsThisRun = 0;
-                PlayerInit(&game->player);
+                game->leaderboardPosition = -1;
+                PlayerInitWithCharacter(&game->player, game->selectedCharacter);
 
                 // Apply meta bonuses from permanent unlocks
                 game->player.speed *= UnlocksGetSpeedBonus(&game->unlocks);
@@ -1218,6 +1262,88 @@ static void DrawSceneToTexture(GameData *game)
             case STATE_SETTINGS:
                 DrawSettingsMenu(game);
                 break;
+
+            case STATE_CHARACTER_SELECT:
+            {
+                DrawMenuStars();
+                DrawText("SELECT CHARACTER", SCREEN_WIDTH/2 - MeasureText("SELECT CHARACTER", 50)/2, 60, 50, NEON_CYAN);
+
+                // Draw character cards
+                int cardWidth = 280;
+                int cardHeight = 380;
+                int cardSpacing = 30;
+                int totalWidth = CHARACTER_COUNT * cardWidth + (CHARACTER_COUNT - 1) * cardSpacing;
+                int startX = (SCREEN_WIDTH - totalWidth) / 2;
+                int cardY = 140;
+
+                for (int i = 0; i < CHARACTER_COUNT; i++)
+                {
+                    int cardX = startX + i * (cardWidth + cardSpacing);
+                    CharacterDef def = GetCharacterDef((CharacterType)i);
+                    bool isSelected = (i == game->characterSelection);
+                    bool isUnlocked = UnlocksHasCharacter(&game->unlocks, i);
+
+                    // Card background
+                    Color bgColor = isUnlocked ? (Color){ 30, 30, 50, 220 } : (Color){ 20, 20, 20, 220 };
+                    DrawRectangle(cardX, cardY, cardWidth, cardHeight, bgColor);
+
+                    // Selection highlight
+                    if (isSelected)
+                    {
+                        DrawRectangleLinesEx((Rectangle){ (float)cardX - 3, (float)cardY - 3, (float)cardWidth + 6, (float)cardHeight + 6 }, 3.0f, NEON_YELLOW);
+                    }
+
+                    // Character preview circle
+                    int previewY = cardY + 80;
+                    int previewRadius = 50;
+                    if (isUnlocked)
+                    {
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius + 5, (Color){ def.primaryColor.r/3, def.primaryColor.g/3, def.primaryColor.b/3, 255 });
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius, def.primaryColor);
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius * 0.6f, (Color){ 200, 200, 200, 200 });
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius * 0.3f, WHITE);
+                    }
+                    else
+                    {
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius, (Color){ 50, 50, 50, 255 });
+                        DrawText("?", cardX + cardWidth/2 - 15, previewY - 20, 50, (Color){ 80, 80, 80, 255 });
+                    }
+
+                    // Character name
+                    Color nameColor = isUnlocked ? def.primaryColor : (Color){ 100, 100, 100, 255 };
+                    DrawText(def.name, cardX + cardWidth/2 - MeasureText(def.name, 28)/2, cardY + 150, 28, nameColor);
+
+                    // Stats (only if unlocked)
+                    if (isUnlocked)
+                    {
+                        int statsY = cardY + 190;
+                        int statsX = cardX + 20;
+                        Color statColor = WHITE;
+
+                        DrawText(TextFormat("HP: %.0f", def.maxHealth), statsX, statsY, 18, statColor);
+                        DrawText(TextFormat("Speed: %.0f", def.speed), statsX, statsY + 25, 18, statColor);
+                        DrawText(TextFormat("Magnet: %.0f", def.magnetRadius), statsX, statsY + 50, 18, statColor);
+                        DrawText(TextFormat("Damage: x%.1f", def.damageMultiplier), statsX, statsY + 75, 18, statColor);
+                        DrawText(TextFormat("XP: x%.2f", def.xpMultiplier), statsX, statsY + 100, 18, statColor);
+
+                        // Description
+                        DrawText(def.description, cardX + 10, cardY + cardHeight - 50, 14, (Color){ 150, 150, 150, 255 });
+                    }
+                    else
+                    {
+                        // Show unlock requirement
+                        const char *lockMsg = "";
+                        if (i == 1) lockMsg = "Play 5 games";
+                        else if (i == 2) lockMsg = "Survive 5 minutes";
+                        DrawText("LOCKED", cardX + cardWidth/2 - MeasureText("LOCKED", 24)/2, cardY + 200, 24, (Color){ 150, 50, 50, 255 });
+                        DrawText(lockMsg, cardX + cardWidth/2 - MeasureText(lockMsg, 16)/2, cardY + 235, 16, (Color){ 100, 100, 100, 255 });
+                    }
+                }
+
+                // Controls hint
+                DrawText("A/D or Left/Right to select - ENTER to confirm - ESC to go back", SCREEN_WIDTH/2 - MeasureText("A/D or Left/Right to select - ENTER to confirm - ESC to go back", 16)/2, SCREEN_HEIGHT - 40, 16, GRAY);
+                break;
+            }
 
             case STATE_STARTING:
             {

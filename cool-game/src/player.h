@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "weapon.h"
+#include "character.h"
 #include <stdbool.h>
 
 #define PLAYER_TRAIL_LENGTH 5
@@ -42,9 +43,14 @@ typedef struct Player {
     float slowAuraAmount;      // Slow intensity (0.0 - 1.0)
     // Evolution tracking
     unsigned int acquiredUpgrades;  // Bitfield of acquired upgrade types
+    // Character type
+    CharacterType characterType;
+    Color primaryColor;
+    Color secondaryColor;
 } Player;
 
 void PlayerInit(Player *player);
+void PlayerInitWithCharacter(Player *player, CharacterType type);
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera);
 void PlayerDraw(Player *player);
 void PlayerTakeDamage(Player *player, float damage);

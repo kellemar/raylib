@@ -6,43 +6,66 @@
 
 void PlayerInit(Player *player)
 {
+    // Default to Vanguard character
+    PlayerInitWithCharacter(player, CHARACTER_VANGUARD);
+}
+
+void PlayerInitWithCharacter(Player *player, CharacterType type)
+{
+    CharacterDef def = GetCharacterDef(type);
+
     player->pos = (Vector2){ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
     player->vel = (Vector2){ 0.0f, 0.0f };
     player->aimDir = (Vector2){ 1.0f, 0.0f };
-    player->radius = 15.0f;
-    player->speed = 300.0f;
-    player->health = 100.0f;
-    player->maxHealth = 100.0f;
+
+    // Apply character stats
+    player->radius = def.radius;
+    player->speed = def.speed;
+    player->health = def.maxHealth;
+    player->maxHealth = def.maxHealth;
+    player->magnetRadius = def.magnetRadius;
+    player->armor = def.armor;
+
     player->invincibilityTimer = 0.0f;
-    player->magnetRadius = 80.0f;
     player->level = 1;
     player->xp = 0;
     player->xpToNextLevel = 10;
     player->alive = true;
-    WeaponInit(&player->weapon, WEAPON_PULSE_CANNON);
+    WeaponInit(&player->weapon, def.startingWeapon);
+
+    // Apply character damage and XP multipliers
+    player->weapon.damage *= def.damageMultiplier;
+    player->xpMultiplier = def.xpMultiplier;
+
     // Initialize trail
     player->trailUpdateTimer = 0.0f;
     for (int i = 0; i < PLAYER_TRAIL_LENGTH; i++)
     {
         player->trailPositions[i] = player->pos;
     }
-    // Initialize dash
+
+    // Initialize dash with character modifier
     player->dashCooldown = 0.0f;
     player->dashTimer = 0.0f;
     player->isDashing = false;
     player->dashDir = (Vector2){ 0.0f, 0.0f };
+
     // Initialize upgrade stats
-    player->armor = 0.0f;
     player->regen = 0.0f;
     player->regenTimer = 0.0f;
-    player->xpMultiplier = 1.0f;
     player->knockbackMultiplier = 1.0f;
     player->dashDamage = 0.0f;
     player->vampirism = 0.0f;
     player->slowAuraRadius = 0.0f;
     player->slowAuraAmount = 0.0f;
+
     // Evolution tracking
     player->acquiredUpgrades = 0;
+
+    // Character visuals
+    player->characterType = type;
+    player->primaryColor = def.primaryColor;
+    player->secondaryColor = def.secondaryColor;
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
@@ -231,12 +254,19 @@ void PlayerDraw(Player *player)
 
     if (visible)
     {
-        DrawCircleV(player->pos, player->radius, NEON_CYAN);
-        DrawCircleV(player->pos, player->radius * 0.6f, (Color){ 100, 255, 255, 200 });
+        // Draw with character colors
+        DrawCircleV(player->pos, player->radius, player->primaryColor);
+        Color innerColor = (Color){
+            (unsigned char)(player->primaryColor.r * 0.6f + 100),
+            (unsigned char)(player->primaryColor.g * 0.6f + 100),
+            (unsigned char)(player->primaryColor.b * 0.6f + 100),
+            200
+        };
+        DrawCircleV(player->pos, player->radius * 0.6f, innerColor);
         DrawCircleV(player->pos, player->radius * 0.3f, NEON_WHITE);
 
         Vector2 aimEnd = Vector2Add(player->pos, Vector2Scale(player->aimDir, player->radius + 12.0f));
-        DrawLineEx(player->pos, aimEnd, 3.0f, NEON_PINK);
+        DrawLineEx(player->pos, aimEnd, 3.0f, player->secondaryColor);
     }
 
     float healthBarWidth = 50.0f;

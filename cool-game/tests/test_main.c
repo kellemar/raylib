@@ -10,6 +10,7 @@ extern const char* run_weapon_tests(void);
 extern const char* run_upgrade_tests(void);
 extern const char* run_unlocks_tests(void);
 extern const char* run_leaderboard_tests(void);
+extern const char* run_character_tests(void);
 
 int main(void)
 {
@@ -24,6 +25,7 @@ int main(void)
     mu_run_suite("Upgrade", run_upgrade_tests);
     mu_run_suite("Unlocks", run_unlocks_tests);
     mu_run_suite("Leaderboard", run_leaderboard_tests);
+    mu_run_suite("Character", run_character_tests);
 
     mu_print_summary();
 

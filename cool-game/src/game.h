@@ -10,13 +10,15 @@
 #include "particle.h"
 #include "unlocks.h"
 #include "leaderboard.h"
+#include "character.h"
 #include <stdbool.h>
 
 typedef enum GameState {
     STATE_MENU,
-    STATE_SETTINGS,    // Settings menu
-    STATE_LEADERBOARD, // High scores display
-    STATE_STARTING,    // "Get Ready" transition screen
+    STATE_SETTINGS,        // Settings menu
+    STATE_LEADERBOARD,     // High scores display
+    STATE_CHARACTER_SELECT,// Character selection screen
+    STATE_STARTING,        // "Get Ready" transition screen
     STATE_PLAYING,
     STATE_PAUSED,
     STATE_LEVELUP,
@@ -87,6 +89,9 @@ typedef struct GameData {
     // Leaderboard
     Leaderboard leaderboard;   // Top 10 high scores
     int leaderboardPosition;   // Position this run placed (-1 if didn't qualify)
+    // Character selection
+    CharacterType selectedCharacter;  // Currently selected character
+    int characterSelection;           // Cursor position in character select
 } GameData;
 
 void GameInit(GameData *game);
