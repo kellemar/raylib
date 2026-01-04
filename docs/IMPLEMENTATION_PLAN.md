@@ -1653,7 +1653,9 @@ make         # MUST PASS - zero warnings
 | 11 | Quick Wins (Game Feel) | 4 | 4 ✓ |
 | 12 | Post-Review Bug Fixes | 3 | 3 ✓ |
 | 13 | 22 Upgrade System | 1 | 1 ✓ |
-| **Total** | | **93** | **92** |
+| 14 | Weapon Evolution System | 1 | 1 ✓ |
+| 15 | Elite Enemies | 1 | 1 ✓ |
+| **Total** | | **95** | **95** |
 
 ### Estimated Time
 
@@ -1946,4 +1948,24 @@ Added 8 evolved weapons that unlock at max level (5) + catalyst upgrade:
 
 ---
 
-*Last updated: 2026-01-05 — Weapon Evolution System added (93/93 tasks, 100%)*
+### 2026-01-05 — Elite Enemies
+
+Added elite enemy variants to increase mid-game challenge:
+
+| Feature | Implementation |
+|---------|----------------|
+| Elite multipliers | ELITE_SIZE_MULT (1.5x), ELITE_HEALTH_MULT (3x), ELITE_DAMAGE_MULT (1.5x), ELITE_XP_MULT (5x), ELITE_SPEED_MULT (0.8x) |
+| Spawn function | `EnemySpawnElite()` - spawns any enemy type with elite modifiers |
+| Scaling spawn chance | 10% base + 1% per minute of gameplay, capped at 25% |
+| Visual feedback | Pulsing gold glow effect behind elites, gold border ring |
+
+**Key code changes:**
+- `enemy.h`: Added `isElite` flag, elite multiplier constants
+- `enemy.c`: Added `EnemySpawnElite()`, updated `EnemyPoolDraw()` with gold glow
+- `game.c`: Updated enemy spawning to use elite chance formula
+
+**Tests updated:** 117 tests passing (added 4 new elite tests)
+
+---
+
+*Last updated: 2026-01-05 — Elite Enemies added (95/95 tasks, 100%)*

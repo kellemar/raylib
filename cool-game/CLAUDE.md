@@ -217,6 +217,44 @@ Weapons evolve when reaching max level (5) + acquiring catalyst upgrade.
 - **Catalyst Upgrade**: Player must have acquired the specific catalyst
 - **Auto-Check**: Evolution triggers automatically after upgrade selection
 
+## ELITE ENEMIES
+
+Elite variants of any enemy type spawn with increased stats and visual distinction.
+
+### Elite Multipliers
+| Stat | Multiplier | Effect |
+|------|------------|--------|
+| Size | 1.5x | 50% larger hitbox |
+| Health | 3.0x | Much tankier |
+| Damage | 1.5x | 50% more contact damage |
+| XP | 5x | 5x XP reward on kill |
+| Speed | 0.8x | Slightly slower (compensates for tankiness) |
+
+### Spawn Chance
+- Base: 10% chance for any enemy to be elite
+- Scales: +1% per minute of gameplay
+- Max: 25% at 15+ minutes
+
+### Visual Identification
+- **Gold Glow**: Pulsing gold glow effect behind elite enemies
+- **Gold Border**: Double gold ring around elite enemies
+- All other enemy visuals remain (color by type, ice effect if slowed)
+
+### Key Functions
+```c
+Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
+// Spawns enemy with elite multipliers applied
+
+// Elite multiplier constants in enemy.h
+#define ELITE_SPAWN_CHANCE  0.1f    // 10% base
+#define ELITE_SIZE_MULT     1.5f
+#define ELITE_HEALTH_MULT   3.0f
+#define ELITE_DAMAGE_MULT   1.5f
+#define ELITE_XP_MULT       5
+#define ELITE_SPEED_MULT    0.8f
+```
+
+
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
 - [x] Phase 1: Player System (complete)
@@ -231,6 +269,7 @@ Weapons evolve when reaching max level (5) + acquiring catalyst upgrade.
 - [x] Phase 10: Final Polish (complete)
 - [x] Phase 13: 22 Upgrade System (complete)
 - [x] Phase 14: Weapon Evolution System (complete)
+- [x] Phase 15: Elite Enemies (complete)
 
 ## TESTING WITH PEEKABOO
 

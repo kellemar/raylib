@@ -65,7 +65,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] 8 weapon types (see Weapons section)
 - [x] 20+ upgrades (damage, speed, multishot, pierce, etc.)
 - [x] Weapon evolution system (combine 2 maxed weapons → ultimate)
-- [ ] Elite enemies (larger, special attacks)
+- [x] Elite enemies (larger, special attacks)
 - [ ] Boss every 5 minutes
 - [ ] Permanent unlocks (new starting weapons, characters)
 - [ ] Leaderboard (local high scores)
@@ -602,6 +602,15 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Fixed: Multi-shot spread pattern** — `projectileCount` upgrade was being applied but `WeaponFire()` only spawned a single projectile. Now spawns multiple projectiles in a spread pattern when `projectileCount > 1`, making the Multi Shot upgrade functional.
 - **Fixed: Enemy spawn position bounds** — Enemies were incorrectly clamped to `SCREEN_WIDTH/HEIGHT` bounds, which limited spawning to a fixed region. Since the camera follows the player into infinite world space, this was incorrect. Enemies now spawn in a ring around the player regardless of world position.
 - **Fixed: High score file read validation** — `fread()` return value was ignored in `LoadHighScore()`, which could result in garbage data on read failure. Now properly validates the return value and defaults to 0 on failure.
+
+---
+
+### 2026-01-05 — Elite Enemies System
+- **Added elite enemy variants** with scaling spawn chance (10% base + 1% per minute, max 25%)
+- **Elite multipliers**: 1.5x size, 3x health, 1.5x damage, 5x XP, 0.8x speed
+- **Visual feedback**: Pulsing gold glow effect and gold border distinguishes elites
+- **New function**: `EnemySpawnElite()` for spawning elite versions of any enemy type
+- **Tests updated**: 117 tests passing (added 4 elite enemy tests)
 
 ---
 
