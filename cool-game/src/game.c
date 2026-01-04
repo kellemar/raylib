@@ -276,6 +276,8 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     {
                         XPSpawn(xp, deathPos, e->xpValue);
                         SpawnExplosion(particles, deathPos, p->color, 15);
+                        // Trigger impact frame for larger enemies
+                        TriggerImpactFrame(game, deathPos, deathRadius * 2.0f);
                     }
 
                     PlayGameSound(SOUND_EXPLOSION);
@@ -623,6 +625,14 @@ void TriggerScreenShake(GameData *game, float intensity, float duration)
     }
 }
 
+void TriggerImpactFrame(GameData *game, Vector2 pos, float radius)
+{
+    // Trigger a bright flash at the given position for 2 frames
+    game->impactPos = pos;
+    game->impactFrames = 2;  // 2 frames = ~33ms at 60fps
+    game->impactRadius = radius;
+}
+
 void GameInitShaders(GameData *game)
 {
     // Create render textures for post-processing (ping-pong for shader chaining)
@@ -736,6 +746,9 @@ void GameInit(GameData *game)
     game->hitstopFrames = 0;
     game->timeScale = 1.0f;
     game->tutorialTimer = 0.0f;
+    game->impactPos = (Vector2){ 0.0f, 0.0f };
+    game->impactFrames = 0;
+    game->impactRadius = 0.0f;
     game->transitionTimer = 0.0f;
     game->fadeAlpha = 0.0f;
     game->settingsSelection = 0;
@@ -999,6 +1012,12 @@ void GameUpdate(GameData *game, float dt)
         }
 
         case STATE_PLAYING:
+            // Update impact frames (decrement each frame)
+            if (game->impactFrames > 0)
+            {
+                game->impactFrames--;
+            }
+
             // Hitstop: freeze game for a few frames on big kills
             if (game->hitstopFrames > 0)
             {
@@ -1330,6 +1349,22 @@ static void DrawGameWorld(GameData *game)
 {
     DrawBackgroundGrid(game->camera);
     ParticlePoolDraw(&game->particles);
+
+    // Draw impact frame flash (bright burst on explosions)
+    if (game->impactFrames > 0)
+    {
+        // Bright expanding ring effect
+        float intensity = (float)game->impactFrames / 2.0f;  // 1.0 on first frame, 0.5 on second
+        float outerRadius = game->impactRadius * (2.0f - intensity);
+        float innerRadius = game->impactRadius * 0.5f * (2.0f - intensity);
+
+        // Draw bright flash rings (additive feel)
+        unsigned char alpha = (unsigned char)(255 * intensity);
+        DrawCircleV(game->impactPos, outerRadius, (Color){ 255, 255, 255, (unsigned char)(alpha * 0.3f) });
+        DrawCircleV(game->impactPos, innerRadius, (Color){ 255, 255, 200, (unsigned char)(alpha * 0.6f) });
+        DrawCircleLinesV(game->impactPos, outerRadius * 0.8f, (Color){ 255, 200, 100, alpha });
+    }
+
     XPPoolDraw(&game->xp);
     EnemyPoolDraw(&game->enemies);
     ProjectilePoolDraw(&game->projectiles);

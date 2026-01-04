@@ -74,6 +74,10 @@ typedef struct GameData {
     int hitstopFrames;         // Frames to freeze game (hitstop effect)
     float timeScale;           // Time multiplier for slow-mo (1.0 = normal)
     float tutorialTimer;       // Time elapsed since game start (for tutorial)
+    // Impact frames (bright flash on explosions)
+    Vector2 impactPos;         // Position of impact flash
+    int impactFrames;          // Frames remaining for impact flash (0 = none)
+    float impactRadius;        // Radius of impact flash
     // Starting transition
     float transitionTimer;     // Timer for "Get Ready" screen
     float fadeAlpha;           // Fade overlay alpha (0-1)
@@ -107,5 +111,6 @@ void GameCleanupShaders(GameData *game);
 void GameUpdate(GameData *game, float dt);
 void GameDraw(GameData *game);
 void TriggerScreenShake(GameData *game, float intensity, float duration);
+void TriggerImpactFrame(GameData *game, Vector2 pos, float radius);
 
 #endif
