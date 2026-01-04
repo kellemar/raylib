@@ -48,6 +48,10 @@ typedef struct GameData {
     // Phase 10: Score multiplier
     float scoreMultiplier;     // Current score multiplier (resets on damage)
     float timeSinceLastHit;    // Seconds since player last took damage
+    // Quick wins: Game feel
+    int hitstopFrames;         // Frames to freeze game (hitstop effect)
+    float timeScale;           // Time multiplier for slow-mo (1.0 = normal)
+    float tutorialTimer;       // Time elapsed since game start (for tutorial)
 } GameData;
 
 void GameInit(GameData *game);

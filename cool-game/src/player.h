@@ -25,6 +25,11 @@ typedef struct Player {
     // Trail effect
     Vector2 trailPositions[PLAYER_TRAIL_LENGTH];
     float trailUpdateTimer;
+    // Dash ability
+    float dashCooldown;        // Time until dash available again
+    float dashTimer;           // Time remaining in current dash
+    bool isDashing;            // Currently performing dash
+    Vector2 dashDir;           // Direction of dash
 } Player;
 
 void PlayerInit(Player *player);

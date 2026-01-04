@@ -25,6 +25,11 @@ void PlayerInit(Player *player)
     {
         player->trailPositions[i] = player->pos;
     }
+    // Initialize dash
+    player->dashCooldown = 0.0f;
+    player->dashTimer = 0.0f;
+    player->isDashing = false;
+    player->dashDir = (Vector2){ 0.0f, 0.0f };
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
@@ -34,6 +39,44 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
     if (player->invincibilityTimer > 0.0f)
     {
         player->invincibilityTimer -= dt;
+    }
+
+    // Update dash cooldown
+    if (player->dashCooldown > 0.0f)
+    {
+        player->dashCooldown -= dt;
+    }
+
+    // Handle active dash
+    if (player->isDashing)
+    {
+        player->dashTimer -= dt;
+        if (player->dashTimer <= 0.0f)
+        {
+            player->isDashing = false;
+            player->dashTimer = 0.0f;
+        }
+        else
+        {
+            // Dash movement: fast in dash direction
+            float dashSpeed = 800.0f;
+            player->pos = Vector2Add(player->pos, Vector2Scale(player->dashDir, dashSpeed * dt));
+            // Keep invincible during dash
+            if (player->invincibilityTimer < 0.1f)
+            {
+                player->invincibilityTimer = 0.1f;
+            }
+            // Skip normal movement during dash
+            WeaponUpdate(&player->weapon, dt);
+            return;
+        }
+    }
+
+    // Trigger dash on SPACE or gamepad button
+    bool dashPressed = IsKeyPressed(KEY_SPACE);
+    if (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN))
+    {
+        dashPressed = true;
     }
 
     WeaponUpdate(&player->weapon, dt);
@@ -57,6 +100,24 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
     if (inputLength > 0.0f)
     {
         input = Vector2Scale(input, 1.0f / inputLength);
+    }
+
+    // Trigger dash if available
+    if (dashPressed && player->dashCooldown <= 0.0f)
+    {
+        player->isDashing = true;
+        player->dashTimer = 0.15f;       // Dash duration: 150ms
+        player->dashCooldown = 1.5f;     // Cooldown: 1.5 seconds
+        // Dash in movement direction, or aim direction if not moving
+        if (inputLength > 0.0f)
+        {
+            player->dashDir = input;
+        }
+        else
+        {
+            player->dashDir = player->aimDir;
+        }
+        player->invincibilityTimer = 0.2f;  // Brief invincibility
     }
 
     player->vel = Vector2Scale(input, player->speed);
@@ -106,6 +167,19 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
 void PlayerDraw(Player *player)
 {
     if (!player->alive) return;
+
+    // Draw dash trail (more prominent when dashing)
+    if (player->isDashing)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            float t = (float)i * 0.2f;
+            Vector2 trailPos = Vector2Subtract(player->pos, Vector2Scale(player->dashDir, t * 60.0f));
+            float alpha = (1.0f - t) * 200.0f;
+            float size = player->radius * (1.0f - t * 0.5f);
+            DrawCircleV(trailPos, size, (Color){ 255, 100, 255, (unsigned char)alpha });
+        }
+    }
 
     // Draw trail (behind player) - subtle effect
     float velMagnitude = Vector2Length(player->vel);

@@ -189,6 +189,13 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     enemies->count--;
                     game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
                     game->killCount++;
+
+                    // Hitstop: brief freeze on kill (more frames for bigger enemies)
+                    int hitstopAmount = (e->xpValue >= 3) ? 4 : 2;
+                    if (hitstopAmount > game->hitstopFrames)
+                    {
+                        game->hitstopFrames = hitstopAmount;
+                    }
                 }
 
                 break;
@@ -394,6 +401,9 @@ void GameInit(GameData *game)
     game->killCount = 0;
     game->scoreMultiplier = 1.0f;
     game->timeSinceLastHit = 0.0f;
+    game->hitstopFrames = 0;
+    game->timeScale = 1.0f;
+    game->tutorialTimer = 0.0f;
     PlayerInit(&game->player);
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
@@ -424,6 +434,9 @@ void GameUpdate(GameData *game, float dt)
                 game->spawnTimer = 0.0f;
                 game->scoreMultiplier = 1.0f;
                 game->timeSinceLastHit = 0.0f;
+                game->hitstopFrames = 0;
+                game->timeScale = 1.0f;
+                game->tutorialTimer = 0.0f;
                 PlayerInit(&game->player);
                 ProjectilePoolInit(&game->projectiles);
                 EnemyPoolInit(&game->enemies);
@@ -436,19 +449,41 @@ void GameUpdate(GameData *game, float dt)
             break;
 
         case STATE_PLAYING:
-            game->gameTime += dt;
+            // Hitstop: freeze game for a few frames on big kills
+            if (game->hitstopFrames > 0)
+            {
+                game->hitstopFrames--;
+                break;  // Skip all updates during hitstop
+            }
+
+            // Apply time scale for slow-mo effects
+            float scaledDt = dt * game->timeScale;
+
+            // Near-death slow-mo: time slows when health < 25%
+            float healthPercent = game->player.health / game->player.maxHealth;
+            if (healthPercent < 0.25f && healthPercent > 0.0f)
+            {
+                game->timeScale = 0.5f;  // Half speed when near death
+            }
+            else
+            {
+                game->timeScale = 1.0f;  // Normal speed
+            }
+
+            game->gameTime += scaledDt;
+            game->tutorialTimer += dt;  // Tutorial uses real time
 
             // Update score multiplier (increases slowly while not hit)
-            game->timeSinceLastHit += dt;
+            game->timeSinceLastHit += scaledDt;
             game->scoreMultiplier = 1.0f + (game->timeSinceLastHit / MULTIPLIER_GROWTH_RATE);
             if (game->scoreMultiplier > MULTIPLIER_MAX) game->scoreMultiplier = MULTIPLIER_MAX;
 
-            PlayerUpdate(&game->player, dt, &game->projectiles, game->camera);
-            ProjectilePoolUpdate(&game->projectiles, dt);
-            EnemyPoolUpdate(&game->enemies, game->player.pos, dt);
-            XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, dt);
-            ParticlePoolUpdate(&game->particles, dt);
-            UpdateGameCamera(game, dt);
+            PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
+            ProjectilePoolUpdate(&game->projectiles, scaledDt);
+            EnemyPoolUpdate(&game->enemies, game->player.pos, scaledDt);
+            XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
+            ParticlePoolUpdate(&game->particles, scaledDt);
+            UpdateGameCamera(game, scaledDt);
 
             game->spawnTimer += dt;
             float spawnInterval = GetSpawnInterval(game->gameTime);
@@ -475,6 +510,7 @@ void GameUpdate(GameData *game, float dt)
                 PlayGameSound(SOUND_LEVELUP);
                 MusicPause();
                 GenerateRandomUpgrades(game->upgradeOptions, 3);
+                game->timeScale = 0.3f;  // Slow-mo during level up
                 game->state = STATE_LEVELUP;
             }
 
@@ -515,18 +551,21 @@ void GameUpdate(GameData *game, float dt)
             {
                 ApplyUpgrade(game->upgradeOptions[0], &game->player);
                 MusicResume();
+                game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
             }
             else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2))
             {
                 ApplyUpgrade(game->upgradeOptions[1], &game->player);
                 MusicResume();
+                game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
             }
             else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3))
             {
                 ApplyUpgrade(game->upgradeOptions[2], &game->player);
                 MusicResume();
+                game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
             }
             break;
@@ -568,6 +607,7 @@ static void DrawSceneToTexture(GameData *game)
                     DrawGameWorld(game);
                 EndMode2D();
                 DrawHUD(game);
+                DrawTutorial(game);
                 break;
 
             case STATE_PAUSED:
