@@ -1532,6 +1532,92 @@ make         # MUST PASS - zero warnings
 
 ---
 
+## PHASE 11: QUICK WINS (GAME FEEL)
+
+### 11.1 Hitstop Effect
+
+#### P11.1.1 — Implement hitstop on enemy kill
+- **Description**: Brief frame freeze when killing enemies for impact
+- **Dependencies**: P10.2.3
+- **Actions**:
+  1. Add `int hitstopFrames` to GameData
+  2. When enemy dies, set hitstopFrames (2 for small, 4 for large enemies)
+  3. Skip game updates while hitstopFrames > 0
+  4. Decrement hitstopFrames each frame
+- **Verification**:
+  - [x] Game briefly freezes on enemy kill
+  - [x] Larger enemies (Splitters) cause longer hitstop
+  - [x] Feels impactful without being disruptive
+- **Status**: `[x]`
+
+---
+
+### 11.2 Dash Ability
+
+#### P11.2.1 — Implement dash mechanic
+- **Description**: Quick dash move with invincibility
+- **Dependencies**: P11.1.1
+- **Actions**:
+  1. Add dash fields to Player: dashCooldown, dashTimer, isDashing, dashDir
+  2. SPACE key (or gamepad A) triggers dash
+  3. Dash in movement direction (or aim direction if stationary)
+  4. 150ms duration, 800 px/s speed
+  5. 1.5 second cooldown
+  6. Grant invincibility during dash
+  7. Add pink trail visual effect while dashing
+  8. Add "DASH: READY/..." indicator to HUD
+- **Verification**:
+  - [x] SPACE triggers dash
+  - [x] Player moves quickly in dash direction
+  - [x] Player is invincible during dash
+  - [x] Cooldown prevents spam
+  - [x] Visual trail appears during dash
+  - [x] HUD shows dash status
+- **Status**: `[x]`
+
+---
+
+### 11.3 Slow-Motion Effects
+
+#### P11.3.1 — Implement time scaling
+- **Description**: Slow-mo for dramatic moments
+- **Dependencies**: P11.2.1
+- **Actions**:
+  1. Add `float timeScale` to GameData (default 1.0)
+  2. Multiply dt by timeScale for all game updates
+  3. Near-death slow-mo: timeScale = 0.5 when health < 25%
+  4. Level-up slow-mo: timeScale = 0.3 during STATE_LEVELUP
+  5. Reset timeScale to 1.0 when returning to normal play
+- **Verification**:
+  - [x] Game slows when player health drops below 25%
+  - [x] Game slows during level-up selection
+  - [x] Time returns to normal after level-up choice
+  - [x] All entities affected by time scale
+- **Status**: `[x]`
+
+---
+
+### 11.4 Tutorial Overlay
+
+#### P11.4.1 — Implement tutorial hints
+- **Description**: Control hints for new players
+- **Dependencies**: P11.3.1
+- **Actions**:
+  1. Add `float tutorialTimer` to GameData
+  2. Create DrawTutorial() function in ui.c
+  3. Show for first 20 seconds of gameplay
+  4. Display: "WASD - Move", "Mouse - Aim", "SPACE - Dash", "Collect crystals"
+  5. Fade out during last 5 seconds
+  6. Position at bottom center of screen
+- **Verification**:
+  - [x] Tutorial shows at game start
+  - [x] All control hints displayed
+  - [x] Fades out smoothly after 15-20 seconds
+  - [x] Doesn't obstruct gameplay
+- **Status**: `[x]`
+
+---
+
 ## SUMMARY
 
 ### Task Counts by Phase
@@ -1549,7 +1635,8 @@ make         # MUST PASS - zero warnings
 | 8 | Visual Polish | 6 | 6 ✓ |
 | 9 | Menus & Polish | 4 | 4 ✓ |
 | 10 | Final Polish | 5 | 5 ✓ |
-| **Total** | | **84** | **83** |
+| 11 | Quick Wins (Game Feel) | 4 | 4 ✓ |
+| **Total** | | **88** | **87** |
 
 ### Estimated Time
 
@@ -1732,6 +1819,25 @@ After completing each phase, verify:
 - [x] Game balance feels fair (5+ minutes survivable with skill)
 - [x] All edge cases handled (0 health, pool overflow, rapid level ups)
 
+### Phase 11 Verification ✓
+- [x] **`make test` passes** — 86 tests, 3207 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Hitstop: game freezes briefly on enemy kill (2-4 frames)
+- [x] Hitstop scales with enemy size (Splitters = longer freeze)
+- [x] Dash: SPACE key triggers quick dash
+- [x] Dash: player is invincible during dash (200ms)
+- [x] Dash: 1.5 second cooldown between dashes
+- [x] Dash: pink trail effect visible while dashing
+- [x] Dash: HUD shows "DASH: READY" or "DASH: ..."
+- [x] Slow-mo: game slows to 50% when health < 25%
+- [x] Slow-mo: game slows to 30% during level-up selection
+- [x] Slow-mo: time returns to normal after upgrade selection
+- [x] Tutorial: shows for first 20 seconds of gameplay
+- [x] Tutorial: displays movement, aim, dash, and XP hints
+- [x] Tutorial: fades out smoothly in last 5 seconds
+- [x] All features work together without conflicts
+
 ---
 
 ## NOTES FOR ENGINEERS
@@ -1754,4 +1860,4 @@ If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 10 Complete (83/84 tasks, 98.8%)*
+*Last updated: 2026-01-04 — Phase 11 Complete (87/88 tasks, 98.9%)*

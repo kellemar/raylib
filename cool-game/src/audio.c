@@ -125,6 +125,12 @@ void AudioInit(void)
         musicLoaded = true;
     }
 
+    // Set music volume to 90% (10% quieter than default)
+    if (musicLoaded)
+    {
+        SetMusicVolume(gameMusic, 0.9f);
+    }
+
     audioInitialized = true;
 }
 

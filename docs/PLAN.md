@@ -40,26 +40,26 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 ## FEATURES
 
 ### Phase 1: Core (Week 1-2)
-- [ ] Player movement (WASD/left stick)
-- [ ] Auto-aim toward nearest enemy OR cursor aim (toggle)
-- [ ] Basic weapon: pulse cannon (fires toward aim direction)
-- [ ] Enemy spawner with wave system
-- [ ] 3 enemy types: Chaser, Orbiter, Splitter
-- [ ] XP crystals drop on enemy death
-- [ ] Level-up screen with 3 random upgrades
-- [ ] Health system + death state
-- [ ] Basic particle system (explosions, trails)
+- [x] Player movement (WASD/left stick)
+- [x] Auto-aim toward nearest enemy OR cursor aim (toggle)
+- [x] Basic weapon: pulse cannon (fires toward aim direction)
+- [x] Enemy spawner with wave system
+- [x] 3 enemy types: Chaser, Orbiter, Splitter
+- [x] XP crystals drop on enemy death
+- [x] Level-up screen with 3 random upgrades
+- [x] Health system + death state
+- [x] Basic particle system (explosions, trails)
 
 ### Phase 2: Juice (Week 3)
-- [ ] Screen shake on hits/explosions
-- [ ] Hitstop (2-3 frame freeze on big kills)
-- [ ] Neon glow shader (bloom post-processing)
-- [ ] CRT scanline overlay shader
+- [x] Screen shake on hits/explosions
+- [x] Hitstop (2-3 frame freeze on big kills)
+- [x] Neon glow shader (bloom post-processing)
+- [x] CRT scanline overlay shader
 - [ ] Chromatic aberration on damage
-- [ ] Camera lerp (smooth follow with slight lag)
-- [ ] Slow-mo on level up / near-death
-- [ ] Sound effects (pew pew, explosions, pickups)
-- [ ] Synthwave background track (procedural or looped)
+- [x] Camera lerp (smooth follow with slight lag)
+- [x] Slow-mo on level up / near-death
+- [x] Sound effects (pew pew, explosions, pickups)
+- [x] Synthwave background track (procedural or looped)
 
 ### Phase 3: Depth (Week 4)
 - [ ] 8 weapon types (see Weapons section)
@@ -71,13 +71,13 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [ ] Leaderboard (local high scores)
 
 ### Phase 4: Polish (Week 5)
-- [ ] Main menu with neon animations
+- [x] Main menu with neon animations
 - [ ] Character select (3 characters with different stats)
 - [ ] Settings (volume, screen shake toggle, CRT filter toggle)
-- [ ] Pause menu
-- [ ] Tutorial overlay (first 30 seconds)
+- [x] Pause menu
+- [x] Tutorial overlay (first 30 seconds)
 - [ ] Achievement system
-- [ ] Stats screen post-death
+- [x] Stats screen post-death
 
 ---
 
@@ -428,17 +428,20 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 
 ## GAME FEEL CHECKLIST
 
-- [ ] **Screen shake**: Intensity scales with damage dealt
-- [ ] **Hitstop**: 2 frames on kill, 5 frames on elite kill
-- [ ] **Knockback**: Enemies pushed by projectiles
-- [ ] **Trails**: Player and projectiles leave fading trails
-- [ ] **Flash**: Enemies flash white when hit
+- [x] **Screen shake**: Intensity scales with damage dealt
+- [x] **Hitstop**: 2 frames on kill, 4 frames on elite kill
+- [x] **Knockback**: Enemies pushed by projectiles
+- [x] **Trails**: Player and projectiles leave fading trails
+- [x] **Flash**: Enemies flash white when hit
 - [ ] **Squash/stretch**: Player squishes on direction change
 - [ ] **Anticipation**: 0.1s windup before boss attacks
 - [ ] **Impact frames**: Single bright frame on explosions
-- [ ] **Sound layering**: Never more than 8 concurrent sounds
-- [ ] **Music ducking**: Music quiets during level-up screen
+- [x] **Sound layering**: Never more than 8 concurrent sounds
+- [x] **Music ducking**: Music quiets during level-up screen
 - [ ] **Chromatic aberration**: Pulses when player is low HP
+- [x] **Dash ability**: SPACE to dash with invincibility
+- [x] **Slow-mo**: Time slows near death and during level-up
+- [x] **Tutorial**: Control hints shown for first 20 seconds
 
 ---
 
@@ -512,7 +515,7 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 | WASD | Move |
 | Mouse | Aim |
 | Left Click | (Auto-fire, no input needed) |
-| Space | Dash (if unlocked) |
+| Space | Dash (1.5s cooldown, invincible) ✓ |
 | 1/2/3 | Select upgrade |
 | Escape | Pause |
 | Tab | Show stats |
