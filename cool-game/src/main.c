@@ -21,7 +21,7 @@ int main(void)
     {
         float dt = GetFrameTime();
         GameUpdate(&game, dt);
-        MusicUpdate();
+        UpdateMusicTransition(dt);  // Handles both intro/game music and transitions
 
         BeginDrawing();
             GameDraw(&game);

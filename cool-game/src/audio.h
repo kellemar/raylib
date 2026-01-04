@@ -16,11 +16,22 @@ void AudioInit(void);
 void AudioCleanup(void);
 void PlayGameSound(SoundType type);
 
+// Game music (plays during gameplay)
 void MusicStart(void);
 void MusicStop(void);
 void MusicPause(void);
 void MusicResume(void);
 void MusicUpdate(void);
 bool IsMusicPlaying(void);
+
+// Intro music (plays on menu screen)
+void IntroMusicStart(void);
+void IntroMusicStop(void);
+void IntroMusicUpdate(void);
+bool IsIntroMusicPlaying(void);
+
+// Smooth transition from intro to game music
+void TransitionToGameMusic(void);
+void UpdateMusicTransition(float dt);
 
 #endif

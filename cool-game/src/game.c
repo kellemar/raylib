@@ -410,6 +410,9 @@ void GameInit(GameData *game)
     XPPoolInit(&game->xp);
     ParticlePoolInit(&game->particles);
     InitCamera(game);
+
+    // Start intro music on menu
+    IntroMusicStart();
 }
 
 void GameUpdate(GameData *game, float dt)
@@ -420,6 +423,15 @@ void GameUpdate(GameData *game, float dt)
             // Initialize and update starfield
             if (!menuStarsInit) InitMenuStars();
             UpdateMenuStars(dt);
+
+            // Update intro music
+            IntroMusicUpdate();
+
+            // Restart intro music if it stopped (loop)
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
 
             // Shader toggles
             if (IsKeyPressed(KEY_F1)) game->shadersEnabled = !game->shadersEnabled;
@@ -443,7 +455,7 @@ void GameUpdate(GameData *game, float dt)
                 XPPoolInit(&game->xp);
                 ParticlePoolInit(&game->particles);
                 InitCamera(game);
-                MusicStart();
+                TransitionToGameMusic();  // Smooth crossfade from intro to game music
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
@@ -542,6 +554,7 @@ void GameUpdate(GameData *game, float dt)
             if (IsKeyPressed(KEY_Q))
             {
                 MusicStop();
+                IntroMusicStart();  // Restart intro music on menu
                 game->state = STATE_MENU;
             }
             break;
@@ -571,7 +584,11 @@ void GameUpdate(GameData *game, float dt)
             break;
 
         case STATE_GAMEOVER:
-            if (IsKeyPressed(KEY_ENTER)) game->state = STATE_MENU;
+            if (IsKeyPressed(KEY_ENTER))
+            {
+                IntroMusicStart();  // Restart intro music on menu
+                game->state = STATE_MENU;
+            }
             break;
     }
 }

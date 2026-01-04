@@ -4,11 +4,21 @@
 
 #define SAMPLE_RATE 44100
 #define MAX_SAMPLES 44100
+#define MUSIC_VOLUME 0.6f
+#define CROSSFADE_DURATION 1.5f
 
 static Sound gameSounds[SOUND_COUNT] = { 0 };
 static Music gameMusic = { 0 };
+static Music introMusic = { 0 };
 static bool musicLoaded = false;
+static bool introMusicLoaded = false;
 static bool audioInitialized = false;
+
+// Crossfade state
+static bool isTransitioning = false;
+static float transitionTimer = 0.0f;
+static float introVolume = MUSIC_VOLUME;
+static float gameVolume = 0.0f;
 
 static Wave GenerateSquareWave(float frequency, float duration, float volume)
 {
@@ -109,6 +119,7 @@ void AudioInit(void)
     gameSounds[SOUND_HIT] = LoadSoundFromWave(hitWave);
     UnloadWave(hitWave);
 
+    // Load game music
     if (FileExists("resources/music/background.ogg"))
     {
         gameMusic = LoadMusicStream("resources/music/background.ogg");
@@ -125,10 +136,31 @@ void AudioInit(void)
         musicLoaded = true;
     }
 
-    // Set music volume to 90% (10% quieter than default)
     if (musicLoaded)
     {
-        SetMusicVolume(gameMusic, 0.9f);
+        SetMusicVolume(gameMusic, MUSIC_VOLUME);
+    }
+
+    // Load intro music
+    if (FileExists("resources/music/game_intro.mp3"))
+    {
+        introMusic = LoadMusicStream("resources/music/game_intro.mp3");
+        introMusicLoaded = true;
+    }
+    else if (FileExists("resources/music/game_intro.ogg"))
+    {
+        introMusic = LoadMusicStream("resources/music/game_intro.ogg");
+        introMusicLoaded = true;
+    }
+    else if (FileExists("resources/music/game_intro.wav"))
+    {
+        introMusic = LoadMusicStream("resources/music/game_intro.wav");
+        introMusicLoaded = true;
+    }
+
+    if (introMusicLoaded)
+    {
+        SetMusicVolume(introMusic, MUSIC_VOLUME);
     }
 
     audioInitialized = true;
@@ -150,6 +182,12 @@ void AudioCleanup(void)
     {
         UnloadMusicStream(gameMusic);
         musicLoaded = false;
+    }
+
+    if (introMusicLoaded)
+    {
+        UnloadMusicStream(introMusic);
+        introMusicLoaded = false;
     }
 
     audioInitialized = false;
@@ -199,4 +237,95 @@ bool IsMusicPlaying(void)
 {
     if (!audioInitialized || !musicLoaded) return false;
     return IsMusicStreamPlaying(gameMusic);
+}
+
+// Intro music functions
+void IntroMusicStart(void)
+{
+    if (!audioInitialized || !introMusicLoaded) return;
+    introVolume = MUSIC_VOLUME;
+    SetMusicVolume(introMusic, introVolume);
+    PlayMusicStream(introMusic);
+}
+
+void IntroMusicStop(void)
+{
+    if (!audioInitialized || !introMusicLoaded) return;
+    StopMusicStream(introMusic);
+}
+
+void IntroMusicUpdate(void)
+{
+    if (!audioInitialized || !introMusicLoaded) return;
+    UpdateMusicStream(introMusic);
+}
+
+bool IsIntroMusicPlaying(void)
+{
+    if (!audioInitialized || !introMusicLoaded) return false;
+    return IsMusicStreamPlaying(introMusic);
+}
+
+// Smooth crossfade transition from intro to game music
+void TransitionToGameMusic(void)
+{
+    if (!audioInitialized) return;
+
+    isTransitioning = true;
+    transitionTimer = 0.0f;
+    introVolume = MUSIC_VOLUME;
+    gameVolume = 0.0f;
+
+    // Start game music at zero volume
+    if (musicLoaded)
+    {
+        SetMusicVolume(gameMusic, 0.0f);
+        PlayMusicStream(gameMusic);
+    }
+}
+
+void UpdateMusicTransition(float dt)
+{
+    if (!audioInitialized) return;
+
+    // Update both music streams
+    if (introMusicLoaded) UpdateMusicStream(introMusic);
+    if (musicLoaded) UpdateMusicStream(gameMusic);
+
+    if (!isTransitioning) return;
+
+    transitionTimer += dt;
+    float progress = transitionTimer / CROSSFADE_DURATION;
+
+    if (progress >= 1.0f)
+    {
+        // Transition complete
+        isTransitioning = false;
+        introVolume = 0.0f;
+        gameVolume = MUSIC_VOLUME;
+
+        if (introMusicLoaded)
+        {
+            StopMusicStream(introMusic);
+        }
+        if (musicLoaded)
+        {
+            SetMusicVolume(gameMusic, MUSIC_VOLUME);
+        }
+    }
+    else
+    {
+        // Crossfade: fade out intro, fade in game
+        introVolume = MUSIC_VOLUME * (1.0f - progress);
+        gameVolume = MUSIC_VOLUME * progress;
+
+        if (introMusicLoaded)
+        {
+            SetMusicVolume(introMusic, introVolume);
+        }
+        if (musicLoaded)
+        {
+            SetMusicVolume(gameMusic, gameVolume);
+        }
+    }
 }
