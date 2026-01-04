@@ -13,6 +13,7 @@
 #define GRID_SIZE 64
 #define HIGHSCORE_FILE "highscore.dat"
 #define SETTINGS_FILE "settings.dat"
+#define BLACK_HOLE_PULL_RADIUS_MULT 5.0f
 
 static const Color GRID_COLOR = { 30, 25, 40, 100 };
 
@@ -180,7 +181,7 @@ static void ApplyBlackHolePull(ProjectilePool *projectiles, EnemyPool *enemies, 
         Projectile *p = &projectiles->projectiles[i];
         if (!p->active || p->behavior != PROJ_BEHAVIOR_PULL) continue;
 
-        float pullRadius = p->radius * 5.0f;  // Pull radius is larger than collision radius
+        float pullRadius = p->radius * BLACK_HOLE_PULL_RADIUS_MULT;
 
         for (int j = 0; j < MAX_ENEMIES; j++)
         {

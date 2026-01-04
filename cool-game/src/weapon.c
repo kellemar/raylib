@@ -5,6 +5,15 @@
 #include <math.h>
 #include <stdlib.h>
 
+// Weapon constants
+#define ORBIT_RADIUS        60.0f   // Distance from player for orbit shield
+#define ORBIT_SPEED         3.0f    // Radians per second for orbit shield
+#define ORBIT_ANGLE_OFFSET  0.5f    // Angle offset between spawns
+#define HOMING_TURN_RATE    5.0f    // Turn rate for homing missiles
+#define FREEZE_SLOW_AMOUNT  0.5f    // 50% slow from freeze ray
+#define FREEZE_SLOW_DURATION 2.0f   // Duration of freeze effect
+#define BLACK_HOLE_PULL     200.0f  // Pull force for black hole
+
 // Weapon color palette for each type
 static const Color WEAPON_COLORS[WEAPON_COUNT] = {
     { 255, 255, 50, 255 },   // PULSE_CANNON - Yellow
@@ -222,7 +231,7 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 params.pierce = false;
                 params.behavior = PROJ_BEHAVIOR_HOMING;
                 params.effects = PROJ_EFFECT_NONE;
-                params.homingStrength = 5.0f;
+                params.homingStrength = HOMING_TURN_RATE;
                 params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
@@ -266,13 +275,13 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 params.behavior = PROJ_BEHAVIOR_ORBIT;
                 params.effects = PROJ_EFFECT_NONE;
                 params.orbitAngle = angle;
-                params.orbitRadius = 60.0f;
-                params.orbitSpeed = 3.0f;
+                params.orbitRadius = ORBIT_RADIUS;
+                params.orbitSpeed = ORBIT_SPEED;
                 params.ownerPos = ownerPosPtr;
                 params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
-            weapon->orbitSpawnAngle += 0.5f;
+            weapon->orbitSpawnAngle += ORBIT_ANGLE_OFFSET;
             break;
         }
 
@@ -323,8 +332,8 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 params.pierce = false;
                 params.behavior = PROJ_BEHAVIOR_LINEAR;
                 params.effects = PROJ_EFFECT_SLOW;
-                params.slowAmount = 0.5f;
-                params.slowDuration = 2.0f;
+                params.slowAmount = FREEZE_SLOW_AMOUNT;
+                params.slowDuration = FREEZE_SLOW_DURATION;
                 params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
@@ -345,7 +354,7 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
             params.pierce = true;
             params.behavior = PROJ_BEHAVIOR_PULL;
             params.effects = PROJ_EFFECT_NONE;
-            params.pullStrength = 200.0f;
+            params.pullStrength = BLACK_HOLE_PULL;
             params.color = projColor;
             ProjectileSpawnEx(pool, &params);
             break;
