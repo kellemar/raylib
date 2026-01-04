@@ -433,9 +433,9 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 - [x] **Knockback**: Enemies pushed by projectiles
 - [x] **Trails**: Player and projectiles leave fading trails
 - [x] **Flash**: Enemies flash white when hit
-- [ ] **Squash/stretch**: Player squishes on direction change
-- [ ] **Anticipation**: 0.1s windup before boss attacks
-- [ ] **Impact frames**: Single bright frame on explosions
+- [x] **Squash/stretch**: Player squishes on direction change
+- [x] **Anticipation**: 0.1s windup before boss attacks
+- [x] **Impact frames**: Single bright frame on explosions
 - [x] **Sound layering**: Never more than 8 concurrent sounds
 - [x] **Music ducking**: Music quiets during level-up screen
 - [x] **Chromatic aberration**: Pulses when player is low HP
@@ -683,6 +683,18 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Run stats tracking**: Total kills, boss kills, score, games played, highest level, longest survival
 - **Character unlocks** (3 characters): Unlocked at 5 games played, 5 minutes survival
 - **Tests updated**: 130 tests passing (8 new unlock tests)
+
+---
+
+### 2026-01-05 — Game Feel Polish: Squash/Stretch & Impact Frames
+- **Added squash/stretch effect** to player character for responsive movement feel
+- Player stretches in movement direction based on velocity
+- Direction changes cause additional squash effect
+- Spring-like interpolation for smooth animation
+- **Added impact frames** on enemy death explosions
+- 2-frame bright flash effect (expanding white rings)
+- Provides satisfying visual feedback for kills
+- Radius scales with enemy size
 
 ---
 
