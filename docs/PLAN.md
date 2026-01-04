@@ -67,7 +67,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] Weapon evolution system (combine 2 maxed weapons → ultimate)
 - [x] Elite enemies (larger, special attacks)
 - [x] Boss every 5 minutes
-- [ ] Permanent unlocks (new starting weapons, characters)
+- [x] Permanent unlocks (new starting weapons, characters)
 - [ ] Leaderboard (local high scores)
 
 ### Phase 4: Polish (Week 5)
@@ -631,6 +631,23 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
   - **Special Upgrades** (6): Double Tap, Vampirism, Explosive Shots, Ricochet, Heat Seeker (Homing), Time Warp (Slow Aura)
 - **Added rarity system**: Common (white), Uncommon (green), Rare (yellow) with color-coded UI
 - **Implemented new mechanics**: Armor (damage reduction), HP regen, lifesteal, critical hits, dash damage, enemy slow aura
+
+---
+
+### 2026-01-05 — Permanent Unlocks System
+- **Added persistent meta-progression** with binary save/load system
+- **Weapon unlocks** (8 weapons with milestone requirements):
+  - Spread Shot: Kill 100 enemies
+  - Homing Missile: Kill 500 enemies
+  - Lightning: Reach level 10
+  - Orbit Shield: Survive 3 minutes
+  - Flamethrower: Kill 1 boss
+  - Freeze Ray: Kill 3 bosses
+  - Black Hole: Score 10,000 lifetime points
+- **Meta upgrades** (5 stats, 5 levels each): Speed (+2%/level), Health (+10/level), Damage (+5%/level), XP (+5%/level), Magnet (+10%/level)
+- **Run stats tracking**: Total kills, boss kills, score, games played, highest level, longest survival
+- **Character unlocks** (3 characters): Unlocked at 5 games played, 5 minutes survival
+- **Tests updated**: 130 tests passing (8 new unlock tests)
 
 ---
 

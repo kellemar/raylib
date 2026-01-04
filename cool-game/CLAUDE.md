@@ -303,6 +303,60 @@ Enemy* EnemyPoolGetBoss(EnemyPool *pool);
 #define BOSS_CHARGE_TIME    1.0f    // Anticipation before dash
 ```
 
+## PERMANENT UNLOCKS SYSTEM
+
+Persistent meta-progression saved to `unlocks.dat`.
+
+### Weapon Unlock Conditions
+| Weapon | Unlock Requirement |
+|--------|-------------------|
+| Pulse Cannon | Default (always unlocked) |
+| Spread Shot | Kill 100 enemies |
+| Homing Missile | Kill 500 enemies |
+| Lightning | Reach level 10 |
+| Orbit Shield | Survive 3 minutes |
+| Flamethrower | Kill 1 boss |
+| Freeze Ray | Kill 3 bosses |
+| Black Hole | Score 10,000 lifetime points |
+
+### Meta Upgrades (5 Levels Each)
+| Stat | Bonus per Level | Max Bonus |
+|------|-----------------|-----------|
+| Speed | +2% | +10% |
+| Health | +10 HP | +50 HP |
+| Damage | +5% | +25% |
+| XP Gain | +5% | +25% |
+| Magnet | +10% | +50% |
+
+### Character Unlock Conditions
+| Character | Unlock Requirement |
+|-----------|-------------------|
+| Default | Always unlocked |
+| Character 2 (Tank) | Play 5 games |
+| Character 3 (Speedster) | Survive 5 minutes |
+
+### Key Functions
+```c
+void UnlocksInit(UnlockData *unlocks);
+void UnlocksSave(UnlockData *unlocks);
+void UnlocksLoad(UnlockData *unlocks);
+bool UnlocksHasWeapon(UnlockData *unlocks, WeaponType weapon);
+void UnlocksUnlockWeapon(UnlockData *unlocks, WeaponType weapon);
+void UnlocksAddRunStats(UnlockData *unlocks, int kills, int bossKills,
+                        int score, int level, float survivalTime);
+bool UnlocksCheckNewUnlocks(UnlockData *unlocks);
+float UnlocksGetSpeedBonus(UnlockData *unlocks);
+float UnlocksGetHealthBonus(UnlockData *unlocks);
+float UnlocksGetDamageBonus(UnlockData *unlocks);
+float UnlocksGetXPBonus(UnlockData *unlocks);
+float UnlocksGetMagnetBonus(UnlockData *unlocks);
+
+// Unlock constants in unlocks.h
+#define META_UPGRADE_MAX_LEVEL 5
+#define META_UPGRADE_COST_BASE 1000
+#define META_UPGRADE_COST_MULT 2
+```
+
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
 - [x] Phase 1: Player System (complete)
@@ -319,6 +373,7 @@ Enemy* EnemyPoolGetBoss(EnemyPool *pool);
 - [x] Phase 14: Weapon Evolution System (complete)
 - [x] Phase 15: Elite Enemies (complete)
 - [x] Phase 16: Boss Enemy System (complete)
+- [x] Phase 17: Permanent Unlocks (complete)
 
 ## TESTING WITH PEEKABOO
 

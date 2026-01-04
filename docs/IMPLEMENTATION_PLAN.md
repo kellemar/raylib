@@ -1656,7 +1656,8 @@ make         # MUST PASS - zero warnings
 | 14 | Weapon Evolution System | 1 | 1 ✓ |
 | 15 | Elite Enemies | 1 | 1 ✓ |
 | 16 | Boss Enemy System | 1 | 1 ✓ |
-| **Total** | | **96** | **96** |
+| 17 | Permanent Unlocks | 1 | 1 ✓ |
+| **Total** | | **97** | **97** |
 
 ### Estimated Time
 
@@ -1994,4 +1995,38 @@ Added boss enemies that spawn every 5 minutes as major challenge events:
 
 ---
 
-*Last updated: 2026-01-05 — Boss Enemy System added (96/96 tasks, 100%)*
+### 2026-01-05 — Permanent Unlocks System
+
+Added persistent meta-progression system with save/load:
+
+| Feature | Implementation |
+|---------|----------------|
+| Weapon unlocks | 8 weapons unlockable via kill counts, level milestones, survival time, boss kills, score |
+| Character unlocks | 3 characters unlockable via games played, survival time |
+| Meta upgrades | 5 stats (speed, health, damage, XP, magnet) × 5 levels each |
+| Run stats | Total kills, boss kills, score, games played, highest level, longest survival |
+| Persistence | Binary file save/load (unlocks.dat) |
+| Meta bonuses | Applied on new game start |
+
+**Unlock conditions:**
+- Spread Shot: 100 kills
+- Homing Missile: 500 kills
+- Lightning: Level 10
+- Orbit Shield: Survive 3 minutes
+- Flamethrower: Kill 1 boss
+- Freeze Ray: Kill 3 bosses
+- Black Hole: Score 10,000 lifetime points
+- Character 2: Play 5 games
+- Character 3: Survive 5 minutes
+
+**Key code changes:**
+- `unlocks.h`: New file - UnlockData struct, unlock functions
+- `unlocks.c`: New file - Save/load, unlock checks, meta bonuses
+- `game.h`: Added UnlockData to GameData, bossKillsThisRun tracking
+- `game.c`: Load unlocks on init, save on game over, apply meta bonuses on game start
+
+**Tests updated:** 130 tests passing (added 8 new unlock tests)
+
+---
+
+*Last updated: 2026-01-05 — Permanent Unlocks added (97/97 tasks, 100%)*
