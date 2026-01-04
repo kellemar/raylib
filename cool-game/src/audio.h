@@ -16,6 +16,12 @@ void AudioInit(void);
 void AudioCleanup(void);
 void PlayGameSound(SoundType type);
 
+// Volume control
+void SetGameMusicVolume(float volume);
+void SetGameSFXVolume(float volume);
+float GetGameMusicVolume(void);
+float GetGameSFXVolume(void);
+
 // Game music (plays during gameplay)
 void MusicStart(void);
 void MusicStop(void);

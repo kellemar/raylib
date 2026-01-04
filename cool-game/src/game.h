@@ -12,12 +12,22 @@
 
 typedef enum GameState {
     STATE_MENU,
+    STATE_SETTINGS,    // Settings menu
     STATE_STARTING,    // "Get Ready" transition screen
     STATE_PLAYING,
     STATE_PAUSED,
     STATE_LEVELUP,
     STATE_GAMEOVER
 } GameState;
+
+// Settings that persist to disk
+typedef struct GameSettings {
+    float musicVolume;          // 0.0 - 1.0
+    float sfxVolume;            // 0.0 - 1.0
+    bool screenShakeEnabled;
+    bool crtEnabled;
+    bool chromaticEnabled;      // Chromatic aberration on low health
+} GameSettings;
 
 typedef struct GameData {
     GameState state;
@@ -60,6 +70,9 @@ typedef struct GameData {
     // Starting transition
     float transitionTimer;     // Timer for "Get Ready" screen
     float fadeAlpha;           // Fade overlay alpha (0-1)
+    // Settings
+    GameSettings settings;     // Persisted game settings
+    int settingsSelection;     // Current settings menu item (0-3)
 } GameData;
 
 void GameInit(GameData *game);

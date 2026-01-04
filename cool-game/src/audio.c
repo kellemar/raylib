@@ -20,6 +20,10 @@ static float transitionTimer = 0.0f;
 static float introVolume = MUSIC_VOLUME;
 static float gameVolume = 0.0f;
 
+// User-configurable volumes
+static float currentMusicVolume = MUSIC_VOLUME;
+static float currentSFXVolume = 1.0f;
+
 static Wave GenerateSquareWave(float frequency, float duration, float volume)
 {
     int sampleCount = (int)(SAMPLE_RATE * duration);
@@ -199,8 +203,38 @@ void PlayGameSound(SoundType type)
     if (type < 0 || type >= SOUND_COUNT) return;
     if (gameSounds[type].frameCount > 0)
     {
+        SetSoundVolume(gameSounds[type], currentSFXVolume);
         PlaySound(gameSounds[type]);
     }
+}
+
+// Volume control functions
+void SetGameMusicVolume(float volume)
+{
+    currentMusicVolume = volume;
+    if (musicLoaded && !isTransitioning)
+    {
+        SetMusicVolume(gameMusic, volume);
+    }
+    if (introMusicLoaded && !isTransitioning)
+    {
+        SetMusicVolume(introMusic, volume);
+    }
+}
+
+void SetGameSFXVolume(float volume)
+{
+    currentSFXVolume = volume;
+}
+
+float GetGameMusicVolume(void)
+{
+    return currentMusicVolume;
+}
+
+float GetGameSFXVolume(void)
+{
+    return currentSFXVolume;
 }
 
 void MusicStart(void)
@@ -243,7 +277,7 @@ bool IsMusicPlaying(void)
 void IntroMusicStart(void)
 {
     if (!audioInitialized || !introMusicLoaded) return;
-    introVolume = MUSIC_VOLUME;
+    introVolume = currentMusicVolume;
     SetMusicVolume(introMusic, introVolume);
     PlayMusicStream(introMusic);
 }
@@ -273,7 +307,7 @@ void TransitionToGameMusic(void)
 
     isTransitioning = true;
     transitionTimer = 0.0f;
-    introVolume = MUSIC_VOLUME;
+    introVolume = currentMusicVolume;
     gameVolume = 0.0f;
 
     // Start game music at zero volume
@@ -302,7 +336,7 @@ void UpdateMusicTransition(float dt)
         // Transition complete
         isTransitioning = false;
         introVolume = 0.0f;
-        gameVolume = MUSIC_VOLUME;
+        gameVolume = currentMusicVolume;
 
         if (introMusicLoaded)
         {
@@ -310,14 +344,14 @@ void UpdateMusicTransition(float dt)
         }
         if (musicLoaded)
         {
-            SetMusicVolume(gameMusic, MUSIC_VOLUME);
+            SetMusicVolume(gameMusic, currentMusicVolume);
         }
     }
     else
     {
         // Crossfade: fade out intro, fade in game
-        introVolume = MUSIC_VOLUME * (1.0f - progress);
-        gameVolume = MUSIC_VOLUME * progress;
+        introVolume = currentMusicVolume * (1.0f - progress);
+        gameVolume = currentMusicVolume * progress;
 
         if (introMusicLoaded)
         {

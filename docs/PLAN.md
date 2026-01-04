@@ -73,7 +73,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 ### Phase 4: Polish (Week 5)
 - [x] Main menu with neon animations
 - [ ] Character select (3 characters with different stats)
-- [ ] Settings (volume, screen shake toggle, CRT filter toggle)
+- [x] Settings (volume, screen shake toggle, CRT filter toggle)
 - [x] Pause menu
 - [x] Tutorial overlay (first 30 seconds)
 - [ ] Achievement system
@@ -568,6 +568,15 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 ---
 
 ## CHANGELOG
+
+### 2026-01-04 — Settings Menu
+- **Added: Settings menu** — Press TAB from the main menu to access. Includes:
+  - Music Volume slider (0-100%)
+  - SFX Volume slider (0-100%)
+  - Screen Shake toggle (ON/OFF)
+  - CRT Filter toggle (ON/OFF)
+- Settings persist to `settings.dat` and are loaded on game start
+- Navigate with W/S or arrow keys, adjust with A/D or left/right, save and exit with ESC or ENTER
 
 ### 2026-01-04 — New Features
 - **Added: Chromatic aberration** — Pulsing RGB separation effect that activates when player health drops below 50%. Intensity scales inversely with health (full effect near death). Uses radial aberration that's stronger at screen edges.

@@ -21,6 +21,13 @@
 #define NEON_RED        (Color){ 255, 50, 50, 255 }
 #define NEON_WHITE      (Color){ 255, 255, 255, 255 }
 
+// Settings defaults
+#define DEFAULT_MUSIC_VOLUME        0.6f
+#define DEFAULT_SFX_VOLUME          1.0f
+#define DEFAULT_SCREEN_SHAKE        true
+#define DEFAULT_CRT_ENABLED         true
+#define DEFAULT_CHROMATIC_ENABLED   true
+
 // Score multiplier constants
 #define MULTIPLIER_MAX          5.0f
 #define MULTIPLIER_GROWTH_RATE  50.0f   // Seconds to gain 1.0x multiplier

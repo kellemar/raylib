@@ -12,6 +12,7 @@
 #define CAMERA_LERP_SPEED 5.0f
 #define GRID_SIZE 64
 #define HIGHSCORE_FILE "highscore.dat"
+#define SETTINGS_FILE "settings.dat"
 
 static const Color GRID_COLOR = { 30, 25, 40, 100 };
 
@@ -39,6 +40,51 @@ static void SaveHighScore(int score)
         fwrite(&score, sizeof(int), 1, file);
         fclose(file);
     }
+}
+
+// Settings persistence
+static void LoadSettings(GameSettings *settings)
+{
+    FILE *file = fopen(SETTINGS_FILE, "rb");
+    if (file != NULL)
+    {
+        if (fread(settings, sizeof(GameSettings), 1, file) != 1)
+        {
+            // Set defaults on read failure
+            settings->musicVolume = DEFAULT_MUSIC_VOLUME;
+            settings->sfxVolume = DEFAULT_SFX_VOLUME;
+            settings->screenShakeEnabled = DEFAULT_SCREEN_SHAKE;
+            settings->crtEnabled = DEFAULT_CRT_ENABLED;
+            settings->chromaticEnabled = DEFAULT_CHROMATIC_ENABLED;
+        }
+        fclose(file);
+    }
+    else
+    {
+        // Set defaults if file doesn't exist
+        settings->musicVolume = DEFAULT_MUSIC_VOLUME;
+        settings->sfxVolume = DEFAULT_SFX_VOLUME;
+        settings->screenShakeEnabled = DEFAULT_SCREEN_SHAKE;
+        settings->crtEnabled = DEFAULT_CRT_ENABLED;
+        settings->chromaticEnabled = DEFAULT_CHROMATIC_ENABLED;
+    }
+}
+
+static void SaveSettings(GameSettings *settings)
+{
+    FILE *file = fopen(SETTINGS_FILE, "wb");
+    if (file != NULL)
+    {
+        fwrite(settings, sizeof(GameSettings), 1, file);
+        fclose(file);
+    }
+}
+
+static void ApplySettings(GameData *game)
+{
+    SetGameMusicVolume(game->settings.musicVolume);
+    SetGameSFXVolume(game->settings.sfxVolume);
+    game->crtEnabled = game->settings.crtEnabled;
 }
 
 // Menu starfield effect
@@ -269,6 +315,155 @@ static void DrawUpgradeOption(int index, Upgrade upgrade, float y)
     DrawText(upgrade.description, (int)(boxX + 60), (int)(y + 42), 16, NEON_GREEN);
 }
 
+static void UpdateSettingsMenu(GameData *game)
+{
+    // Navigation (up/down or W/S)
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
+    {
+        game->settingsSelection--;
+        if (game->settingsSelection < 0) game->settingsSelection = 4;
+    }
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
+    {
+        game->settingsSelection++;
+        if (game->settingsSelection > 4) game->settingsSelection = 0;
+    }
+
+    // Adjust values (left/right or A/D)
+    float volumeStep = 0.1f;
+    bool leftPressed = IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A);
+    bool rightPressed = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D);
+
+    switch (game->settingsSelection)
+    {
+        case 0: // Music Volume
+            if (leftPressed && game->settings.musicVolume > 0.05f)
+                game->settings.musicVolume -= volumeStep;
+            else if (leftPressed)
+                game->settings.musicVolume = 0.0f;
+            if (rightPressed && game->settings.musicVolume < 0.95f)
+                game->settings.musicVolume += volumeStep;
+            else if (rightPressed)
+                game->settings.musicVolume = 1.0f;
+            SetGameMusicVolume(game->settings.musicVolume);
+            break;
+
+        case 1: // SFX Volume
+            if (leftPressed && game->settings.sfxVolume > 0.05f)
+                game->settings.sfxVolume -= volumeStep;
+            else if (leftPressed)
+                game->settings.sfxVolume = 0.0f;
+            if (rightPressed && game->settings.sfxVolume < 0.95f)
+                game->settings.sfxVolume += volumeStep;
+            else if (rightPressed)
+                game->settings.sfxVolume = 1.0f;
+            SetGameSFXVolume(game->settings.sfxVolume);
+            // Play test sound when adjusting
+            if (leftPressed || rightPressed) PlayGameSound(SOUND_PICKUP);
+            break;
+
+        case 2: // Screen Shake
+            if (leftPressed || rightPressed)
+                game->settings.screenShakeEnabled = !game->settings.screenShakeEnabled;
+            break;
+
+        case 3: // CRT Filter
+            if (leftPressed || rightPressed)
+            {
+                game->settings.crtEnabled = !game->settings.crtEnabled;
+                game->crtEnabled = game->settings.crtEnabled;
+            }
+            break;
+
+        case 4: // Chromatic Aberration
+            if (leftPressed || rightPressed)
+                game->settings.chromaticEnabled = !game->settings.chromaticEnabled;
+            break;
+    }
+
+    // Exit settings
+    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER))
+    {
+        SaveSettings(&game->settings);
+        game->state = STATE_MENU;
+    }
+}
+
+static void DrawSettingsMenu(GameData *game)
+{
+    // Draw starfield background
+    DrawMenuStars();
+
+    // Title
+    const char *title = "SETTINGS";
+    DrawText(title, SCREEN_WIDTH/2 - MeasureText(title, 50)/2, 100, 50, NEON_CYAN);
+
+    float startY = 180.0f;
+    float itemHeight = 60.0f;
+    float boxWidth = 500.0f;
+    float boxX = SCREEN_WIDTH / 2.0f - boxWidth / 2.0f;
+
+    const char *labels[] = { "Music Volume", "SFX Volume", "Screen Shake", "CRT Filter", "Chromatic FX" };
+
+    for (int i = 0; i < 5; i++)
+    {
+        float y = startY + i * itemHeight;
+        bool selected = (i == game->settingsSelection);
+
+        // Box background
+        Color boxColor = selected ? (Color){ 60, 30, 80, 230 } : (Color){ 40, 20, 60, 200 };
+        Color borderColor = selected ? NEON_CYAN : NEON_PINK;
+        DrawRectangle((int)boxX, (int)y, (int)boxWidth, 50, boxColor);
+        DrawRectangleLinesEx((Rectangle){ boxX, y, boxWidth, 50 }, selected ? 3.0f : 2.0f, borderColor);
+
+        // Label
+        Color textColor = selected ? NEON_WHITE : GRAY;
+        DrawText(labels[i], (int)(boxX + 20), (int)(y + 14), 22, textColor);
+
+        // Value display - position from left side of box for consistency
+        float sliderX = boxX + 220;
+        if (i < 2) // Volume sliders
+        {
+            float volume = (i == 0) ? game->settings.musicVolume : game->settings.sfxVolume;
+            int percent = (int)(volume * 100);
+
+            // Slider background
+            float sliderWidth = 180.0f;
+            float sliderHeight = 12.0f;
+            float sliderY = y + 19;
+            DrawRectangle((int)sliderX, (int)sliderY, (int)sliderWidth, (int)sliderHeight, (Color){ 50, 50, 50, 255 });
+            DrawRectangle((int)sliderX, (int)sliderY, (int)(sliderWidth * volume), (int)sliderHeight, selected ? NEON_GREEN : (Color){ 50, 200, 100, 200 });
+
+            // Percentage text - right-aligned within box
+            const char *percentText = TextFormat("%d%%", percent);
+            int textWidth = MeasureText(percentText, 20);
+            DrawText(percentText, (int)(boxX + boxWidth - textWidth - 20), (int)(y + 14), 20, selected ? NEON_GREEN : GRAY);
+        }
+        else // Toggle switches
+        {
+            bool enabled;
+            if (i == 2) enabled = game->settings.screenShakeEnabled;
+            else if (i == 3) enabled = game->settings.crtEnabled;
+            else enabled = game->settings.chromaticEnabled;
+
+            const char *state = enabled ? "ON" : "OFF";
+            Color stateColor = enabled ? NEON_GREEN : NEON_RED;
+            if (!selected) stateColor = enabled ? (Color){ 50, 200, 100, 200 } : (Color){ 200, 50, 50, 200 };
+            // Right-aligned toggle text
+            int textWidth = MeasureText(state, 22);
+            DrawText(state, (int)(boxX + boxWidth - textWidth - 20), (int)(y + 14), 22, stateColor);
+        }
+    }
+
+    // Instructions
+    const char *navText = "W/S or Up/Down: Navigate";
+    const char *adjustText = "A/D or Left/Right: Adjust";
+    const char *exitText = "ESC or ENTER: Save and Exit";
+    DrawText(navText, SCREEN_WIDTH/2 - MeasureText(navText, 16)/2, 510, 16, GRAY);
+    DrawText(adjustText, SCREEN_WIDTH/2 - MeasureText(adjustText, 16)/2, 535, 16, GRAY);
+    DrawText(exitText, SCREEN_WIDTH/2 - MeasureText(exitText, 16)/2, 560, 16, NEON_YELLOW);
+}
+
 static void InitCamera(GameData *game)
 {
     game->camera.target = game->player.pos;
@@ -299,6 +494,9 @@ static void UpdateGameCamera(GameData *game, float dt)
 
 void TriggerScreenShake(GameData *game, float intensity, float duration)
 {
+    // Check if screen shake is enabled in settings
+    if (!game->settings.screenShakeEnabled) return;
+
     if (intensity > game->shakeIntensity)
     {
         game->shakeIntensity = intensity;
@@ -420,6 +618,12 @@ void GameInit(GameData *game)
     game->tutorialTimer = 0.0f;
     game->transitionTimer = 0.0f;
     game->fadeAlpha = 0.0f;
+    game->settingsSelection = 0;
+
+    // Load and apply settings
+    LoadSettings(&game->settings);
+    ApplySettings(game);
+
     PlayerInit(&game->player);
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
@@ -461,7 +665,27 @@ void GameUpdate(GameData *game, float dt)
                 game->fadeAlpha = 0.0f;
                 // Music transition happens later when fading into game
             }
+            if (IsKeyPressed(KEY_TAB))
+            {
+                game->settingsSelection = 0;
+                game->state = STATE_SETTINGS;
+            }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
+            break;
+
+        case STATE_SETTINGS:
+            // Initialize starfield if needed (shares with menu)
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            UpdateSettingsMenu(game);
             break;
 
         case STATE_STARTING:
@@ -548,7 +772,7 @@ void GameUpdate(GameData *game, float dt)
             }
 
             // Chromatic aberration: intensity increases as health decreases below 50%
-            if (healthPercent < 0.5f && healthPercent > 0.0f)
+            if (game->settings.chromaticEnabled && healthPercent < 0.5f && healthPercent > 0.0f)
             {
                 // Scale from 0 at 50% health to 1.0 at 0% health
                 game->chromaticIntensity = 1.0f - (healthPercent / 0.5f);
@@ -691,8 +915,13 @@ static void DrawSceneToTexture(GameData *game)
                 DrawText("NEON VOID", SCREEN_WIDTH/2 - MeasureText("NEON VOID", 60)/2, 200, 60, NEON_CYAN);
                 DrawText(TextFormat("High Score: %d", game->highScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("High Score: %d", game->highScore), 24)/2, 280, 24, NEON_YELLOW);
                 DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 350, 20, NEON_PINK);
-                DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 400, 20, GRAY);
-                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 500, 16, (Color){ 100, 100, 100, 255 });
+                DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 390, 20, NEON_CYAN);
+                DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 430, 20, GRAY);
+                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 520, 16, (Color){ 100, 100, 100, 255 });
+                break;
+
+            case STATE_SETTINGS:
+                DrawSettingsMenu(game);
                 break;
 
             case STATE_STARTING:
