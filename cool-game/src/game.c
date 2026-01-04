@@ -299,6 +299,12 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
                     game->killCount++;
 
+                    // Track boss kills for unlocks
+                    if (e->isBoss)
+                    {
+                        game->bossKillsThisRun++;
+                    }
+
                     // Hitstop: brief freeze on kill (more frames for bigger enemies)
                     int hitstopAmount = (e->xpValue >= 3) ? 4 : 2;
                     if (hitstopAmount > game->hitstopFrames)
@@ -735,6 +741,10 @@ void GameInit(GameData *game)
     game->bossCount = 0;
     game->bossWarningTimer = 0.0f;
     game->bossWarningActive = false;
+    game->bossKillsThisRun = 0;
+
+    // Load persistent unlocks
+    UnlocksLoad(&game->unlocks);
 
     // Load and apply settings
     LoadSettings(&game->settings);
@@ -855,7 +865,21 @@ void GameUpdate(GameData *game, float dt)
                 game->hitstopFrames = 0;
                 game->timeScale = 1.0f;
                 game->tutorialTimer = 0.0f;
+                game->bossSpawnTimer = BOSS_SPAWN_INTERVAL;
+                game->bossCount = 0;
+                game->bossWarningTimer = 0.0f;
+                game->bossWarningActive = false;
+                game->bossKillsThisRun = 0;
                 PlayerInit(&game->player);
+
+                // Apply meta bonuses from permanent unlocks
+                game->player.speed *= UnlocksGetSpeedBonus(&game->unlocks);
+                game->player.maxHealth += UnlocksGetHealthBonus(&game->unlocks);
+                game->player.health = game->player.maxHealth;
+                game->player.weapon.damage *= UnlocksGetDamageBonus(&game->unlocks);
+                game->player.xpMultiplier *= UnlocksGetXPBonus(&game->unlocks);
+                game->player.magnetRadius *= UnlocksGetMagnetBonus(&game->unlocks);
+
                 ProjectilePoolInit(&game->projectiles);
                 EnemyPoolInit(&game->enemies);
                 XPPoolInit(&game->xp);
@@ -1012,6 +1036,13 @@ void GameUpdate(GameData *game, float dt)
                     game->highScore = game->score;
                     SaveHighScore(game->highScore);
                 }
+
+                // Save run stats to unlocks
+                UnlocksAddRunStats(&game->unlocks, game->killCount, game->bossKillsThisRun,
+                                   game->score, game->player.level, game->gameTime);
+                UnlocksCheckNewUnlocks(&game->unlocks);
+                UnlocksSave(&game->unlocks);
+
                 game->state = STATE_GAMEOVER;
             }
 

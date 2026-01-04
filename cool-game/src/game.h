@@ -8,6 +8,7 @@
 #include "xp.h"
 #include "upgrade.h"
 #include "particle.h"
+#include "unlocks.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -78,6 +79,9 @@ typedef struct GameData {
     int bossCount;             // Number of bosses defeated this run
     float bossWarningTimer;    // Warning display timer before boss spawn
     bool bossWarningActive;    // Show "BOSS INCOMING" warning
+    // Permanent unlocks
+    UnlockData unlocks;        // Persistent unlock data
+    int bossKillsThisRun;      // Boss kills this run (for unlock tracking)
 } GameData;
 
 void GameInit(GameData *game);
