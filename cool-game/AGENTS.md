@@ -49,6 +49,31 @@ make test && make && echo "Ready to proceed"
 - If `make test` fails: FIX TESTS FIRST, cannot proceed
 - If `make` has warnings: FIX WARNINGS, cannot proceed
 
+### Launch Game and Capture Screen
+```bash
+cd cool-game
+make test       # MUST PASS FIRST
+make clean && make
+./neon_void &
+sleep 3
+peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
+```
+
+### Simulate Keyboard Input
+```bash
+osascript -e 'tell application "System Events" to key code 36'  # ENTER
+sleep 2
+peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
+```
+
+### Key Codes for osascript
+- ENTER: `key code 36`
+- ESC: `key code 53`
+- SPACE: `key code 49`
+- W/A/S/D: `key code 13/0/1/2`
+- 1/2/3: `key code 18/19/20`
+
+
 ## WHERE TO LOOK
 | Task | Location | Notes |
 |------|----------|-------|

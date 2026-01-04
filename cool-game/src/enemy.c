@@ -37,6 +37,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitAngle = 0.0f;
                     e->orbitDistance = 0.0f;
                     e->splitCount = 0;
+                    e->hitFlashTimer = 0.0f;
                     break;
 
                 case ENEMY_ORBITER:
@@ -49,6 +50,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitAngle = (float)(rand() % 360) * DEG2RAD;
                     e->orbitDistance = 200.0f + (float)(rand() % 100);
                     e->splitCount = 0;
+                    e->hitFlashTimer = 0.0f;
                     break;
 
                 case ENEMY_SPLITTER:
@@ -61,6 +63,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitAngle = 0.0f;
                     e->orbitDistance = 0.0f;
                     e->splitCount = 2;
+                    e->hitFlashTimer = 0.0f;
                     break;
 
                 default:
@@ -73,6 +76,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitAngle = 0.0f;
                     e->orbitDistance = 0.0f;
                     e->splitCount = 0;
+                    e->hitFlashTimer = 0.0f;
                     break;
             }
 
@@ -103,6 +107,7 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
             e->orbitAngle = 0.0f;
             e->orbitDistance = 0.0f;
             e->splitCount = splitCount;
+            e->hitFlashTimer = 0.0f;
 
             pool->count++;
             return e;
@@ -117,6 +122,12 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
     {
         Enemy *e = &pool->enemies[i];
         if (!e->active) continue;
+
+        // Update hit flash timer
+        if (e->hitFlashTimer > 0.0f)
+        {
+            e->hitFlashTimer -= dt;
+        }
 
         switch (e->type)
         {
@@ -192,29 +203,41 @@ void EnemyPoolDraw(EnemyPool *pool)
         Enemy *e = &pool->enemies[i];
         if (!e->active) continue;
 
-        switch (e->type)
+        // Check if hit flash is active
+        bool isFlashing = e->hitFlashTimer > 0.0f;
+
+        if (isFlashing)
         {
-            case ENEMY_CHASER:
-                DrawCircleV(e->pos, e->radius, NEON_RED);
-                DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
-                break;
+            // Draw white flash
+            DrawCircleV(e->pos, e->radius, WHITE);
+            DrawCircleV(e->pos, e->radius * 0.6f, (Color){ 255, 255, 255, 200 });
+        }
+        else
+        {
+            switch (e->type)
+            {
+                case ENEMY_CHASER:
+                    DrawCircleV(e->pos, e->radius, NEON_RED);
+                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
+                    break;
 
-            case ENEMY_ORBITER:
-                DrawCircleV(e->pos, e->radius, NEON_CYAN);
-                DrawCircleV(e->pos, e->radius * 0.6f, NEON_PINK);
-                DrawCircleLinesV(e->pos, e->radius + 3.0f, NEON_CYAN);
-                break;
+                case ENEMY_ORBITER:
+                    DrawCircleV(e->pos, e->radius, NEON_CYAN);
+                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_PINK);
+                    DrawCircleLinesV(e->pos, e->radius + 3.0f, NEON_CYAN);
+                    break;
 
-            case ENEMY_SPLITTER:
-                DrawCircleV(e->pos, e->radius, NEON_YELLOW);
-                DrawCircleV(e->pos, e->radius * 0.7f, NEON_GREEN);
-                DrawCircleV(e->pos, e->radius * 0.4f, NEON_YELLOW);
-                break;
+                case ENEMY_SPLITTER:
+                    DrawCircleV(e->pos, e->radius, NEON_YELLOW);
+                    DrawCircleV(e->pos, e->radius * 0.7f, NEON_GREEN);
+                    DrawCircleV(e->pos, e->radius * 0.4f, NEON_YELLOW);
+                    break;
 
-            default:
-                DrawCircleV(e->pos, e->radius, NEON_RED);
-                DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
-                break;
+                default:
+                    DrawCircleV(e->pos, e->radius, NEON_RED);
+                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
+                    break;
+            }
         }
 
         if (e->health < e->maxHealth)

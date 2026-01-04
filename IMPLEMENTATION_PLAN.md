@@ -1289,9 +1289,9 @@ make         # MUST PASS - zero warnings
      - Draw renderTexture to screen
   4. Unload render texture on cleanup
 - **Verification**:
-  - [ ] `make run` — game renders correctly through texture
-  - [ ] No visual difference yet (pass-through)
-- **Status**: `[ ]`
+  - [x] `make run` — game renders correctly through texture
+  - [x] No visual difference yet (pass-through)
+- **Status**: `[x]`
 
 #### P8.1.2 — Implement bloom shader
 - **Description**: Glow effect for bright objects
@@ -1302,10 +1302,10 @@ make         # MUST PASS - zero warnings
   3. Apply shader when drawing render texture to screen
   4. Add uniform for intensity control
 - **Verification**:
-  - [ ] `make run` — bloom effect visible
-  - [ ] Bright objects (player, projectiles) glow
-  - [ ] Effect is subtle, not overwhelming
-- **Status**: `[ ]`
+  - [x] `make run` — bloom effect visible
+  - [x] Bright objects (player, projectiles) glow
+  - [x] Effect is subtle, not overwhelming
+- **Status**: `[x]`
 
 #### P8.1.3 — Implement CRT shader
 - **Description**: Retro CRT monitor effect
@@ -1316,10 +1316,10 @@ make         # MUST PASS - zero warnings
   3. Add time uniform for animation
   4. Make toggleable in settings
 - **Verification**:
-  - [ ] `make run` — CRT scanlines visible
-  - [ ] Slight barrel distortion on edges
-  - [ ] RGB separation effect
-- **Status**: `[ ]`
+  - [x] `make run` — CRT scanlines visible
+  - [x] Slight barrel distortion on edges
+  - [x] RGB separation effect
+- **Status**: `[x]`
 
 ---
 
@@ -1333,10 +1333,10 @@ make         # MUST PASS - zero warnings
   2. Draw circles at each position with decreasing alpha
   3. Update positions every few frames
 - **Verification**:
-  - [ ] `make run` — player leaves trail when moving
-  - [ ] Trail fades smoothly
-  - [ ] Trail disappears when stationary
-- **Status**: `[ ]`
+  - [x] `make run` — player leaves trail when moving
+  - [x] Trail fades smoothly
+  - [x] Trail disappears when stationary
+- **Status**: `[x]`
 
 #### P8.2.2 — Add enemy hit flash
 - **Description**: Enemies flash white when damaged
@@ -1347,10 +1347,10 @@ make         # MUST PASS - zero warnings
   3. In draw: if hitFlashTimer > 0, draw white instead of normal color
   4. Decrease hitFlashTimer in update
 - **Verification**:
-  - [ ] `make run` — enemies flash when hit
-  - [ ] Flash is brief and noticeable
-  - [ ] Doesn't interfere with normal rendering
-- **Status**: `[ ]`
+  - [x] `make run` — enemies flash when hit
+  - [x] Flash is brief and noticeable
+  - [x] Doesn't interfere with normal rendering
+- **Status**: `[x]`
 
 #### P8.2.3 — Add background grid
 - **Description**: Subtle grid showing movement
@@ -1361,10 +1361,10 @@ make         # MUST PASS - zero warnings
   3. Use very dark color, subtle alpha
   4. Grid spacing: 64 pixels
 - **Verification**:
-  - [ ] `make run` — grid visible in background
-  - [ ] Grid moves as camera moves
-  - [ ] Grid doesn't distract from gameplay
-- **Status**: `[ ]`
+  - [x] `make run` — grid visible in background
+  - [x] Grid moves as camera moves
+  - [x] Grid doesn't distract from gameplay
+- **Status**: `[x]`
 
 ---
 
@@ -1545,10 +1545,10 @@ make         # MUST PASS - zero warnings
 | 5 | Particles & Juice | 7 | 7 ✓ |
 | 6 | Additional Enemies | 5 | 5 ✓ |
 | 7 | Audio | 4 | 4 ✓ |
-| 8 | Visual Polish | 6 | 0 |
+| 8 | Visual Polish | 6 | 6 ✓ |
 | 9 | Menus & Polish | 4 | 0 |
 | 10 | Final Polish | 5 | 0 |
-| **Total** | | **84** | **68** |
+| **Total** | | **84** | **74** |
 
 ### Estimated Time
 
@@ -1686,6 +1686,24 @@ After completing each phase, verify:
 - [x] No audio clipping or distortion
 - [x] AudioInit/AudioCleanup work without crashes
 
+### Phase 8 Verification ✓
+- [x] **`make test` passes** — 27 tests, 1160 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Render texture pipeline works (game renders through texture)
+- [x] Bloom shader applies glow effect to bright objects
+- [x] CRT shader adds scanlines, barrel distortion, RGB separation
+- [x] F1 toggles bloom shader on/off
+- [x] F2 toggles CRT shader on/off
+- [x] Player trail appears when moving
+- [x] Trail fades out behind player
+- [x] Trail disappears when player stops moving
+- [x] Enemies flash white when hit by projectiles
+- [x] Hit flash is brief (~0.1 seconds)
+- [x] Background grid visible in world space
+- [x] Grid moves with camera (world-aligned, 64px spacing)
+- [x] All visual effects work together without performance issues
+
 ---
 
 ## NOTES FOR ENGINEERS
@@ -1708,4 +1726,4 @@ If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 7 Complete (68/84 tasks, 81.0%)*
+*Last updated: 2026-01-04 — Phase 8 Complete (74/84 tasks, 88.1%)*

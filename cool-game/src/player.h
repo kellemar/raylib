@@ -5,6 +5,8 @@
 #include "weapon.h"
 #include <stdbool.h>
 
+#define PLAYER_TRAIL_LENGTH 10
+
 typedef struct Player {
     Vector2 pos;
     Vector2 vel;
@@ -20,6 +22,9 @@ typedef struct Player {
     int xpToNextLevel;
     bool alive;
     Weapon weapon;
+    // Trail effect
+    Vector2 trailPositions[PLAYER_TRAIL_LENGTH];
+    float trailUpdateTimer;
 } Player;
 
 void PlayerInit(Player *player);

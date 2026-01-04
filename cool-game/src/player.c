@@ -19,6 +19,12 @@ void PlayerInit(Player *player)
     player->xpToNextLevel = 10;
     player->alive = true;
     WeaponInit(&player->weapon, WEAPON_PULSE_CANNON);
+    // Initialize trail
+    player->trailUpdateTimer = 0.0f;
+    for (int i = 0; i < PLAYER_TRAIL_LENGTH; i++)
+    {
+        player->trailPositions[i] = player->pos;
+    }
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
@@ -56,6 +62,20 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
     player->vel = Vector2Scale(input, player->speed);
     player->pos = Vector2Add(player->pos, Vector2Scale(player->vel, dt));
 
+    // Update trail positions
+    player->trailUpdateTimer += dt;
+    float trailInterval = 0.02f;
+    if (player->trailUpdateTimer >= trailInterval)
+    {
+        player->trailUpdateTimer = 0.0f;
+        // Shift positions back
+        for (int i = PLAYER_TRAIL_LENGTH - 1; i > 0; i--)
+        {
+            player->trailPositions[i] = player->trailPositions[i - 1];
+        }
+        player->trailPositions[0] = player->pos;
+    }
+
     Vector2 mouseScreenPos = GetMousePosition();
     Vector2 mouseWorldPos = GetScreenToWorld2D(mouseScreenPos, camera);
     Vector2 toMouse = Vector2Subtract(mouseWorldPos, player->pos);
@@ -86,6 +106,20 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
 void PlayerDraw(Player *player)
 {
     if (!player->alive) return;
+
+    // Draw trail (behind player)
+    float velMagnitude = Vector2Length(player->vel);
+    if (velMagnitude > 10.0f)
+    {
+        for (int i = PLAYER_TRAIL_LENGTH - 1; i >= 0; i--)
+        {
+            float t = (float)i / (float)PLAYER_TRAIL_LENGTH;
+            float alpha = (1.0f - t) * 150.0f;
+            float radius = player->radius * (1.0f - t * 0.7f);
+            Color trailColor = (Color){ 50, 255, 255, (unsigned char)alpha };
+            DrawCircleV(player->trailPositions[i], radius, trailColor);
+        }
+    }
 
     bool visible = true;
     if (player->invincibilityTimer > 0.0f)

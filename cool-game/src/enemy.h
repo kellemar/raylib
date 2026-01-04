@@ -26,6 +26,7 @@ typedef struct Enemy {
     float orbitAngle;
     float orbitDistance;
     int splitCount;
+    float hitFlashTimer;
 } Enemy;
 
 typedef struct EnemyPool {

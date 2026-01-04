@@ -33,9 +33,20 @@ typedef struct GameData {
     Camera2D camera;
     float shakeIntensity;
     float shakeDuration;
+    // Post-processing (ping-pong textures for shader chaining)
+    RenderTexture2D renderTarget;
+    RenderTexture2D renderTarget2;
+    Shader bloomShader;
+    Shader crtShader;
+    int bloomIntensityLoc;
+    int crtTimeLoc;
+    bool shadersEnabled;
+    bool crtEnabled;
 } GameData;
 
 void GameInit(GameData *game);
+void GameInitShaders(GameData *game);
+void GameCleanupShaders(GameData *game);
 void GameUpdate(GameData *game, float dt);
 void GameDraw(GameData *game);
 void TriggerScreenShake(GameData *game, float intensity, float duration);

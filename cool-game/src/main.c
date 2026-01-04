@@ -15,6 +15,7 @@ int main(void)
 
     static GameData game = { 0 };
     GameInit(&game);
+    GameInitShaders(&game);
 
     while (!WindowShouldClose())
     {
@@ -27,6 +28,7 @@ int main(void)
         EndDrawing();
     }
 
+    GameCleanupShaders(&game);
     AudioCleanup();
     CloseAudioDevice();
     CloseWindow();

@@ -163,9 +163,9 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 3: Enemies (complete)
 - [x] Phase 4: XP & Leveling (complete)
 - [x] Phase 5: Particles & Juice (complete)
-- [ ] Phase 6: Additional Enemies
-- [ ] Phase 7: Audio
-- [ ] Phase 8: Visual Polish
+- [x] Phase 6: Additional Enemies (complete)
+- [x] Phase 7: Audio (complete)
+- [x] Phase 8: Visual Polish (complete)
 - [ ] Phase 9: Menus & Polish
 - [ ] Phase 10: Final Polish
 
@@ -180,14 +180,14 @@ make test       # MUST PASS FIRST
 make clean && make
 ./neon_void &
 sleep 3
-peekaboo image --mode screen --retina --path ~/Desktop/game_test.png
+peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
 ```
 
 ### Simulate Keyboard Input
 ```bash
 osascript -e 'tell application "System Events" to key code 36'  # ENTER
 sleep 2
-peekaboo image --mode screen --path ~/Desktop/gameplay.png
+peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
 ```
 
 ### Key Codes for osascript
