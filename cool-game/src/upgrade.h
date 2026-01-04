@@ -49,4 +49,9 @@ Upgrade GetUpgradeDefinition(UpgradeType type);
 void ApplyUpgrade(UpgradeType type, Player *player);
 void GenerateRandomUpgrades(UpgradeType *options, int count);
 
+// Evolution catalyst system
+#include "weapon.h"
+UpgradeType GetEvolutionCatalyst(WeaponType baseWeapon);
+bool IsEvolutionCatalyst(UpgradeType upgrade, WeaponType weapon);
+
 #endif

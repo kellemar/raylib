@@ -40,6 +40,8 @@ typedef struct Player {
     float vampirism;           // Lifesteal percentage (0.0 - 1.0)
     float slowAuraRadius;      // Radius of slow aura around player
     float slowAuraAmount;      // Slow intensity (0.0 - 1.0)
+    // Evolution tracking
+    unsigned int acquiredUpgrades;  // Bitfield of acquired upgrade types
 } Player;
 
 void PlayerInit(Player *player);
@@ -48,5 +50,11 @@ void PlayerDraw(Player *player);
 void PlayerTakeDamage(Player *player, float damage);
 void PlayerSwitchWeapon(Player *player, WeaponType type);
 void PlayerCycleWeapon(Player *player, int direction);  // +1 next, -1 prev
+
+// Upgrade tracking for evolution
+void PlayerMarkUpgradeAcquired(Player *player, int upgradeType);
+bool PlayerHasUpgrade(Player *player, int upgradeType);
+bool PlayerCanEvolveWeapon(Player *player);
+void PlayerEvolveWeapon(Player *player);
 
 #endif

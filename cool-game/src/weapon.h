@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 typedef enum WeaponType {
+    // Base weapons
     WEAPON_PULSE_CANNON,    // Single shot, medium speed
     WEAPON_SPREAD_SHOT,     // 3-way spread
     WEAPON_HOMING_MISSILE,  // Slow, seeks enemies
@@ -14,8 +15,20 @@ typedef enum WeaponType {
     WEAPON_FLAMETHROWER,    // Rapid fire short range cone
     WEAPON_FREEZE_RAY,      // Slows enemies on hit
     WEAPON_BLACK_HOLE,      // Pulls enemies in
+    WEAPON_BASE_COUNT,      // Number of base weapons (for cycling)
+    // Evolved weapons (unlocked via evolution)
+    WEAPON_MEGA_CANNON = WEAPON_BASE_COUNT,  // Pulse Cannon + Pierce → huge piercing beam
+    WEAPON_CIRCLE_BURST,    // Spread Shot + Multi Shot → 360° nova
+    WEAPON_SWARM,           // Homing Missile + Double Shot → 20 mini missiles
+    WEAPON_TESLA_COIL,      // Lightning + Crit Chance → permanent AoE damage
+    WEAPON_BLADE_DANCER,    // Orbit Shield + Damage → 8 fast orbiting blades
+    WEAPON_INFERNO,         // Flamethrower + Range → screen-wide fire
+    WEAPON_BLIZZARD,        // Freeze Ray + Slow Aura → freeze + shatter
+    WEAPON_SINGULARITY,     // Black Hole + Explosive → insta-kill vortex
     WEAPON_COUNT
 } WeaponType;
+
+#define WEAPON_MAX_LEVEL 5  // Level required for evolution
 
 typedef struct Weapon {
     WeaponType type;
@@ -47,5 +60,13 @@ bool WeaponCanFire(Weapon *weapon);
 void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, Vector2 *ownerPosPtr);
 const char* WeaponGetName(WeaponType type);
 Color WeaponGetColor(WeaponType type);
+
+// Evolution system
+bool WeaponIsEvolved(WeaponType type);
+bool WeaponCanEvolve(Weapon *weapon, bool hasCatalyst);
+WeaponType WeaponGetEvolvedType(WeaponType baseType);
+WeaponType WeaponGetBaseType(WeaponType evolvedType);
+void WeaponEvolve(Weapon *weapon);
+void WeaponLevelUp(Weapon *weapon);
 
 #endif

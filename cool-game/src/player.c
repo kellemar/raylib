@@ -1,5 +1,6 @@
 #include "player.h"
 #include "types.h"
+#include "upgrade.h"
 #include "raymath.h"
 #include <math.h>
 
@@ -40,6 +41,8 @@ void PlayerInit(Player *player)
     player->vampirism = 0.0f;
     player->slowAuraRadius = 0.0f;
     player->slowAuraAmount = 0.0f;
+    // Evolution tracking
+    player->acquiredUpgrades = 0;
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
@@ -276,11 +279,48 @@ void PlayerSwitchWeapon(Player *player, WeaponType type)
 
 void PlayerCycleWeapon(Player *player, int direction)
 {
+    // Only cycle through base weapons, not evolved ones
     int newType = (int)player->weapon.type + direction;
 
-    // Wrap around
-    if (newType < 0) newType = WEAPON_COUNT - 1;
-    if (newType >= WEAPON_COUNT) newType = 0;
+    // Wrap around within base weapons only
+    if (newType < 0) newType = WEAPON_BASE_COUNT - 1;
+    if (newType >= WEAPON_BASE_COUNT) newType = 0;
 
     PlayerSwitchWeapon(player, (WeaponType)newType);
+}
+
+void PlayerMarkUpgradeAcquired(Player *player, int upgradeType)
+{
+    if (upgradeType >= 0 && upgradeType < 32)
+    {
+        player->acquiredUpgrades |= (1u << upgradeType);
+    }
+}
+
+bool PlayerHasUpgrade(Player *player, int upgradeType)
+{
+    if (upgradeType < 0 || upgradeType >= 32) return false;
+    return (player->acquiredUpgrades & (1u << upgradeType)) != 0;
+}
+
+bool PlayerCanEvolveWeapon(Player *player)
+{
+    // Check if weapon is at max level and is a base weapon
+    if (player->weapon.level < WEAPON_MAX_LEVEL) return false;
+    if (player->weapon.type >= WEAPON_BASE_COUNT) return false;  // Already evolved
+
+    // Check if player has the catalyst upgrade for this weapon
+    UpgradeType catalyst = GetEvolutionCatalyst(player->weapon.type);
+    return PlayerHasUpgrade(player, (int)catalyst);
+}
+
+void PlayerEvolveWeapon(Player *player)
+{
+    if (!PlayerCanEvolveWeapon(player)) return;
+
+    WeaponType evolvedType = WeaponGetEvolvedType(player->weapon.type);
+    if (evolvedType != player->weapon.type)
+    {
+        WeaponEvolve(&player->weapon);
+    }
 }

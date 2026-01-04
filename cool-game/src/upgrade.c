@@ -40,40 +40,51 @@ Upgrade GetUpgradeDefinition(UpgradeType type)
 
 void ApplyUpgrade(UpgradeType type, Player *player)
 {
+    // Mark upgrade as acquired for evolution tracking
+    PlayerMarkUpgradeAcquired(player, (int)type);
+
     switch (type)
     {
-        // Weapon upgrades
+        // Weapon upgrades - also level up the weapon
         case UPGRADE_DAMAGE:
             player->weapon.damage *= 1.25f;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_FIRE_RATE:
             player->weapon.fireRate *= 1.2f;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_PROJECTILE_COUNT:
             player->weapon.projectileCount += 1;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_PIERCE:
             player->weapon.pierce = true;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_RANGE:
             player->weapon.projectileLifetime *= 1.3f;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_PROJ_SIZE:
             player->weapon.projectileRadius *= 1.25f;
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_COOLDOWN:
             player->weapon.fireRate *= 1.15f;  // Faster fire rate = shorter cooldown
+            WeaponLevelUp(&player->weapon);
             break;
 
         case UPGRADE_CRIT_CHANCE:
             player->weapon.critChance += 0.1f;
             if (player->weapon.critChance > 1.0f) player->weapon.critChance = 1.0f;
+            WeaponLevelUp(&player->weapon);
             break;
 
         // Player upgrades
@@ -156,4 +167,25 @@ void GenerateRandomUpgrades(UpgradeType *options, int count)
             generated++;
         }
     }
+}
+
+UpgradeType GetEvolutionCatalyst(WeaponType baseWeapon)
+{
+    switch (baseWeapon)
+    {
+        case WEAPON_PULSE_CANNON:  return UPGRADE_PIERCE;           // → Mega Cannon
+        case WEAPON_SPREAD_SHOT:   return UPGRADE_PROJECTILE_COUNT; // → Circle Burst
+        case WEAPON_HOMING_MISSILE: return UPGRADE_DOUBLE_SHOT;     // → Swarm
+        case WEAPON_LIGHTNING:     return UPGRADE_CRIT_CHANCE;      // → Tesla Coil
+        case WEAPON_ORBIT_SHIELD:  return UPGRADE_DAMAGE;           // → Blade Dancer
+        case WEAPON_FLAMETHROWER:  return UPGRADE_RANGE;            // → Inferno
+        case WEAPON_FREEZE_RAY:    return UPGRADE_SLOW_AURA;        // → Blizzard
+        case WEAPON_BLACK_HOLE:    return UPGRADE_EXPLOSIVE;        // → Singularity
+        default: return UPGRADE_DAMAGE;
+    }
+}
+
+bool IsEvolutionCatalyst(UpgradeType upgrade, WeaponType weapon)
+{
+    return GetEvolutionCatalyst(weapon) == upgrade;
 }

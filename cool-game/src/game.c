@@ -1001,6 +1001,12 @@ void GameUpdate(GameData *game, float dt)
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1))
             {
                 ApplyUpgrade(game->upgradeOptions[0], &game->player);
+                // Check for weapon evolution after upgrade
+                if (PlayerCanEvolveWeapon(&game->player))
+                {
+                    PlayerEvolveWeapon(&game->player);
+                    PlayGameSound(SOUND_LEVELUP);  // Extra fanfare for evolution
+                }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
@@ -1008,6 +1014,11 @@ void GameUpdate(GameData *game, float dt)
             else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2))
             {
                 ApplyUpgrade(game->upgradeOptions[1], &game->player);
+                if (PlayerCanEvolveWeapon(&game->player))
+                {
+                    PlayerEvolveWeapon(&game->player);
+                    PlayGameSound(SOUND_LEVELUP);
+                }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
@@ -1015,6 +1026,11 @@ void GameUpdate(GameData *game, float dt)
             else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3))
             {
                 ApplyUpgrade(game->upgradeOptions[2], &game->player);
+                if (PlayerCanEvolveWeapon(&game->player))
+                {
+                    PlayerEvolveWeapon(&game->player);
+                    PlayGameSound(SOUND_LEVELUP);
+                }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
                 game->state = STATE_PLAYING;
