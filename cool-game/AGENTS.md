@@ -1,165 +1,34 @@
-# AGENTS.md - cool-game/
+# cool-game
 
-## OVERVIEW
-NEON VOID: A survivor-like game built with raylib. Player fights waves of enemies, collects XP, and chooses upgrades on level-up.
+NEON VOID is a survivor-like game built with raylib. The codebase is a single C99 app with fixed-size entity pools and lightweight tests for pure logic.
 
-## STRUCTURE
-cool-game/
-├── src/
-│   ├── main.c          # Entry point, game loop
-│   ├── game.h/c        # Game state machine, core loop, camera, collisions
-│   ├── types.h         # Constants, colors, pool sizes
-│   ├── utils.h/c       # Pure testable functions (collision, math)
-│   ├── player.h/c      # Player entity, movement, aiming, health, weapon
-│   ├── projectile.h/c  # Projectile pool with update/draw
-│   ├── weapon.h/c      # Weapon definitions (pulse cannon)
-│   ├── enemy.h/c       # Enemy pool, AI, spawning, collisions
-│   ├── xp.h/c          # XP crystals, magnet collection
-│   ├── upgrade.h/c     # Upgrade definitions and application
-│   ├── particle.h/c    # Particle effects (explosions, hit sparks)
-│   ├── ui.h/c          # HUD rendering (health, XP, score, etc)
-│   └── audio.h/c       # Sound effects and music management
-├── tests/
-│   ├── minunit.h       # Lightweight test framework
-│   ├── test_main.c     # Test runner
-│   ├── test_utils.c    # Tests for utility functions (16 tests)
-│   └── test_enemy.c    # Tests for enemy pool logic (6 tests)
-├── resources/
-│   ├── shaders/
-│   ├── sounds/
-│   ├── music/
-│   └── textures/
-├── Makefile
-├── neon_void           # Game binary
-└── test_runner         # Test binary
+## Stack
+- C99, raylib
+- Makefile build
+- Lightweight unit tests in `cool-game/tests` (minunit)
 
-## COMMANDS (in priority order)
-```bash
-make test       # Run unit tests - MUST PASS FIRST
-make            # Build game - MUST have zero warnings
-make run        # Build and run game
-make clean      # Remove build artifacts
-```
+## Structure
+- `cool-game/src` - Game code and headers
+- `cool-game/resources` - Shaders, sounds, music, textures
+- `cool-game/tests` - Unit tests for pure logic and pools
+- `cool-game/Makefile` - Build and test targets
+- `cool-game/neon_void` - Built game binary
+- `cool-game/test_runner` - Built test binary
 
-## MANDATORY WORKFLOW
-**Before ANY task is considered complete:**
-```bash
-make test && make && echo "Ready to proceed"
-```
-- If `make test` fails: FIX TESTS FIRST, cannot proceed
-- If `make` has warnings: FIX WARNINGS, cannot proceed
+## Commands
+- `make test` - Run unit tests
+- `make` - Build the game
+- `make run` - Build and run the game
+- `make clean` - Remove build artifacts
 
-### Launch Game and Capture Screen
-```bash
-cd cool-game
-make test       # MUST PASS FIRST
-make clean && make
-./neon_void &
-sleep 3
-peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
-```
+## Key Patterns
+- Fixed-size pools with active flags; no dynamic allocation for runtime entities
+- Game state transitions happen in `cool-game/src/game.c` (update phase only)
+- Camera2D means screen-space input must be converted to world space; avoid screen bounds for world entities
 
-### Simulate Keyboard Input
-```bash
-osascript -e 'tell application "System Events" to key code 36'  # ENTER
-sleep 2
-peekaboo see --window-title "Neon Void" --app neon_void --json-output --path ~/Desktop/game_test.png
-```
+## Constraints
+- Do not edit build artifacts or runtime data files (`*.o`, `neon_void`, `test_runner`, `*.dat`)
+- Prefer adding pure logic to `cool-game/src/utils.c` with matching tests in `cool-game/tests`
 
-### Key Codes for osascript
-- ENTER: `key code 36`
-- ESC: `key code 53`
-- SPACE: `key code 49`
-- W/A/S/D: `key code 13/0/1/2`
-- 1/2/3: `key code 18/19/20`
-
-
-## WHERE TO LOOK
-| Task | Location | Notes |
-|------|----------|-------|
-| Game states | src/game.h | STATE_MENU, STATE_PLAYING, etc. |
-| Screen/pool constants | src/types.h | SCREEN_WIDTH, MAX_ENEMIES, MAX_PARTICLES |
-| Color palette | src/types.h | NEON_CYAN, NEON_PINK, VOID_BLACK |
-| State transitions | src/game.c | GameUpdate switch statement |
-| Rendering | src/game.c | GameDraw with Camera2D, DrawGameWorld |
-| Camera & screen shake | src/game.c | InitCamera, UpdateGameCamera, TriggerScreenShake |
-| Particle effects | src/particle.h/c | SpawnExplosion, SpawnHitParticles |
-| HUD rendering | src/ui.h/c | DrawHUD (screen-space UI) |
-| Pure logic/math | src/utils.h/c | Collision, spawn interval |
-| Enemy types/AI | src/enemy.h/c | ENEMY_CHASER, EnemyPool |
-| Audio/music | src/audio.h/c | Sound effects, background music |
-| Unit tests | tests/ | MinUnit framework, 27 tests |
-| Implementation plan | ../IMPLEMENTATION_PLAN.md | Task breakdown by phase |
-
-## CONVENTIONS
-- Follow raylib code style: 4 spaces, Allman braces, TitleCase functions
-- All pools use fixed-size arrays with active flags (no dynamic allocation)
-- Each system: header declares struct + Init/Update/Draw, .c implements
-- Game state changes only in GameUpdate(), never in Draw functions
-- Use types.h colors (NEON_*) for consistent neon aesthetic
-- Extract pure logic to utils.h/c for testability
-
-## COORDINATE SYSTEMS (CRITICAL)
-
-This game uses Camera2D. Understanding coordinate spaces prevents bugs.
-
-| Space | Used For | Examples |
-|-------|----------|----------|
-| **Screen space** | Mouse input, HUD | `GetMousePosition()`, `DrawHUD()` (after EndMode2D) |
-| **World space** | All game entities | Player, enemies, projectiles, particles, XP crystals |
-
-### Converting Between Spaces
-```c
-Vector2 mouseScreen = GetMousePosition();
-Vector2 mouseWorld = GetScreenToWorld2D(mouseScreen, camera);
-```
-
-### What Lives Where
-| Screen Space | World Space |
-|--------------|-------------|
-| Mouse cursor position | Player position |
-| HUD elements | Enemy positions |
-| Menu/overlay text | Projectile positions |
-| | Particle positions |
-| | XP crystal positions |
-
-### Camera Impact Checklist
-When modifying camera or adding camera-dependent features:
-- [ ] Mouse input uses `GetScreenToWorld2D()` before world-space comparisons
-- [ ] No hardcoded `SCREEN_WIDTH/HEIGHT` bounds for world-space entities
-- [ ] Projectile culling is lifetime-based, NOT position-based
-- [ ] Enemy spawning is relative to player position, not screen origin
-- [ ] HUD drawing happens AFTER `EndMode2D()` (screen space)
-
-## ANTI-PATTERNS
-- Dynamic memory allocation (use fixed pools from types.h)
-- Modifying game state in Draw functions
-- Adding raylib.h include without going through types.h
-- Hardcoding colors (use NEON_* palette from types.h)
-- **Skipping `make test` before completing a task**
-- **Proceeding when tests fail**
-- **Using `GetMousePosition()` directly for world-space calculations** (must convert with `GetScreenToWorld2D`)
-- **Clamping world-space positions to SCREEN_WIDTH/HEIGHT** (camera follows player, world is infinite)
-- **Culling entities based on fixed screen bounds** (use lifetime or distance from player instead)
-
-## GAME STATES
-| State | Enter | Exit | Description |
-|-------|-------|------|-------------|
-| STATE_MENU | Game start, game over | ENTER | Title screen |
-| STATE_PLAYING | ENTER from menu | ESC, death | Main gameplay |
-| STATE_PAUSED | ESC from playing | ESC, Q | Pause overlay |
-| STATE_LEVELUP | XP threshold | 1/2/3 | Upgrade selection |
-| STATE_GAMEOVER | Player death | ENTER | Final score display |
-
-## IMPLEMENTATION STATUS
-- [x] Phase 0: Project Setup (complete)
-- [x] Phase 1: Player System (complete)
-- [x] Phase 2: Weapons & Projectiles (complete)
-- [x] Phase 3: Enemies (complete)
-- [x] Phase 4: XP & Leveling (complete)
-- [x] Phase 5: Particles & Juice (complete)
-- [x] Phase 6: Additional Enemies (complete)
-- [x] Phase 7: Audio (complete)
-- [ ] Phase 8: Visual Polish
-- [ ] Phase 9: Menus & Polish
-- [ ] Phase 10: Final Polish
+## Additional Context
+Read `cool-game/README.md` for gameplay details, `cool-game/agent_docs/` for deeper system notes, and `cool-game/src/types.h` for shared constants.

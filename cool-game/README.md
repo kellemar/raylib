@@ -42,6 +42,12 @@ make clean
 
 ---
 
+## Developer Notes
+
+For contributor guidance, see `cool-game/AGENTS.md` and the deeper system notes in `cool-game/agent_docs/`.
+
+---
+
 ## Controls
 
 ### Keyboard
