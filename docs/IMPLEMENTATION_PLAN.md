@@ -1655,7 +1655,8 @@ make         # MUST PASS - zero warnings
 | 13 | 22 Upgrade System | 1 | 1 ✓ |
 | 14 | Weapon Evolution System | 1 | 1 ✓ |
 | 15 | Elite Enemies | 1 | 1 ✓ |
-| **Total** | | **95** | **95** |
+| 16 | Boss Enemy System | 1 | 1 ✓ |
+| **Total** | | **96** | **96** |
 
 ### Estimated Time
 
@@ -1968,4 +1969,29 @@ Added elite enemy variants to increase mid-game challenge:
 
 ---
 
-*Last updated: 2026-01-05 — Elite Enemies added (95/95 tasks, 100%)*
+### 2026-01-05 — Boss Enemy System
+
+Added boss enemies that spawn every 5 minutes as major challenge events:
+
+| Feature | Implementation |
+|---------|----------------|
+| Boss stats | BOSS_BASE_HEALTH (2000), BOSS_BASE_RADIUS (60), BOSS_BASE_DAMAGE (30), BOSS_XP_VALUE (100), BOSS_BASE_SPEED (50) |
+| Spawn timing | BOSS_SPAWN_INTERVAL (300s = 5 minutes) |
+| Attack pattern | Charge-and-dash: 1s charge with warning, then 8x speed dash at player |
+| Scaling | Each subsequent boss is 50% stronger (health, damage), gives more XP |
+| Warning system | 5-second countdown with flashing "BOSS INCOMING" text |
+| UI feedback | Boss health bar at top center of screen with boss number |
+| Visual effects | Purple glow, red warning rings when charging, menacing eyes, crown spikes |
+
+**Key code changes:**
+- `enemy.h`: Added `ENEMY_BOSS` type, boss stats constants, boss fields in Enemy struct
+- `enemy.c`: Added `EnemySpawnBoss()`, `EnemyPoolHasBoss()`, `EnemyPoolGetBoss()`, boss AI in update, boss visuals in draw
+- `game.h`: Added `bossSpawnTimer`, `bossCount`, `bossWarningTimer`, `bossWarningActive`
+- `game.c`: Added boss spawn logic with warning system
+- `ui.c`: Added boss warning display and boss health bar
+
+**Tests updated:** 122 tests passing (added 5 new boss tests)
+
+---
+
+*Last updated: 2026-01-05 — Boss Enemy System added (96/96 tasks, 100%)*

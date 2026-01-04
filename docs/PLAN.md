@@ -66,7 +66,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] 20+ upgrades (damage, speed, multishot, pierce, etc.)
 - [x] Weapon evolution system (combine 2 maxed weapons → ultimate)
 - [x] Elite enemies (larger, special attacks)
-- [ ] Boss every 5 minutes
+- [x] Boss every 5 minutes
 - [ ] Permanent unlocks (new starting weapons, characters)
 - [ ] Leaderboard (local high scores)
 
@@ -602,6 +602,16 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Fixed: Multi-shot spread pattern** — `projectileCount` upgrade was being applied but `WeaponFire()` only spawned a single projectile. Now spawns multiple projectiles in a spread pattern when `projectileCount > 1`, making the Multi Shot upgrade functional.
 - **Fixed: Enemy spawn position bounds** — Enemies were incorrectly clamped to `SCREEN_WIDTH/HEIGHT` bounds, which limited spawning to a fixed region. Since the camera follows the player into infinite world space, this was incorrect. Enemies now spawn in a ring around the player regardless of world position.
 - **Fixed: High score file read validation** — `fread()` return value was ignored in `LoadHighScore()`, which could result in garbage data on read failure. Now properly validates the return value and defaults to 0 on failure.
+
+---
+
+### 2026-01-05 — Boss Enemy System
+- **Added boss enemies** spawning every 5 minutes with 5-second warning countdown
+- **Boss stats**: 2000 base health, 60 radius, 30 damage, 100 XP, scaling 50% stronger per boss
+- **Boss AI**: Charge-and-dash attack pattern with 1-second anticipation, 8x dash speed
+- **Visual feedback**: Purple glow, red warning rings when charging, menacing eyes, crown spikes
+- **UI elements**: "BOSS INCOMING" warning with countdown, boss health bar at top center of screen
+- **Tests updated**: 122 tests passing (added 5 boss tests)
 
 ---
 

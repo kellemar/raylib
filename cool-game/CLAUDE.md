@@ -254,6 +254,54 @@ Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
 #define ELITE_SPEED_MULT    0.8f
 ```
 
+## BOSS ENEMIES
+
+Boss enemies spawn every 5 minutes as major challenge events.
+
+### Boss Stats
+| Stat | Value | Notes |
+|------|-------|-------|
+| Health | 2000 base | Scales 50% per boss (boss #2 = 3000, #3 = 4000...) |
+| Radius | 60 | Large, imposing visual |
+| Damage | 30 | High contact damage |
+| Speed | 50 | Slow approach, fast dash attack |
+| XP | 100 × boss number | Major reward for defeating |
+
+### Attack Pattern
+1. **Approach Phase**: Slowly moves toward player (speed 50)
+2. **Charge Phase**: Stops, shakes, red warning rings expand (1 second)
+3. **Dash Phase**: Lunges at player at 8x normal speed
+4. Cycle repeats every 3 seconds
+
+### Spawn Timing
+- First boss: 5:00 (300 seconds)
+- Subsequent bosses: 5 minutes after previous defeated
+- Warning: "BOSS INCOMING" display 5 seconds before spawn
+- Boss timer pauses while boss is alive
+
+### Visual Identification
+- **Purple Glow**: Pulsing purple aura behind boss
+- **Red Warning Rings**: Expanding red circles when charging
+- **Menacing Eyes**: Red glowing eyes
+- **Crown Spikes**: Magenta spikes radiating from top
+- **Health Bar**: Large purple health bar at top of screen
+
+### Key Functions
+```c
+Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber);
+bool EnemyPoolHasBoss(EnemyPool *pool);
+Enemy* EnemyPoolGetBoss(EnemyPool *pool);
+
+// Boss constants in enemy.h
+#define BOSS_SPAWN_INTERVAL 300.0f  // 5 minutes
+#define BOSS_BASE_HEALTH    2000.0f
+#define BOSS_BASE_RADIUS    60.0f
+#define BOSS_BASE_DAMAGE    30.0f
+#define BOSS_BASE_SPEED     50.0f
+#define BOSS_XP_VALUE       100
+#define BOSS_ATTACK_INTERVAL 3.0f   // Seconds between attacks
+#define BOSS_CHARGE_TIME    1.0f    // Anticipation before dash
+```
 
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
@@ -270,6 +318,7 @@ Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
 - [x] Phase 13: 22 Upgrade System (complete)
 - [x] Phase 14: Weapon Evolution System (complete)
 - [x] Phase 15: Elite Enemies (complete)
+- [x] Phase 16: Boss Enemy System (complete)
 
 ## TESTING WITH PEEKABOO
 
