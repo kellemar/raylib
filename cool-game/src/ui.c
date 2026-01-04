@@ -17,9 +17,9 @@ void DrawHUD(GameData *game)
 
     // Score multiplier display (changes color based on value)
     Color multiplierColor = NEON_GREEN;
-    if (game->scoreMultiplier >= 3.0f) multiplierColor = NEON_YELLOW;
-    if (game->scoreMultiplier >= 4.0f) multiplierColor = NEON_ORANGE;
-    if (game->scoreMultiplier >= 4.5f) multiplierColor = NEON_PINK;
+    if (game->scoreMultiplier >= MULTIPLIER_TIER_YELLOW) multiplierColor = NEON_YELLOW;
+    if (game->scoreMultiplier >= MULTIPLIER_TIER_ORANGE) multiplierColor = NEON_ORANGE;
+    if (game->scoreMultiplier >= MULTIPLIER_TIER_PINK) multiplierColor = NEON_PINK;
     DrawText(TextFormat("x%.1f", game->scoreMultiplier), padding + 120, startY + lineHeight, 16, multiplierColor);
 
     DrawText(TextFormat("LEVEL: %d", game->player.level), padding, startY + lineHeight * 2, 20, NEON_CYAN);

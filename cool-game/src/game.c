@@ -440,9 +440,8 @@ void GameUpdate(GameData *game, float dt)
 
             // Update score multiplier (increases slowly while not hit)
             game->timeSinceLastHit += dt;
-            // Increase by 0.1 every 5 seconds, max 5.0x
-            game->scoreMultiplier = 1.0f + (game->timeSinceLastHit / 50.0f);
-            if (game->scoreMultiplier > 5.0f) game->scoreMultiplier = 5.0f;
+            game->scoreMultiplier = 1.0f + (game->timeSinceLastHit / MULTIPLIER_GROWTH_RATE);
+            if (game->scoreMultiplier > MULTIPLIER_MAX) game->scoreMultiplier = MULTIPLIER_MAX;
 
             PlayerUpdate(&game->player, dt, &game->projectiles, game->camera);
             ProjectilePoolUpdate(&game->projectiles, dt);

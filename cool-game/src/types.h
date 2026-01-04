@@ -21,4 +21,11 @@
 #define NEON_RED        (Color){ 255, 50, 50, 255 }
 #define NEON_WHITE      (Color){ 255, 255, 255, 255 }
 
+// Score multiplier constants
+#define MULTIPLIER_MAX          5.0f
+#define MULTIPLIER_GROWTH_RATE  50.0f   // Seconds to gain 1.0x multiplier
+#define MULTIPLIER_TIER_YELLOW  3.0f
+#define MULTIPLIER_TIER_ORANGE  4.0f
+#define MULTIPLIER_TIER_PINK    4.5f
+
 #endif
