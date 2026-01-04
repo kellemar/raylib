@@ -14,6 +14,7 @@ typedef struct Player {
     float health;
     float maxHealth;
     float invincibilityTimer;
+    float magnetRadius;
     int level;
     int xp;
     int xpToNextLevel;

@@ -5,6 +5,8 @@
 #include "projectile.h"
 #include "player.h"
 #include "enemy.h"
+#include "xp.h"
+#include "upgrade.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -23,7 +25,9 @@ typedef struct GameData {
     Player player;
     ProjectilePool projectiles;
     EnemyPool enemies;
+    XPPool xp;
     float spawnTimer;
+    UpgradeType upgradeOptions[3];
 } GameData;
 
 void GameInit(GameData *game);

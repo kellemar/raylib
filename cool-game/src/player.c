@@ -13,6 +13,7 @@ void PlayerInit(Player *player)
     player->health = 100.0f;
     player->maxHealth = 100.0f;
     player->invincibilityTimer = 0.0f;
+    player->magnetRadius = 80.0f;
     player->level = 1;
     player->xp = 0;
     player->xpToNextLevel = 10;

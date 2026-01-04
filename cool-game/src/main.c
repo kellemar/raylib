@@ -2,12 +2,14 @@
 #include "types.h"
 #include "game.h"
 
+_Static_assert(sizeof(GameData) < 1048576, "GameData exceeds 1MB - ensure it is static or heap-allocated");
+
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "NEON VOID");
     SetTargetFPS(60);
 
-    GameData game = { 0 };
+    static GameData game = { 0 };
     GameInit(&game);
 
     while (!WindowShouldClose())
