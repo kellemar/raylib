@@ -208,7 +208,7 @@ static void ApplyBlackHolePull(ProjectilePool *projectiles, EnemyPool *enemies, 
     }
 }
 
-static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game)
+static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game, Player *player)
 {
     for (int i = 0; i < MAX_PROJECTILES; i++)
     {
@@ -222,8 +222,30 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
 
             if (CheckCircleCollision(p->pos, p->radius, e->pos, e->radius))
             {
-                e->health -= p->damage;
+                // Apply critical hit
+                float damage = p->damage;
+                if (player->weapon.critChance > 0.0f)
+                {
+                    float roll = (float)(rand() % 100) / 100.0f;
+                    if (roll < player->weapon.critChance)
+                    {
+                        damage *= player->weapon.critMultiplier;
+                    }
+                }
+
+                e->health -= damage;
                 e->hitFlashTimer = 0.1f;
+
+                // Apply vampirism (lifesteal)
+                if (player->vampirism > 0.0f && player->health < player->maxHealth)
+                {
+                    float healAmount = damage * player->vampirism;
+                    player->health += healAmount;
+                    if (player->health > player->maxHealth)
+                    {
+                        player->health = player->maxHealth;
+                    }
+                }
 
                 // Use projectile color for hit particles
                 SpawnHitParticles(particles, p->pos, p->color, 5);
@@ -291,10 +313,9 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
     }
 }
 
-static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, ParticlePool *particles, GameData *game)
+static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, ParticlePool *particles, GameData *game, XPPool *xp)
 {
     if (!player->alive) return;
-    if (player->invincibilityTimer > 0.0f) return;
 
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
@@ -303,6 +324,30 @@ static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, Parti
 
         if (CheckCircleCollision(player->pos, player->radius, e->pos, e->radius))
         {
+            // If player is dashing and has dash damage, damage the enemy instead
+            if (player->isDashing && player->dashDamage > 0.0f)
+            {
+                e->health -= player->dashDamage;
+                e->hitFlashTimer = 0.1f;
+                SpawnHitParticles(particles, e->pos, NEON_PINK, 8);
+
+                if (e->health <= 0.0f)
+                {
+                    XPSpawn(xp, e->pos, e->xpValue);
+                    SpawnExplosion(particles, e->pos, NEON_PINK, 15);
+                    PlayGameSound(SOUND_EXPLOSION);
+                    TriggerScreenShake(game, 3.0f, 0.15f);
+                    e->active = false;
+                    enemies->count--;
+                    game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
+                    game->killCount++;
+                }
+                continue;  // Check next enemy, don't take damage
+            }
+
+            // Normal collision - player takes damage if not invincible
+            if (player->invincibilityTimer > 0.0f) continue;
+
             PlayerTakeDamage(player, e->damage);
             PlayGameSound(SOUND_HIT);
             SpawnHitParticles(particles, player->pos, NEON_RED, 10);
@@ -318,8 +363,9 @@ static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, Parti
             if (dist > 0.0f)
             {
                 Vector2 pushDir = { dx / dist, dy / dist };
-                e->pos.x -= pushDir.x * 30.0f;
-                e->pos.y -= pushDir.y * 30.0f;
+                float knockback = 30.0f * player->knockbackMultiplier;
+                e->pos.x -= pushDir.x * knockback;
+                e->pos.y -= pushDir.y * knockback;
             }
 
             break;
@@ -338,6 +384,28 @@ static bool CheckLevelUp(Player *player)
     return false;
 }
 
+static Color GetRarityColor(UpgradeRarity rarity)
+{
+    switch (rarity)
+    {
+        case RARITY_COMMON:   return NEON_WHITE;
+        case RARITY_UNCOMMON: return NEON_GREEN;
+        case RARITY_RARE:     return NEON_YELLOW;
+        default:              return NEON_WHITE;
+    }
+}
+
+static Color GetRarityBorderColor(UpgradeRarity rarity)
+{
+    switch (rarity)
+    {
+        case RARITY_COMMON:   return NEON_PINK;
+        case RARITY_UNCOMMON: return NEON_GREEN;
+        case RARITY_RARE:     return NEON_YELLOW;
+        default:              return NEON_PINK;
+    }
+}
+
 static void DrawUpgradeOption(int index, Upgrade upgrade, float y)
 {
     float boxWidth = 300.0f;
@@ -345,7 +413,8 @@ static void DrawUpgradeOption(int index, Upgrade upgrade, float y)
     float boxX = SCREEN_WIDTH / 2.0f - boxWidth / 2.0f;
 
     Color boxColor = (Color){ 40, 20, 60, 230 };
-    Color borderColor = NEON_PINK;
+    Color borderColor = GetRarityBorderColor(upgrade.rarity);
+    Color nameColor = GetRarityColor(upgrade.rarity);
 
     DrawRectangle((int)boxX, (int)y, (int)boxWidth, (int)boxHeight, boxColor);
     DrawRectangleLinesEx((Rectangle){ boxX, y, boxWidth, boxHeight }, 2.0f, borderColor);
@@ -354,7 +423,7 @@ static void DrawUpgradeOption(int index, Upgrade upgrade, float y)
     snprintf(keyLabel, sizeof(keyLabel), "[%d]", index + 1);
     DrawText(keyLabel, (int)(boxX + 15), (int)(y + 15), 24, NEON_CYAN);
 
-    DrawText(upgrade.name, (int)(boxX + 60), (int)(y + 12), 22, NEON_WHITE);
+    DrawText(upgrade.name, (int)(boxX + 60), (int)(y + 12), 22, nameColor);
     DrawText(upgrade.description, (int)(boxX + 60), (int)(y + 42), 16, NEON_GREEN);
 }
 
@@ -842,15 +911,37 @@ void GameUpdate(GameData *game, float dt)
                 game->spawnTimer = 0.0f;
             }
 
+            // Apply slow aura around player if upgraded
+            if (game->player.slowAuraRadius > 0.0f)
+            {
+                for (int i = 0; i < MAX_ENEMIES; i++)
+                {
+                    Enemy *e = &game->enemies.enemies[i];
+                    if (!e->active) continue;
+
+                    float dx = game->player.pos.x - e->pos.x;
+                    float dy = game->player.pos.y - e->pos.y;
+                    float distSq = dx * dx + dy * dy;
+                    float radiusSq = game->player.slowAuraRadius * game->player.slowAuraRadius;
+
+                    if (distSq < radiusSq)
+                    {
+                        EnemyApplySlow(e, game->player.slowAuraAmount, 0.5f);
+                    }
+                }
+            }
+
             // Apply black hole pull effect before collision checks
             ApplyBlackHolePull(&game->projectiles, &game->enemies, scaledDt);
-            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, &game->particles, game);
-            CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game);
+            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, &game->particles, game, &game->player);
+            CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game, &game->xp);
 
             int collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
             if (collectedXP > 0)
             {
-                game->player.xp += collectedXP;
+                // Apply XP multiplier from upgrades
+                int boostedXP = (int)(collectedXP * game->player.xpMultiplier);
+                game->player.xp += boostedXP;
                 PlayGameSound(SOUND_PICKUP);
             }
 

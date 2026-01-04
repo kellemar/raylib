@@ -31,6 +31,14 @@ typedef struct Weapon {
     float spreadAngle;      // Angle between multi-shot projectiles
     int chainCount;         // For lightning - how many enemies to chain to
     float orbitSpawnAngle;  // For orbit shield - angle offset for next spawn
+    // Upgrade-based stats
+    float critChance;       // Chance for critical hit (0.0 - 1.0)
+    float critMultiplier;   // Critical hit damage multiplier (default 2.0)
+    bool doubleShot;        // Fire twice per shot
+    int ricochetCount;      // Number of times projectiles can bounce
+    bool explosive;         // Projectiles explode on hit
+    float explosionRadius;  // Radius of explosion
+    float homingStrength;   // Homing projectile tracking strength multiplier
 } Weapon;
 
 void WeaponInit(Weapon *weapon, WeaponType type);

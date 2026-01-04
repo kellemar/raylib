@@ -30,6 +30,16 @@ typedef struct Player {
     float dashTimer;           // Time remaining in current dash
     bool isDashing;            // Currently performing dash
     Vector2 dashDir;           // Direction of dash
+    // Upgrade stats
+    float armor;               // Flat damage reduction
+    float regen;               // HP per second
+    float regenTimer;          // Accumulator for regen
+    float xpMultiplier;        // XP gain multiplier (1.0 = normal)
+    float knockbackMultiplier; // Enemy knockback multiplier (1.0 = normal)
+    float dashDamage;          // Damage dealt while dashing
+    float vampirism;           // Lifesteal percentage (0.0 - 1.0)
+    float slowAuraRadius;      // Radius of slow aura around player
+    float slowAuraAmount;      // Slow intensity (0.0 - 1.0)
 } Player;
 
 void PlayerInit(Player *player);

@@ -45,6 +45,14 @@ void WeaponInit(Weapon *weapon, WeaponType type)
     weapon->pierce = false;
     weapon->chainCount = 0;
     weapon->orbitSpawnAngle = 0.0f;
+    // Initialize upgrade-based stats
+    weapon->critChance = 0.0f;
+    weapon->critMultiplier = 2.0f;
+    weapon->doubleShot = false;
+    weapon->ricochetCount = 0;
+    weapon->explosive = false;
+    weapon->explosionRadius = 30.0f;
+    weapon->homingStrength = 1.0f;
 
     switch (type)
     {

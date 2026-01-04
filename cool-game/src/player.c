@@ -30,11 +30,36 @@ void PlayerInit(Player *player)
     player->dashTimer = 0.0f;
     player->isDashing = false;
     player->dashDir = (Vector2){ 0.0f, 0.0f };
+    // Initialize upgrade stats
+    player->armor = 0.0f;
+    player->regen = 0.0f;
+    player->regenTimer = 0.0f;
+    player->xpMultiplier = 1.0f;
+    player->knockbackMultiplier = 1.0f;
+    player->dashDamage = 0.0f;
+    player->vampirism = 0.0f;
+    player->slowAuraRadius = 0.0f;
+    player->slowAuraAmount = 0.0f;
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
 {
     if (!player->alive) return;
+
+    // Handle health regeneration
+    if (player->regen > 0.0f && player->health < player->maxHealth)
+    {
+        player->regenTimer += dt;
+        if (player->regenTimer >= 1.0f)
+        {
+            player->regenTimer -= 1.0f;
+            player->health += player->regen;
+            if (player->health > player->maxHealth)
+            {
+                player->health = player->maxHealth;
+            }
+        }
+    }
 
     if (player->invincibilityTimer > 0.0f)
     {
@@ -227,7 +252,11 @@ void PlayerTakeDamage(Player *player, float damage)
     if (!player->alive) return;
     if (player->invincibilityTimer > 0.0f) return;
 
-    player->health -= damage;
+    // Apply armor damage reduction
+    float actualDamage = damage - player->armor;
+    if (actualDamage < 1.0f) actualDamage = 1.0f;  // Minimum 1 damage
+
+    player->health -= actualDamage;
     player->invincibilityTimer = 0.5f;
 
     if (player->health <= 0.0f)
