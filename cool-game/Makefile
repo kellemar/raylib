@@ -36,7 +36,9 @@ OBJS = $(SRCS:.c=.o)
 
 # Test files
 TEST_DIR = tests
-TEST_SRCS = $(TEST_DIR)/test_main.c $(TEST_DIR)/test_utils.c $(TEST_DIR)/test_enemy.c
+TEST_SRCS = $(TEST_DIR)/test_main.c $(TEST_DIR)/test_utils.c $(TEST_DIR)/test_enemy.c \
+            $(TEST_DIR)/test_projectile.c $(TEST_DIR)/test_xp.c $(TEST_DIR)/test_weapon.c \
+            $(TEST_DIR)/test_upgrade.c
 TEST_TARGET = test_runner
 
 # Output
