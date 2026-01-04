@@ -57,7 +57,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] CRT scanline overlay shader
 - [x] Chromatic aberration on damage
 - [x] Camera lerp (smooth follow with slight lag)
-- [x] Slow-mo on level up / near-death
+- [x] Slow-mo on level up
 - [x] Sound effects (pew pew, explosions, pickups)
 - [x] Synthwave background track (procedural or looped)
 
@@ -440,7 +440,7 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 - [x] **Music ducking**: Music quiets during level-up screen
 - [x] **Chromatic aberration**: Pulses when player is low HP
 - [x] **Dash ability**: SPACE to dash with invincibility
-- [x] **Slow-mo**: Time slows near death and during level-up
+- [x] **Slow-mo**: Time slows during level-up
 - [x] **Tutorial**: Control hints shown for first 20 seconds
 
 ---

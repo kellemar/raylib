@@ -802,19 +802,10 @@ void GameUpdate(GameData *game, float dt)
 
             // Apply time scale for slow-mo effects
             float scaledDt = dt * game->timeScale;
-
-            // Near-death slow-mo: time slows when health < 25%
-            float healthPercent = game->player.health / game->player.maxHealth;
-            if (healthPercent < 0.25f && healthPercent > 0.0f)
-            {
-                game->timeScale = 0.5f;  // Half speed when near death
-            }
-            else
-            {
-                game->timeScale = 1.0f;  // Normal speed
-            }
+            game->timeScale = 1.0f;  // Reset to normal (level-up can override)
 
             // Chromatic aberration: intensity increases as health decreases below 50%
+            float healthPercent = game->player.health / game->player.maxHealth;
             if (game->settings.chromaticEnabled && healthPercent < 0.5f && healthPercent > 0.0f)
             {
                 // Scale from 0 at 50% health to 1.0 at 0% health
