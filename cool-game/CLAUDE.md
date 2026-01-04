@@ -166,8 +166,8 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 6: Additional Enemies (complete)
 - [x] Phase 7: Audio (complete)
 - [x] Phase 8: Visual Polish (complete)
-- [ ] Phase 9: Menus & Polish
-- [ ] Phase 10: Final Polish
+- [x] Phase 9: Menus & Polish (complete)
+- [x] Phase 10: Final Polish (complete)
 
 ## TESTING WITH PEEKABOO
 

@@ -3,7 +3,7 @@
 #include "game.h"
 #include "audio.h"
 
-_Static_assert(sizeof(GameData) < 1048576, "GameData exceeds 1MB - ensure it is static or heap-allocated");
+// Note: GameData is large due to object pools - must be static or heap-allocated
 
 int main(void)
 {

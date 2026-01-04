@@ -10,10 +10,18 @@ void DrawHUD(GameData *game)
     int lineHeight = 26;
     int startY = 10;
 
-    DrawRectangle(5, 5, 180, 175, (Color){ 0, 0, 0, 150 });
+    DrawRectangle(5, 5, 180, 200, (Color){ 0, 0, 0, 150 });
 
     DrawText(TextFormat("TIME: %.1f", game->gameTime), padding, startY, 20, NEON_WHITE);
     DrawText(TextFormat("SCORE: %d", game->score), padding, startY + lineHeight, 20, NEON_YELLOW);
+
+    // Score multiplier display (changes color based on value)
+    Color multiplierColor = NEON_GREEN;
+    if (game->scoreMultiplier >= 3.0f) multiplierColor = NEON_YELLOW;
+    if (game->scoreMultiplier >= 4.0f) multiplierColor = NEON_ORANGE;
+    if (game->scoreMultiplier >= 4.5f) multiplierColor = NEON_PINK;
+    DrawText(TextFormat("x%.1f", game->scoreMultiplier), padding + 120, startY + lineHeight, 16, multiplierColor);
+
     DrawText(TextFormat("LEVEL: %d", game->player.level), padding, startY + lineHeight * 2, 20, NEON_CYAN);
 
     float hpPercent = game->player.health / game->player.maxHealth;

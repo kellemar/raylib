@@ -187,7 +187,7 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     TriggerScreenShake(game, 3.0f, 0.15f);
                     e->active = false;
                     enemies->count--;
-                    game->score += e->xpValue * 10;
+                    game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
                     game->killCount++;
                 }
 
@@ -213,6 +213,10 @@ static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, Parti
             PlayGameSound(SOUND_HIT);
             SpawnHitParticles(particles, player->pos, NEON_RED, 10);
             TriggerScreenShake(game, 8.0f, 0.25f);
+
+            // Reset score multiplier on damage
+            game->scoreMultiplier = 1.0f;
+            game->timeSinceLastHit = 0.0f;
 
             float dx = player->pos.x - e->pos.x;
             float dy = player->pos.y - e->pos.y;
@@ -388,6 +392,8 @@ void GameInit(GameData *game)
     game->spawnTimer = 0.0f;
     game->highScore = LoadHighScore();
     game->killCount = 0;
+    game->scoreMultiplier = 1.0f;
+    game->timeSinceLastHit = 0.0f;
     PlayerInit(&game->player);
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
@@ -416,6 +422,8 @@ void GameUpdate(GameData *game, float dt)
                 game->score = 0;
                 game->killCount = 0;
                 game->spawnTimer = 0.0f;
+                game->scoreMultiplier = 1.0f;
+                game->timeSinceLastHit = 0.0f;
                 PlayerInit(&game->player);
                 ProjectilePoolInit(&game->projectiles);
                 EnemyPoolInit(&game->enemies);
@@ -429,6 +437,13 @@ void GameUpdate(GameData *game, float dt)
 
         case STATE_PLAYING:
             game->gameTime += dt;
+
+            // Update score multiplier (increases slowly while not hit)
+            game->timeSinceLastHit += dt;
+            // Increase by 0.1 every 5 seconds, max 5.0x
+            game->scoreMultiplier = 1.0f + (game->timeSinceLastHit / 50.0f);
+            if (game->scoreMultiplier > 5.0f) game->scoreMultiplier = 5.0f;
+
             PlayerUpdate(&game->player, dt, &game->projectiles, game->camera);
             ProjectilePoolUpdate(&game->projectiles, dt);
             EnemyPoolUpdate(&game->enemies, game->player.pos, dt);
