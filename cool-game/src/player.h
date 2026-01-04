@@ -5,7 +5,7 @@
 #include "weapon.h"
 #include <stdbool.h>
 
-#define PLAYER_TRAIL_LENGTH 10
+#define PLAYER_TRAIL_LENGTH 5
 
 typedef struct Player {
     Vector2 pos;

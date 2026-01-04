@@ -62,9 +62,9 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
     player->vel = Vector2Scale(input, player->speed);
     player->pos = Vector2Add(player->pos, Vector2Scale(player->vel, dt));
 
-    // Update trail positions
+    // Update trail positions (subtle effect)
     player->trailUpdateTimer += dt;
-    float trailInterval = 0.02f;
+    float trailInterval = 0.04f;
     if (player->trailUpdateTimer >= trailInterval)
     {
         player->trailUpdateTimer = 0.0f;
@@ -107,15 +107,15 @@ void PlayerDraw(Player *player)
 {
     if (!player->alive) return;
 
-    // Draw trail (behind player)
+    // Draw trail (behind player) - subtle effect
     float velMagnitude = Vector2Length(player->vel);
-    if (velMagnitude > 10.0f)
+    if (velMagnitude > 50.0f)  // Only show trail when moving faster
     {
         for (int i = PLAYER_TRAIL_LENGTH - 1; i >= 0; i--)
         {
             float t = (float)i / (float)PLAYER_TRAIL_LENGTH;
-            float alpha = (1.0f - t) * 150.0f;
-            float radius = player->radius * (1.0f - t * 0.7f);
+            float alpha = (1.0f - t) * 60.0f;  // Lower max alpha (was 150)
+            float radius = player->radius * (0.6f - t * 0.4f);  // Smaller circles
             Color trailColor = (Color){ 50, 255, 255, (unsigned char)alpha };
             DrawCircleV(player->trailPositions[i], radius, trailColor);
         }

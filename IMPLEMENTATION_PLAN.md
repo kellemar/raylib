@@ -1384,10 +1384,11 @@ make         # MUST PASS - zero warnings
   3. ENTER → STATE_PLAYING
   4. ESC in menu → exit game
 - **Verification**:
-  - [ ] `make run` — starts in menu
-  - [ ] Title displays correctly
-  - [ ] Can start game and quit
-- **Status**: `[ ]`
+  - [x] `make run` — starts in menu
+  - [x] Title displays correctly
+  - [x] Can start game and quit
+  - [x] Starfield animation on menu background
+- **Status**: `[x]`
 
 #### P9.1.2 — Add high score display
 - **Description**: Show best score on menu
@@ -1398,10 +1399,10 @@ make         # MUST PASS - zero warnings
   3. Display on menu: "High Score: XXXXX"
   4. (Optional) Save/load from file for persistence
 - **Verification**:
-  - [ ] `make run` — high score displays on menu
-  - [ ] High score updates after good run
-  - [ ] Persists between game sessions (if implemented)
-- **Status**: `[ ]`
+  - [x] `make run` — high score displays on menu
+  - [x] High score updates after good run
+  - [x] Persists between game sessions (saved to highscore.dat)
+- **Status**: `[x]`
 
 ---
 
@@ -1418,10 +1419,10 @@ make         # MUST PASS - zero warnings
      - "Press Q to Quit to Menu"
   2. Game state preserved while paused
 - **Verification**:
-  - [ ] `make run` — ESC pauses game
-  - [ ] Game visible behind pause overlay
-  - [ ] Can resume or quit to menu
-- **Status**: `[ ]`
+  - [x] `make run` — ESC pauses game
+  - [x] Game visible behind pause overlay
+  - [x] Can resume or quit to menu
+- **Status**: `[x]`
 
 ---
 
@@ -1440,10 +1441,10 @@ make         # MUST PASS - zero warnings
      - "Press ENTER to Return to Menu"
   2. Add kill counter to GameData, increment on enemy death
 - **Verification**:
-  - [ ] `make run` — game over shows all stats
-  - [ ] Stats are accurate
-  - [ ] Can return to menu
-- **Status**: `[ ]`
+  - [x] `make run` — game over shows all stats
+  - [x] Stats are accurate
+  - [x] Can return to menu
+- **Status**: `[x]`
 
 ---
 
@@ -1546,9 +1547,9 @@ make         # MUST PASS - zero warnings
 | 6 | Additional Enemies | 5 | 5 ✓ |
 | 7 | Audio | 4 | 4 ✓ |
 | 8 | Visual Polish | 6 | 6 ✓ |
-| 9 | Menus & Polish | 4 | 0 |
+| 9 | Menus & Polish | 4 | 4 ✓ |
 | 10 | Final Polish | 5 | 0 |
-| **Total** | | **84** | **74** |
+| **Total** | | **84** | **78** |
 
 ### Estimated Time
 
@@ -1704,6 +1705,19 @@ After completing each phase, verify:
 - [x] Grid moves with camera (world-aligned, 64px spacing)
 - [x] All visual effects work together without performance issues
 
+### Phase 9 Verification ✓
+- [x] **`make test` passes** — 27 tests, 1160 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Menu shows starfield effect (stars streaming from center)
+- [x] Menu displays "High Score: X" in yellow
+- [x] High score updates after a run with higher score
+- [x] High score persists after game restart (highscore.dat)
+- [x] Game over shows "Enemies Killed: X" in orange
+- [x] Kill counter resets each new game
+- [x] Pause menu works (ESC to pause, ESC to resume, Q to quit)
+- [x] All state transitions work correctly
+
 ---
 
 ## NOTES FOR ENGINEERS
@@ -1726,4 +1740,4 @@ If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 8 Complete (74/84 tasks, 88.1%)*
+*Last updated: 2026-01-04 — Phase 9 Complete (78/84 tasks, 92.9%)*

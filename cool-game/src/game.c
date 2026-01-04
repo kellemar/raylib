@@ -11,8 +11,102 @@
 #define XP_COLLECT_RADIUS 15.0f
 #define CAMERA_LERP_SPEED 5.0f
 #define GRID_SIZE 64
+#define HIGHSCORE_FILE "highscore.dat"
 
 static const Color GRID_COLOR = { 30, 25, 40, 100 };
+
+// High score persistence
+static int LoadHighScore(void)
+{
+    int score = 0;
+    FILE *file = fopen(HIGHSCORE_FILE, "rb");
+    if (file != NULL)
+    {
+        fread(&score, sizeof(int), 1, file);
+        fclose(file);
+    }
+    return score;
+}
+
+static void SaveHighScore(int score)
+{
+    FILE *file = fopen(HIGHSCORE_FILE, "wb");
+    if (file != NULL)
+    {
+        fwrite(&score, sizeof(int), 1, file);
+        fclose(file);
+    }
+}
+
+// Menu starfield effect
+#define MENU_STARS 100
+#define STAR_MAX_DISTANCE 800.0f
+#define STAR_BASE_SPEED 50.0f
+
+typedef struct {
+    float angle;      // Direction from center (radians)
+    float distance;   // Distance from screen center
+    float speed;      // Base speed multiplier
+    float size;       // Star size (1-3)
+} MenuStar;
+
+static MenuStar menuStars[MENU_STARS];
+static bool menuStarsInit = false;
+
+static void InitMenuStars(void)
+{
+    for (int i = 0; i < MENU_STARS; i++)
+    {
+        menuStars[i].angle = ((float)(rand() % 360)) * DEG2RAD;
+        menuStars[i].distance = (float)(rand() % (int)STAR_MAX_DISTANCE);
+        menuStars[i].speed = 0.5f + (float)(rand() % 100) / 100.0f;  // 0.5 to 1.5
+        menuStars[i].size = 1.0f + (float)(rand() % 3);  // 1 to 3
+    }
+    menuStarsInit = true;
+}
+
+static void UpdateMenuStars(float dt)
+{
+    for (int i = 0; i < MENU_STARS; i++)
+    {
+        // Move outward with acceleration based on distance
+        float speedMultiplier = 1.0f + (menuStars[i].distance / STAR_MAX_DISTANCE) * 3.0f;
+        menuStars[i].distance += STAR_BASE_SPEED * menuStars[i].speed * speedMultiplier * dt;
+
+        // Respawn at center when out of bounds
+        if (menuStars[i].distance > STAR_MAX_DISTANCE)
+        {
+            menuStars[i].angle = ((float)(rand() % 360)) * DEG2RAD;
+            menuStars[i].distance = 5.0f + (float)(rand() % 20);  // Start near center
+            menuStars[i].speed = 0.5f + (float)(rand() % 100) / 100.0f;
+            menuStars[i].size = 1.0f + (float)(rand() % 3);
+        }
+    }
+}
+
+static void DrawMenuStars(void)
+{
+    Vector2 center = { SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
+
+    for (int i = 0; i < MENU_STARS; i++)
+    {
+        // Calculate position from polar coordinates
+        float x = center.x + cosf(menuStars[i].angle) * menuStars[i].distance;
+        float y = center.y + sinf(menuStars[i].angle) * menuStars[i].distance;
+
+        // Size increases with distance (parallax effect)
+        float size = menuStars[i].size * (0.5f + (menuStars[i].distance / STAR_MAX_DISTANCE) * 1.5f);
+
+        // Alpha increases with distance (stars become more visible as they move out)
+        float alpha = 0.3f + (menuStars[i].distance / STAR_MAX_DISTANCE) * 0.7f;
+        unsigned char a = (unsigned char)(alpha * 255);
+
+        // Color varies between white and cyan
+        Color starColor = (i % 3 == 0) ? (Color){ 100, 200, 255, a } : (Color){ 255, 255, 255, a };
+
+        DrawCircle((int)x, (int)y, size, starColor);
+    }
+}
 
 static int GetXPForLevel(int level)
 {
@@ -94,6 +188,7 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     e->active = false;
                     enemies->count--;
                     game->score += e->xpValue * 10;
+                    game->killCount++;
                 }
 
                 break;
@@ -291,6 +386,8 @@ void GameInit(GameData *game)
     game->score = 0;
     game->isPaused = false;
     game->spawnTimer = 0.0f;
+    game->highScore = LoadHighScore();
+    game->killCount = 0;
     PlayerInit(&game->player);
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
@@ -304,6 +401,10 @@ void GameUpdate(GameData *game, float dt)
     switch (game->state)
     {
         case STATE_MENU:
+            // Initialize and update starfield
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
             // Shader toggles
             if (IsKeyPressed(KEY_F1)) game->shadersEnabled = !game->shadersEnabled;
             if (IsKeyPressed(KEY_F2)) game->crtEnabled = !game->crtEnabled;
@@ -313,6 +414,7 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_PLAYING;
                 game->gameTime = 0.0f;
                 game->score = 0;
+                game->killCount = 0;
                 game->spawnTimer = 0.0f;
                 PlayerInit(&game->player);
                 ProjectilePoolInit(&game->projectiles);
@@ -365,6 +467,12 @@ void GameUpdate(GameData *game, float dt)
             if (!game->player.alive)
             {
                 MusicStop();
+                // Update high score if beaten
+                if (game->score > game->highScore)
+                {
+                    game->highScore = game->score;
+                    SaveHighScore(game->highScore);
+                }
                 game->state = STATE_GAMEOVER;
             }
 
@@ -433,7 +541,9 @@ static void DrawSceneToTexture(GameData *game)
         switch (game->state)
         {
             case STATE_MENU:
+                DrawMenuStars();
                 DrawText("NEON VOID", SCREEN_WIDTH/2 - MeasureText("NEON VOID", 60)/2, 200, 60, NEON_CYAN);
+                DrawText(TextFormat("High Score: %d", game->highScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("High Score: %d", game->highScore), 24)/2, 280, 24, NEON_YELLOW);
                 DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 350, 20, NEON_PINK);
                 DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 400, 20, GRAY);
                 DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 500, 16, (Color){ 100, 100, 100, 255 });
@@ -476,9 +586,10 @@ static void DrawSceneToTexture(GameData *game)
             case STATE_GAMEOVER:
                 DrawText("GAME OVER", SCREEN_WIDTH/2 - MeasureText("GAME OVER", 60)/2, 200, 60, NEON_RED);
                 DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - MeasureText(TextFormat("Final Score: %d", game->score), 30)/2, 300, 30, NEON_YELLOW);
-                DrawText(TextFormat("Level Reached: %d", game->player.level), SCREEN_WIDTH/2 - MeasureText(TextFormat("Level Reached: %d", game->player.level), 20)/2, 350, 20, NEON_CYAN);
-                DrawText(TextFormat("Time Survived: %.1fs", game->gameTime), SCREEN_WIDTH/2 - MeasureText(TextFormat("Time Survived: %.1fs", game->gameTime), 20)/2, 380, 20, NEON_WHITE);
-                DrawText("Press ENTER to Return to Menu", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Return to Menu", 20)/2, 450, 20, NEON_CYAN);
+                DrawText(TextFormat("Enemies Killed: %d", game->killCount), SCREEN_WIDTH/2 - MeasureText(TextFormat("Enemies Killed: %d", game->killCount), 20)/2, 340, 20, NEON_ORANGE);
+                DrawText(TextFormat("Level Reached: %d", game->player.level), SCREEN_WIDTH/2 - MeasureText(TextFormat("Level Reached: %d", game->player.level), 20)/2, 370, 20, NEON_CYAN);
+                DrawText(TextFormat("Time Survived: %.1fs", game->gameTime), SCREEN_WIDTH/2 - MeasureText(TextFormat("Time Survived: %.1fs", game->gameTime), 20)/2, 400, 20, NEON_WHITE);
+                DrawText("Press ENTER to Return to Menu", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Return to Menu", 20)/2, 470, 20, NEON_CYAN);
                 break;
         }
     EndTextureMode();

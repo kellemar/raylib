@@ -42,6 +42,9 @@ typedef struct GameData {
     int crtTimeLoc;
     bool shadersEnabled;
     bool crtEnabled;
+    // Phase 9: Menu & Polish
+    int highScore;    // Best score across sessions (persisted to file)
+    int killCount;    // Enemies killed this run
 } GameData;
 
 void GameInit(GameData *game);
