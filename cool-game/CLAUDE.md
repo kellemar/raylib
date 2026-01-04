@@ -9,10 +9,10 @@ cool-game/
 │   ├── main.c          # Entry point, game loop
 │   ├── game.h/c        # Game state machine, core loop
 │   ├── types.h         # Constants, colors, pool sizes
-│   ├── player.h/c      # Player entity (TODO)
+│   ├── player.h/c      # Player entity, movement, aiming, health, weapon
+│   ├── projectile.h/c  # Projectile pool with update/draw
+│   ├── weapon.h/c      # Weapon definitions (pulse cannon)
 │   ├── enemy.h/c       # Enemy pool and AI (TODO)
-│   ├── projectile.h/c  # Projectile pool (TODO)
-│   ├── weapon.h/c      # Weapon definitions (TODO)
 │   ├── particle.h/c    # Particle effects (TODO)
 │   ├── xp.h/c          # XP crystals (TODO)
 │   ├── upgrade.h/c     # Upgrade system (TODO)
@@ -46,6 +46,64 @@ cool-game/
 ## DEVELOPMENT FLOW
 Always run `make run` after every task is tested and completed to ensure that the game is able to build and compile.
 
+## TESTING WITH PEEKABOO
+
+Use `peekaboo` to visually verify game changes without manual intervention.
+
+### Launch Game and Capture Screen
+```bash
+# Build and launch game in background
+cd cool-game
+make clean && make
+./neon_void &
+sleep 3
+
+# Capture full screen (multi-monitor: captures all screens)
+peekaboo image --mode screen --retina --path ~/Desktop/game_test.png
+
+# The game window is typically on screen1 if you have multiple monitors
+# Check ~/Desktop/game_test_1.png for the game window
+```
+
+### Simulate Keyboard Input
+```bash
+# Press ENTER to start game from menu
+osascript -e 'tell application "System Events" to key code 36'
+sleep 2
+
+# Capture gameplay
+peekaboo image --mode screen --path ~/Desktop/gameplay.png
+```
+
+### Verify Screenshots with look_at Tool
+After capturing screenshots, use the `look_at` tool to analyze them:
+```
+look_at(file_path="~/Desktop/gameplay.png", goal="Check if projectiles are firing toward mouse, player visible, HUD showing")
+```
+
+### Testing Workflow
+1. `make clean && make` - Rebuild game
+2. `./neon_void &` - Launch in background
+3. `sleep 3` - Wait for window to open
+4. `osascript -e 'tell application "System Events" to key code 36'` - Press ENTER
+5. `sleep 2` - Wait for game to start
+6. `peekaboo image --mode screen --path ~/Desktop/test.png` - Capture
+7. Use `look_at` tool to verify screenshot
+8. `pkill -f neon_void` - Kill game process
+
+### Key Codes for osascript
+- ENTER: `key code 36`
+- ESC: `key code 53`
+- SPACE: `key code 49`
+- W/A/S/D: `key code 13/0/1/2`
+- 1/2/3: `key code 18/19/20`
+
+### Notes
+- Game window title is "NEON VOID" but peekaboo may not find it by name
+- Use `--mode screen` to capture all displays, then check numbered files
+- Multi-monitor setups create multiple files: `test.png`, `test_1.png`, etc.
+- Game typically appears on `_1.png` suffix file on multi-monitor setups
+
 ## COMMANDS
 ```bash
 make            # Build game
@@ -71,8 +129,8 @@ make clean      # Remove build artifacts
 
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
-- [ ] Phase 1: Player System
-- [ ] Phase 2: Weapons & Projectiles
+- [x] Phase 1: Player System (complete)
+- [x] Phase 2: Weapons & Projectiles (complete)
 - [ ] Phase 3: Enemies
 - [ ] Phase 4: XP & Leveling
 - [ ] Phase 5: Particles & Juice
