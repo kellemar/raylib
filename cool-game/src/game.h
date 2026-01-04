@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "raylib.h"
+#include "projectile.h"
 #include "player.h"
 #include <stdbool.h>
 
@@ -19,6 +20,7 @@ typedef struct GameData {
     int score;
     bool isPaused;
     Player player;
+    ProjectilePool projectiles;
 } GameData;
 
 void GameInit(GameData *game);

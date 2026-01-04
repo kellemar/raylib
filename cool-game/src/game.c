@@ -8,6 +8,7 @@ void GameInit(GameData *game)
     game->score = 0;
     game->isPaused = false;
     PlayerInit(&game->player);
+    ProjectilePoolInit(&game->projectiles);
 }
 
 void GameUpdate(GameData *game, float dt)
@@ -21,13 +22,15 @@ void GameUpdate(GameData *game, float dt)
                 game->gameTime = 0.0f;
                 game->score = 0;
                 PlayerInit(&game->player);
+                ProjectilePoolInit(&game->projectiles);
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
 
         case STATE_PLAYING:
             game->gameTime += dt;
-            PlayerUpdate(&game->player, dt);
+            PlayerUpdate(&game->player, dt, &game->projectiles);
+            ProjectilePoolUpdate(&game->projectiles, dt);
 
             if (!game->player.alive)
             {
@@ -68,6 +71,7 @@ void GameDraw(GameData *game)
 
         case STATE_PLAYING:
             ClearBackground(VOID_BLACK);
+            ProjectilePoolDraw(&game->projectiles);
             PlayerDraw(&game->player);
             DrawText(TextFormat("TIME: %.1f", game->gameTime), 10, 10, 20, NEON_WHITE);
             DrawText(TextFormat("SCORE: %d", game->score), 10, 40, 20, NEON_YELLOW);

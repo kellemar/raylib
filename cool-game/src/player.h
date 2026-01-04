@@ -2,6 +2,7 @@
 #define PLAYER_H
 
 #include "raylib.h"
+#include "weapon.h"
 #include <stdbool.h>
 
 typedef struct Player {
@@ -17,10 +18,11 @@ typedef struct Player {
     int xp;
     int xpToNextLevel;
     bool alive;
+    Weapon weapon;
 } Player;
 
 void PlayerInit(Player *player);
-void PlayerUpdate(Player *player, float dt);
+void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles);
 void PlayerDraw(Player *player);
 void PlayerTakeDamage(Player *player, float damage);
 

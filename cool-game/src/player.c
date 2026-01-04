@@ -17,9 +17,10 @@ void PlayerInit(Player *player)
     player->xp = 0;
     player->xpToNextLevel = 10;
     player->alive = true;
+    WeaponInit(&player->weapon, WEAPON_PULSE_CANNON);
 }
 
-void PlayerUpdate(Player *player, float dt)
+void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles)
 {
     if (!player->alive) return;
 
@@ -27,6 +28,8 @@ void PlayerUpdate(Player *player, float dt)
     {
         player->invincibilityTimer -= dt;
     }
+
+    WeaponUpdate(&player->weapon, dt);
 
     Vector2 input = { 0.0f, 0.0f };
 
@@ -79,6 +82,8 @@ void PlayerUpdate(Player *player, float dt)
     {
         player->aimDir = Vector2Scale(toMouse, 1.0f / toMouseLength);
     }
+
+    WeaponFire(&player->weapon, projectiles, player->pos, player->aimDir);
 }
 
 void PlayerDraw(Player *player)
