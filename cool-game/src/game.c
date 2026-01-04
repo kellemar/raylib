@@ -115,17 +115,12 @@ static int GetXPForLevel(int level)
 
 static Vector2 GetSpawnPosition(Vector2 playerPos)
 {
+    // Spawn enemies in a ring around the player (400-600 units away)
+    // No world bounds clamping - world is infinite with following camera
     float angle = (float)(rand() % 360) * DEG2RAD;
     float distance = 400.0f + (float)(rand() % 200);
     Vector2 offset = { cosf(angle) * distance, sinf(angle) * distance };
-    Vector2 spawnPos = Vector2Add(playerPos, offset);
-
-    if (spawnPos.x < -50.0f) spawnPos.x = -50.0f;
-    if (spawnPos.x > SCREEN_WIDTH + 50.0f) spawnPos.x = SCREEN_WIDTH + 50.0f;
-    if (spawnPos.y < -50.0f) spawnPos.y = -50.0f;
-    if (spawnPos.y > SCREEN_HEIGHT + 50.0f) spawnPos.y = SCREEN_HEIGHT + 50.0f;
-
-    return spawnPos;
+    return Vector2Add(playerPos, offset);
 }
 
 static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game)
@@ -445,7 +440,7 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_STARTING;
                 game->transitionTimer = 0.0f;
                 game->fadeAlpha = 0.0f;
-                TransitionToGameMusic();  // Start crossfade to game music
+                // Music transition happens later when fading into game
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
@@ -453,14 +448,15 @@ void GameUpdate(GameData *game, float dt)
         case STATE_STARTING:
         {
             // Transition timing:
-            // 0.0 - 0.5s: Fade to black
-            // 0.5 - 2.0s: Show "Get Ready" on black
-            // 2.0 - 2.5s: Fade from black to game
+            // 0.0 - 0.5s: Fade to black (intro music still playing)
+            // 0.5 - 2.0s: Show "Get Ready" on black (intro music fades, game music starts at 2.0)
+            // 2.0 - 2.5s: Fade from black to game (game music playing)
             // 2.5s+: Start playing
             float fadeInEnd = 0.5f;
             float holdEnd = 2.0f;
             float fadeOutEnd = 2.5f;
 
+            float prevTimer = game->transitionTimer;
             game->transitionTimer += dt;
 
             if (game->transitionTimer < fadeInEnd)
@@ -475,6 +471,13 @@ void GameUpdate(GameData *game, float dt)
             }
             else if (game->transitionTimer < fadeOutEnd)
             {
+                // Start game music when entering fade-out phase
+                if (prevTimer < holdEnd)
+                {
+                    IntroMusicStop();
+                    MusicStart();
+                }
+
                 // Fade from black to game
                 float progress = (game->transitionTimer - holdEnd) / (fadeOutEnd - holdEnd);
                 game->fadeAlpha = 1.0f - progress;
