@@ -30,6 +30,7 @@ typedef struct Weapon {
     bool pierce;            // Projectiles pass through enemies
     float spreadAngle;      // Angle between multi-shot projectiles
     int chainCount;         // For lightning - how many enemies to chain to
+    float orbitSpawnAngle;  // For orbit shield - angle offset for next spawn
 } Weapon;
 
 void WeaponInit(Weapon *weapon, WeaponType type);

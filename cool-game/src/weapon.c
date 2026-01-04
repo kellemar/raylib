@@ -35,6 +35,7 @@ void WeaponInit(Weapon *weapon, WeaponType type)
     weapon->level = 1;
     weapon->pierce = false;
     weapon->chainCount = 0;
+    weapon->orbitSpawnAngle = 0.0f;
 
     switch (type)
     {
@@ -253,12 +254,9 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
 
         case WEAPON_ORBIT_SHIELD:
         {
-            // Calculate starting angle based on existing orbit projectiles
-            static float nextOrbitAngle = 0.0f;
-
             for (int i = 0; i < weapon->projectileCount; i++)
             {
-                float angle = nextOrbitAngle + (i * 2.0f * PI / weapon->projectileCount);
+                float angle = weapon->orbitSpawnAngle + (i * 2.0f * PI / weapon->projectileCount);
 
                 ProjectileSpawnParams params = {
                     .pos = pos,
@@ -278,7 +276,7 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 };
                 ProjectileSpawnEx(pool, &params);
             }
-            nextOrbitAngle += 0.5f;  // Offset next spawn
+            weapon->orbitSpawnAngle += 0.5f;  // Offset next spawn
             break;
         }
 
