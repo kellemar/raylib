@@ -7,37 +7,63 @@ void ParticlePoolInit(ParticlePool *pool)
     for (int i = 0; i < MAX_PARTICLES; i++)
     {
         pool->particles[i].active = false;
+        pool->particles[i].activeIndex = -1;
+        pool->freeIndices[i] = i;
     }
     pool->count = 0;
+    pool->freeCount = MAX_PARTICLES;
 }
 
 static Particle* ParticleSpawn(ParticlePool *pool, Vector2 pos, Vector2 vel, Color color, float size, float lifetime)
 {
-    for (int i = 0; i < MAX_PARTICLES; i++)
-    {
-        if (!pool->particles[i].active)
-        {
-            Particle *p = &pool->particles[i];
-            p->pos = pos;
-            p->vel = vel;
-            p->color = color;
-            p->size = size;
-            p->lifetime = lifetime;
-            p->maxLifetime = lifetime;
-            p->active = true;
-            pool->count++;
-            return p;
-        }
-    }
-    return NULL;
+    if (pool->freeCount <= 0) return NULL;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    Particle *p = &pool->particles[index];
+    p->pos = pos;
+    p->vel = vel;
+    p->color = color;
+    p->size = size;
+    p->lifetime = lifetime;
+    p->maxLifetime = lifetime;
+    p->active = true;
+    p->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
+    return p;
+}
+
+static void ParticleDeactivate(ParticlePool *pool, int index)
+{
+    if (index < 0 || index >= MAX_PARTICLES) return;
+    if (!pool->particles[index].active) return;
+
+    int removeSlot = pool->particles[index].activeIndex;
+    int lastIndex = pool->activeIndices[pool->count - 1];
+
+    pool->activeIndices[removeSlot] = lastIndex;
+    pool->particles[lastIndex].activeIndex = removeSlot;
+    pool->count--;
+
+    pool->particles[index].active = false;
+    pool->particles[index].activeIndex = -1;
+    pool->freeIndices[pool->freeCount] = index;
+    pool->freeCount++;
 }
 
 void ParticlePoolUpdate(ParticlePool *pool, float dt)
 {
-    for (int i = 0; i < MAX_PARTICLES; i++)
+    for (int i = 0; i < pool->count; )
     {
-        Particle *p = &pool->particles[i];
-        if (!p->active) continue;
+        int index = pool->activeIndices[i];
+        Particle *p = &pool->particles[index];
+        if (!p->active)
+        {
+            ParticleDeactivate(pool, index);
+            continue;
+        }
 
         p->pos.x += p->vel.x * dt;
         p->pos.y += p->vel.y * dt;
@@ -49,17 +75,19 @@ void ParticlePoolUpdate(ParticlePool *pool, float dt)
 
         if (p->lifetime <= 0.0f)
         {
-            p->active = false;
-            pool->count--;
+            ParticleDeactivate(pool, index);
+            continue;
         }
+
+        i++;
     }
 }
 
-void ParticlePoolDraw(ParticlePool *pool)
+void ParticlePoolDraw(ParticlePool *pool, Rectangle view)
 {
-    for (int i = 0; i < MAX_PARTICLES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        Particle *p = &pool->particles[i];
+        Particle *p = &pool->particles[pool->activeIndices[i]];
         if (!p->active) continue;
 
         float lifeRatio = p->lifetime / p->maxLifetime;
@@ -69,6 +97,12 @@ void ParticlePoolDraw(ParticlePool *pool)
         drawColor.a = alpha;
 
         float drawSize = p->size * (0.5f + 0.5f * lifeRatio);
+
+        if (p->pos.x + drawSize < view.x || p->pos.x - drawSize > view.x + view.width ||
+            p->pos.y + drawSize < view.y || p->pos.y - drawSize > view.y + view.height)
+        {
+            continue;
+        }
 
         DrawCircleV(p->pos, drawSize, drawColor);
     }

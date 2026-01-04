@@ -12,27 +12,53 @@ void XPPoolInit(XPPool *pool)
     for (int i = 0; i < MAX_XP_CRYSTALS; i++)
     {
         pool->crystals[i].active = false;
+        pool->crystals[i].activeIndex = -1;
+        pool->freeIndices[i] = i;
     }
     pool->count = 0;
+    pool->freeCount = MAX_XP_CRYSTALS;
+}
+
+static void XPDeactivate(XPPool *pool, int index)
+{
+    if (index < 0 || index >= MAX_XP_CRYSTALS) return;
+    if (!pool->crystals[index].active) return;
+
+    int removeSlot = pool->crystals[index].activeIndex;
+    int lastIndex = pool->activeIndices[pool->count - 1];
+
+    pool->activeIndices[removeSlot] = lastIndex;
+    pool->crystals[lastIndex].activeIndex = removeSlot;
+    pool->count--;
+
+    pool->crystals[index].active = false;
+    pool->crystals[index].activeIndex = -1;
+    pool->freeIndices[pool->freeCount] = index;
+    pool->freeCount++;
 }
 
 void XPPoolUpdate(XPPool *pool, Vector2 playerPos, float magnetRadius, float dt)
 {
-    for (int i = 0; i < MAX_XP_CRYSTALS; i++)
+    for (int i = 0; i < pool->count; )
     {
-        XPCrystal *xp = &pool->crystals[i];
-        if (!xp->active) continue;
+        int index = pool->activeIndices[i];
+        XPCrystal *xp = &pool->crystals[index];
+        if (!xp->active)
+        {
+            XPDeactivate(pool, index);
+            continue;
+        }
 
         xp->lifetime -= dt;
         if (xp->lifetime <= 0.0f)
         {
-            xp->active = false;
-            pool->count--;
+            XPDeactivate(pool, index);
             continue;
         }
 
+        float magnetRadiusSq = magnetRadius * magnetRadius;
         float distSq = Vector2DistanceSq(xp->pos, playerPos);
-        if (distSq < magnetRadius * magnetRadius && distSq > 0.0f)
+        if (distSq < magnetRadiusSq && distSq > 0.0f)
         {
             float dist = sqrtf(distSq);
             float dx = (playerPos.x - xp->pos.x) / dist;
@@ -44,19 +70,28 @@ void XPPoolUpdate(XPPool *pool, Vector2 playerPos, float magnetRadius, float dt)
             xp->pos.x += dx * speed * dt;
             xp->pos.y += dy * speed * dt;
         }
+
+        i++;
     }
 }
 
-void XPPoolDraw(XPPool *pool)
+void XPPoolDraw(XPPool *pool, Rectangle view)
 {
-    for (int i = 0; i < MAX_XP_CRYSTALS; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        XPCrystal *xp = &pool->crystals[i];
+        XPCrystal *xp = &pool->crystals[pool->activeIndices[i]];
         if (!xp->active) continue;
 
         float r = xp->radius;
         float pulse = 1.0f + 0.2f * sinf(xp->lifetime * 8.0f);
         float size = r * pulse;
+        float cullRadius = size * 1.5f;
+
+        if (xp->pos.x + cullRadius < view.x || xp->pos.x - cullRadius > view.x + view.width ||
+            xp->pos.y + cullRadius < view.y || xp->pos.y - cullRadius > view.y + view.height)
+        {
+            continue;
+        }
 
         Color glowColor = (Color){ 50, 255, 100, 80 };
         DrawCircleV(xp->pos, size * 1.5f, glowColor);
@@ -78,38 +113,47 @@ void XPPoolDraw(XPPool *pool)
 
 void XPSpawn(XPPool *pool, Vector2 pos, int value)
 {
-    for (int i = 0; i < MAX_XP_CRYSTALS; i++)
-    {
-        XPCrystal *xp = &pool->crystals[i];
-        if (!xp->active)
-        {
-            xp->pos = pos;
-            xp->value = value;
-            xp->radius = XP_CRYSTAL_RADIUS;
-            xp->lifetime = XP_CRYSTAL_LIFETIME;
-            xp->active = true;
-            pool->count++;
-            return;
-        }
-    }
+    if (pool->freeCount <= 0) return;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    XPCrystal *xp = &pool->crystals[index];
+    xp->pos = pos;
+    xp->value = value;
+    xp->radius = XP_CRYSTAL_RADIUS;
+    xp->lifetime = XP_CRYSTAL_LIFETIME;
+    xp->active = true;
+    xp->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
 }
 
 int XPCollect(XPPool *pool, Vector2 playerPos, float collectRadius)
 {
     int totalCollected = 0;
 
-    for (int i = 0; i < MAX_XP_CRYSTALS; i++)
+    float collectRadiusSq = collectRadius * collectRadius;
+
+    for (int i = 0; i < pool->count; )
     {
-        XPCrystal *xp = &pool->crystals[i];
-        if (!xp->active) continue;
+        int index = pool->activeIndices[i];
+        XPCrystal *xp = &pool->crystals[index];
+        if (!xp->active)
+        {
+            XPDeactivate(pool, index);
+            continue;
+        }
 
         float distSq = Vector2DistanceSq(xp->pos, playerPos);
-        if (distSq < collectRadius * collectRadius)
+        if (distSq < collectRadiusSq)
         {
             totalCollected += xp->value;
-            xp->active = false;
-            pool->count--;
+            XPDeactivate(pool, index);
+            continue;
         }
+
+        i++;
     }
 
     return totalCollected;

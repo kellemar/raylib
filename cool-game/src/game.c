@@ -13,6 +13,7 @@
 #define GRID_SIZE 64
 #define SETTINGS_FILE "settings.dat"
 #define BLACK_HOLE_PULL_RADIUS_MULT 5.0f
+#define WORLD_VIEW_MARGIN 200.0f
 
 static const Color GRID_COLOR = { 30, 25, 40, 100 };
 
@@ -159,224 +160,271 @@ static Vector2 GetSpawnPosition(Vector2 playerPos)
     return Vector2Add(playerPos, offset);
 }
 
-static void ApplyBlackHolePull(ProjectilePool *projectiles, EnemyPool *enemies, float dt)
+typedef struct BlackHolePullContext {
+    Projectile *projectile;
+    float pullRadius;
+    float dt;
+} BlackHolePullContext;
+
+static bool ApplyBlackHolePullVisit(Enemy *enemy, int index, void *user)
+{
+    (void)index;
+    BlackHolePullContext *ctx = (BlackHolePullContext *)user;
+    Projectile *p = ctx->projectile;
+
+    float dx = p->pos.x - enemy->pos.x;
+    float dy = p->pos.y - enemy->pos.y;
+    float distSq = dx * dx + dy * dy;
+
+    if (distSq > 1.0f)
+    {
+        float dist = sqrtf(distSq);
+        float pullFactor = 1.0f - (dist / ctx->pullRadius);
+        float pullForce = p->pullStrength * pullFactor * ctx->dt;
+
+        enemy->pos.x += (dx / dist) * pullForce;
+        enemy->pos.y += (dy / dist) * pullForce;
+    }
+
+    return true;
+}
+
+static void ApplyBlackHolePull(ProjectilePool *projectiles, EnemyPool *enemies, EnemySpatialGrid *grid, float dt)
 {
     // Black hole projectiles pull nearby enemies toward them
-    for (int i = 0; i < MAX_PROJECTILES; i++)
+    for (int i = 0; i < projectiles->count; i++)
     {
-        Projectile *p = &projectiles->projectiles[i];
+        Projectile *p = &projectiles->projectiles[projectiles->activeIndices[i]];
         if (!p->active || p->behavior != PROJ_BEHAVIOR_PULL) continue;
 
         float pullRadius = p->radius * BLACK_HOLE_PULL_RADIUS_MULT;
-
-        for (int j = 0; j < MAX_ENEMIES; j++)
-        {
-            Enemy *e = &enemies->enemies[j];
-            if (!e->active) continue;
-
-            float dx = p->pos.x - e->pos.x;
-            float dy = p->pos.y - e->pos.y;
-            float distSq = dx * dx + dy * dy;
-            float pullRadiusSq = pullRadius * pullRadius;
-
-            if (distSq < pullRadiusSq && distSq > 1.0f)
-            {
-                float dist = sqrtf(distSq);
-                // Pull force increases as enemies get closer
-                float pullFactor = 1.0f - (dist / pullRadius);
-                float pullForce = p->pullStrength * pullFactor * dt;
-
-                // Apply pull toward black hole
-                e->pos.x += (dx / dist) * pullForce;
-                e->pos.y += (dy / dist) * pullForce;
-            }
-        }
+        BlackHolePullContext ctx = { p, pullRadius, dt };
+        EnemySpatialGridForEachInRadius(grid, enemies, p->pos, pullRadius, ApplyBlackHolePullVisit, &ctx);
     }
 }
 
-static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game, Player *player)
+typedef struct ProjectileCollisionContext {
+    ProjectilePool *projectiles;
+    EnemyPool *enemies;
+    XPPool *xp;
+    ParticlePool *particles;
+    GameData *game;
+    Player *player;
+    Projectile *projectile;
+    int projectileIndex;
+} ProjectileCollisionContext;
+
+static bool ProjectileEnemyCollisionVisit(Enemy *enemy, int index, void *user)
 {
-    for (int i = 0; i < MAX_PROJECTILES; i++)
+    ProjectileCollisionContext *ctx = (ProjectileCollisionContext *)user;
+    Projectile *p = ctx->projectile;
+
+    if (!CheckCircleCollision(p->pos, p->radius, enemy->pos, enemy->radius))
     {
-        Projectile *p = &projectiles->projectiles[i];
-        if (!p->active) continue;
+        return true;
+    }
 
-        for (int j = 0; j < MAX_ENEMIES; j++)
+    float damage = p->damage;
+    if (ctx->player->weapon.critChance > 0.0f)
+    {
+        float roll = (float)(rand() % 100) / 100.0f;
+        if (roll < ctx->player->weapon.critChance)
         {
-            Enemy *e = &enemies->enemies[j];
-            if (!e->active) continue;
-
-            if (CheckCircleCollision(p->pos, p->radius, e->pos, e->radius))
-            {
-                // Apply critical hit
-                float damage = p->damage;
-                if (player->weapon.critChance > 0.0f)
-                {
-                    float roll = (float)(rand() % 100) / 100.0f;
-                    if (roll < player->weapon.critChance)
-                    {
-                        damage *= player->weapon.critMultiplier;
-                    }
-                }
-
-                e->health -= damage;
-                e->hitFlashTimer = 0.1f;
-
-                // Apply vampirism (lifesteal)
-                if (player->vampirism > 0.0f && player->health < player->maxHealth)
-                {
-                    float healAmount = damage * player->vampirism;
-                    player->health += healAmount;
-                    if (player->health > player->maxHealth)
-                    {
-                        player->health = player->maxHealth;
-                    }
-                }
-
-                // Use projectile color for hit particles
-                SpawnHitParticles(particles, p->pos, p->color, 5);
-
-                // Apply slow effect from freeze ray
-                if (p->effects & PROJ_EFFECT_SLOW)
-                {
-                    EnemyApplySlow(e, p->slowAmount, p->slowDuration);
-                }
-
-                if (!p->pierce)
-                {
-                    p->active = false;
-                    projectiles->count--;
-                }
-
-                if (e->health <= 0.0f)
-                {
-                    Vector2 deathPos = e->pos;
-                    EnemyType deathType = e->type;
-                    int deathSplitCount = e->splitCount;
-                    float deathRadius = e->radius;
-                    float deathMaxHealth = e->maxHealth;
-
-                    if (deathType == ENEMY_SPLITTER && deathSplitCount > 0)
-                    {
-                        float childRadius = deathRadius * 0.7f;
-                        float childHealth = deathMaxHealth * 0.5f;
-                        int childSplitCount = deathSplitCount - 1;
-
-                        Vector2 offset1 = { -deathRadius, 0.0f };
-                        Vector2 offset2 = { deathRadius, 0.0f };
-                        Vector2 childPos1 = Vector2Add(deathPos, offset1);
-                        Vector2 childPos2 = Vector2Add(deathPos, offset2);
-
-                        EnemySpawnSplitterChild(enemies, childPos1, childSplitCount, childRadius, childHealth);
-                        EnemySpawnSplitterChild(enemies, childPos2, childSplitCount, childRadius, childHealth);
-
-                        SpawnExplosion(particles, deathPos, p->color, 10);
-                    }
-                    else
-                    {
-                        XPSpawn(xp, deathPos, e->xpValue);
-                        SpawnExplosion(particles, deathPos, p->color, 15);
-                        // Trigger impact frame for larger enemies
-                        TriggerImpactFrame(game, deathPos, deathRadius * 2.0f);
-                    }
-
-                    PlayGameSound(SOUND_EXPLOSION);
-                    TriggerScreenShake(game, 3.0f, 0.15f);
-                    e->active = false;
-                    enemies->count--;
-                    game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
-                    game->killCount++;
-
-                    // Achievement: First Blood (first kill ever)
-                    TryEarnAchievement(game, ACH_FIRST_BLOOD);
-
-                    // Achievement: Centurion (100 kills this run)
-                    if (game->killCount >= 100)
-                    {
-                        TryEarnAchievement(game, ACH_CENTURION);
-                    }
-
-                    // Track boss kills for unlocks
-                    if (e->isBoss)
-                    {
-                        game->bossKillsThisRun++;
-
-                        // Achievement: Boss Hunter (first boss kill)
-                        TryEarnAchievement(game, ACH_BOSS_HUNTER);
-                    }
-
-                    // Hitstop: brief freeze on kill (more frames for bigger enemies)
-                    int hitstopAmount = (e->xpValue >= 3) ? 4 : 2;
-                    if (hitstopAmount > game->hitstopFrames)
-                    {
-                        game->hitstopFrames = hitstopAmount;
-                    }
-                }
-
-                break;
-            }
+            damage *= ctx->player->weapon.critMultiplier;
         }
+    }
+
+    enemy->health -= damage;
+    enemy->hitFlashTimer = 0.1f;
+
+    if (ctx->player->vampirism > 0.0f && ctx->player->health < ctx->player->maxHealth)
+    {
+        float healAmount = damage * ctx->player->vampirism;
+        ctx->player->health += healAmount;
+        if (ctx->player->health > ctx->player->maxHealth)
+        {
+            ctx->player->health = ctx->player->maxHealth;
+        }
+    }
+
+    SpawnHitParticles(ctx->particles, p->pos, p->color, 5);
+
+    if (p->effects & PROJ_EFFECT_SLOW)
+    {
+        EnemyApplySlow(enemy, p->slowAmount, p->slowDuration);
+    }
+
+    if (!p->pierce)
+    {
+        ProjectileDeactivate(ctx->projectiles, ctx->projectileIndex);
+    }
+
+    if (enemy->health <= 0.0f)
+    {
+        Vector2 deathPos = enemy->pos;
+        EnemyType deathType = enemy->type;
+        int deathSplitCount = enemy->splitCount;
+        float deathRadius = enemy->radius;
+        float deathMaxHealth = enemy->maxHealth;
+
+        if (deathType == ENEMY_SPLITTER && deathSplitCount > 0)
+        {
+            float childRadius = deathRadius * 0.7f;
+            float childHealth = deathMaxHealth * 0.5f;
+            int childSplitCount = deathSplitCount - 1;
+
+            Vector2 offset1 = { -deathRadius, 0.0f };
+            Vector2 offset2 = { deathRadius, 0.0f };
+            Vector2 childPos1 = Vector2Add(deathPos, offset1);
+            Vector2 childPos2 = Vector2Add(deathPos, offset2);
+
+            EnemySpawnSplitterChild(ctx->enemies, childPos1, childSplitCount, childRadius, childHealth);
+            EnemySpawnSplitterChild(ctx->enemies, childPos2, childSplitCount, childRadius, childHealth);
+
+            SpawnExplosion(ctx->particles, deathPos, p->color, 10);
+        }
+        else
+        {
+            XPSpawn(ctx->xp, deathPos, enemy->xpValue);
+            SpawnExplosion(ctx->particles, deathPos, p->color, 15);
+            TriggerImpactFrame(ctx->game, deathPos, deathRadius * 2.0f);
+        }
+
+        PlayGameSound(SOUND_EXPLOSION);
+        TriggerScreenShake(ctx->game, 3.0f, 0.15f);
+        EnemyDeactivate(ctx->enemies, index);
+        ctx->game->score += (int)(enemy->xpValue * 10 * ctx->game->scoreMultiplier);
+        ctx->game->killCount++;
+
+        TryEarnAchievement(ctx->game, ACH_FIRST_BLOOD);
+
+        if (ctx->game->killCount >= 100)
+        {
+            TryEarnAchievement(ctx->game, ACH_CENTURION);
+        }
+
+        if (enemy->isBoss)
+        {
+            ctx->game->bossKillsThisRun++;
+            TryEarnAchievement(ctx->game, ACH_BOSS_HUNTER);
+        }
+
+        int hitstopAmount = (enemy->xpValue >= 3) ? 4 : 2;
+        if (hitstopAmount > ctx->game->hitstopFrames)
+        {
+            ctx->game->hitstopFrames = hitstopAmount;
+        }
+    }
+
+    return false;
+}
+
+static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, EnemySpatialGrid *grid, XPPool *xp, ParticlePool *particles, GameData *game, Player *player)
+{
+    for (int i = 0; i < projectiles->count; )
+    {
+        int index = projectiles->activeIndices[i];
+        Projectile *p = &projectiles->projectiles[index];
+        if (!p->active)
+        {
+            ProjectileDeactivate(projectiles, index);
+            continue;
+        }
+
+        ProjectileCollisionContext ctx = { projectiles, enemies, xp, particles, game, player, p, index };
+        float searchRadius = p->radius + BOSS_BASE_RADIUS;
+        EnemySpatialGridForEachInRadius(grid, enemies, p->pos, searchRadius, ProjectileEnemyCollisionVisit, &ctx);
+
+        if (!p->active)
+        {
+            continue;
+        }
+
+        i++;
     }
 }
 
-static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, ParticlePool *particles, GameData *game, XPPool *xp)
+typedef struct EnemyPlayerCollisionContext {
+    EnemyPool *enemies;
+    Player *player;
+    ParticlePool *particles;
+    GameData *game;
+    XPPool *xp;
+} EnemyPlayerCollisionContext;
+
+static bool EnemyPlayerCollisionVisit(Enemy *enemy, int index, void *user)
+{
+    EnemyPlayerCollisionContext *ctx = (EnemyPlayerCollisionContext *)user;
+    Player *player = ctx->player;
+
+    if (!CheckCircleCollision(player->pos, player->radius, enemy->pos, enemy->radius))
+    {
+        return true;
+    }
+
+    if (player->isDashing && player->dashDamage > 0.0f)
+    {
+        enemy->health -= player->dashDamage;
+        enemy->hitFlashTimer = 0.1f;
+        SpawnHitParticles(ctx->particles, enemy->pos, NEON_PINK, 8);
+
+        if (enemy->health <= 0.0f)
+        {
+            XPSpawn(ctx->xp, enemy->pos, enemy->xpValue);
+            SpawnExplosion(ctx->particles, enemy->pos, NEON_PINK, 15);
+            PlayGameSound(SOUND_EXPLOSION);
+            TriggerScreenShake(ctx->game, 3.0f, 0.15f);
+            EnemyDeactivate(ctx->enemies, index);
+            ctx->game->score += (int)(enemy->xpValue * 10 * ctx->game->scoreMultiplier);
+            ctx->game->killCount++;
+        }
+
+        return true;
+    }
+
+    if (player->invincibilityTimer > 0.0f) return true;
+
+    PlayerTakeDamage(player, enemy->damage);
+    PlayGameSound(SOUND_HIT);
+    SpawnHitParticles(ctx->particles, player->pos, NEON_RED, 10);
+    TriggerScreenShake(ctx->game, 8.0f, 0.25f);
+
+    ctx->game->scoreMultiplier = 1.0f;
+    ctx->game->timeSinceLastHit = 0.0f;
+
+    float dx = player->pos.x - enemy->pos.x;
+    float dy = player->pos.y - enemy->pos.y;
+    float dist = sqrtf(dx * dx + dy * dy);
+    if (dist > 0.0f)
+    {
+        Vector2 pushDir = { dx / dist, dy / dist };
+        float knockback = 30.0f * player->knockbackMultiplier;
+        enemy->pos.x -= pushDir.x * knockback;
+        enemy->pos.y -= pushDir.y * knockback;
+    }
+
+    return false;
+}
+
+static void CheckEnemyPlayerCollisions(EnemyPool *enemies, EnemySpatialGrid *grid, Player *player, ParticlePool *particles, GameData *game, XPPool *xp)
 {
     if (!player->alive) return;
 
-    for (int i = 0; i < MAX_ENEMIES; i++)
-    {
-        Enemy *e = &enemies->enemies[i];
-        if (!e->active) continue;
+    EnemyPlayerCollisionContext ctx = { enemies, player, particles, game, xp };
+    float searchRadius = player->radius + BOSS_BASE_RADIUS;
+    EnemySpatialGridForEachInRadius(grid, enemies, player->pos, searchRadius, EnemyPlayerCollisionVisit, &ctx);
+}
 
-        if (CheckCircleCollision(player->pos, player->radius, e->pos, e->radius))
-        {
-            // If player is dashing and has dash damage, damage the enemy instead
-            if (player->isDashing && player->dashDamage > 0.0f)
-            {
-                e->health -= player->dashDamage;
-                e->hitFlashTimer = 0.1f;
-                SpawnHitParticles(particles, e->pos, NEON_PINK, 8);
+typedef struct SlowAuraContext {
+    Player *player;
+} SlowAuraContext;
 
-                if (e->health <= 0.0f)
-                {
-                    XPSpawn(xp, e->pos, e->xpValue);
-                    SpawnExplosion(particles, e->pos, NEON_PINK, 15);
-                    PlayGameSound(SOUND_EXPLOSION);
-                    TriggerScreenShake(game, 3.0f, 0.15f);
-                    e->active = false;
-                    enemies->count--;
-                    game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
-                    game->killCount++;
-                }
-                continue;  // Check next enemy, don't take damage
-            }
-
-            // Normal collision - player takes damage if not invincible
-            if (player->invincibilityTimer > 0.0f) continue;
-
-            PlayerTakeDamage(player, e->damage);
-            PlayGameSound(SOUND_HIT);
-            SpawnHitParticles(particles, player->pos, NEON_RED, 10);
-            TriggerScreenShake(game, 8.0f, 0.25f);
-
-            // Reset score multiplier on damage
-            game->scoreMultiplier = 1.0f;
-            game->timeSinceLastHit = 0.0f;
-
-            float dx = player->pos.x - e->pos.x;
-            float dy = player->pos.y - e->pos.y;
-            float dist = sqrtf(dx * dx + dy * dy);
-            if (dist > 0.0f)
-            {
-                Vector2 pushDir = { dx / dist, dy / dist };
-                float knockback = 30.0f * player->knockbackMultiplier;
-                e->pos.x -= pushDir.x * knockback;
-                e->pos.y -= pushDir.y * knockback;
-            }
-
-            break;
-        }
-    }
+static bool SlowAuraVisit(Enemy *enemy, int index, void *user)
+{
+    (void)index;
+    SlowAuraContext *ctx = (SlowAuraContext *)user;
+    EnemyApplySlow(enemy, ctx->player->slowAuraAmount, 0.5f);
+    return true;
 }
 
 static bool CheckLevelUp(Player *player)
@@ -1012,6 +1060,8 @@ void GameUpdate(GameData *game, float dt)
         }
 
         case STATE_PLAYING:
+        {
+            EnemySpatialGrid enemyGrid;
             // Update impact frames (decrement each frame)
             if (game->impactFrames > 0)
             {
@@ -1073,9 +1123,10 @@ void GameUpdate(GameData *game, float dt)
                 TryEarnAchievement(game, ACH_IMMORTAL);
             }
 
+            EnemySpatialGridBuild(&enemyGrid, &game->enemies);
             PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
             // Pass enemy pool so each homing projectile can find its own target
-            ProjectilePoolUpdate(&game->projectiles, scaledDt, &game->enemies);
+            ProjectilePoolUpdate(&game->projectiles, scaledDt, &game->enemies, &enemyGrid);
             EnemyPoolUpdate(&game->enemies, game->player.pos, scaledDt);
             XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
             ParticlePoolUpdate(&game->particles, scaledDt);
@@ -1136,30 +1187,26 @@ void GameUpdate(GameData *game, float dt)
                 }
             }
 
+            EnemySpatialGridBuild(&enemyGrid, &game->enemies);
+
             // Apply slow aura around player if upgraded
             if (game->player.slowAuraRadius > 0.0f)
             {
-                for (int i = 0; i < MAX_ENEMIES; i++)
-                {
-                    Enemy *e = &game->enemies.enemies[i];
-                    if (!e->active) continue;
-
-                    float dx = game->player.pos.x - e->pos.x;
-                    float dy = game->player.pos.y - e->pos.y;
-                    float distSq = dx * dx + dy * dy;
-                    float radiusSq = game->player.slowAuraRadius * game->player.slowAuraRadius;
-
-                    if (distSq < radiusSq)
-                    {
-                        EnemyApplySlow(e, game->player.slowAuraAmount, 0.5f);
-                    }
-                }
+                SlowAuraContext ctx = { &game->player };
+                EnemySpatialGridForEachInRadius(
+                    &enemyGrid,
+                    &game->enemies,
+                    game->player.pos,
+                    game->player.slowAuraRadius,
+                    SlowAuraVisit,
+                    &ctx
+                );
             }
 
             // Apply black hole pull effect before collision checks
-            ApplyBlackHolePull(&game->projectiles, &game->enemies, scaledDt);
-            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, &game->particles, game, &game->player);
-            CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game, &game->xp);
+            ApplyBlackHolePull(&game->projectiles, &game->enemies, &enemyGrid, scaledDt);
+            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, &game->player);
+            CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, &game->player, &game->particles, game, &game->xp);
 
             int collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
             if (collectedXP > 0)
@@ -1272,6 +1319,7 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_PAUSED;
             }
             break;
+        }
 
         case STATE_PAUSED:
             if (IsKeyPressed(KEY_ESCAPE))
@@ -1347,8 +1395,17 @@ void GameUpdate(GameData *game, float dt)
 
 static void DrawGameWorld(GameData *game)
 {
+    float halfWidth = SCREEN_WIDTH / (2.0f * game->camera.zoom);
+    float halfHeight = SCREEN_HEIGHT / (2.0f * game->camera.zoom);
+    Rectangle view = {
+        game->camera.target.x - halfWidth - WORLD_VIEW_MARGIN,
+        game->camera.target.y - halfHeight - WORLD_VIEW_MARGIN,
+        halfWidth * 2.0f + WORLD_VIEW_MARGIN * 2.0f,
+        halfHeight * 2.0f + WORLD_VIEW_MARGIN * 2.0f
+    };
+
     DrawBackgroundGrid(game->camera);
-    ParticlePoolDraw(&game->particles);
+    ParticlePoolDraw(&game->particles, view);
 
     // Draw impact frame flash (bright burst on explosions)
     if (game->impactFrames > 0)
@@ -1365,9 +1422,9 @@ static void DrawGameWorld(GameData *game)
         DrawCircleLinesV(game->impactPos, outerRadius * 0.8f, (Color){ 255, 200, 100, alpha });
     }
 
-    XPPoolDraw(&game->xp);
-    EnemyPoolDraw(&game->enemies);
-    ProjectilePoolDraw(&game->projectiles);
+    XPPoolDraw(&game->xp, view);
+    EnemyPoolDraw(&game->enemies, view);
+    ProjectilePoolDraw(&game->projectiles, view);
     PlayerDraw(&game->player);
 }
 

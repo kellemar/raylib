@@ -9,178 +9,182 @@ void EnemyPoolInit(EnemyPool *pool)
     for (int i = 0; i < MAX_ENEMIES; i++)
     {
         pool->enemies[i].active = false;
+        pool->enemies[i].activeIndex = -1;
+        pool->freeIndices[i] = i;
     }
     pool->count = 0;
+    pool->freeCount = MAX_ENEMIES;
 }
 
 Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    if (pool->freeCount <= 0) return NULL;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    Enemy *e = &pool->enemies[index];
+    e->pos = pos;
+    e->vel = (Vector2){ 0.0f, 0.0f };
+    e->type = type;
+    e->active = true;
+    e->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
+
+    switch (type)
     {
-        if (!pool->enemies[i].active)
-        {
-            Enemy *e = &pool->enemies[i];
-            e->pos = pos;
-            e->vel = (Vector2){ 0.0f, 0.0f };
-            e->type = type;
-            e->active = true;
-
-            switch (type)
-            {
-                case ENEMY_CHASER:
-                    e->radius = 12.0f;
-                    e->speed = 100.0f;
-                    e->baseSpeed = 100.0f;
-                    e->health = 30.0f;
-                    e->maxHealth = 30.0f;
-                    e->damage = 10.0f;
-                    e->xpValue = 1;
-                    e->orbitAngle = 0.0f;
-                    e->orbitDistance = 0.0f;
-                    e->splitCount = 0;
-                    e->hitFlashTimer = 0.0f;
-                    e->slowTimer = 0.0f;
-                    e->slowAmount = 0.0f;
-                    e->isElite = false;
-                    e->isBoss = false;
-                    e->bossPhase = 0;
-                    e->bossAttackTimer = 0.0f;
-                    e->bossChargeTimer = 0.0f;
-                    e->bossCharging = false;
-                    break;
-
-                case ENEMY_ORBITER:
-                    e->radius = 15.0f;
-                    e->speed = 80.0f;
-                    e->baseSpeed = 80.0f;
-                    e->health = 50.0f;
-                    e->maxHealth = 50.0f;
-                    e->damage = 15.0f;
-                    e->xpValue = 2;
-                    e->orbitAngle = (float)(rand() % 360) * DEG2RAD;
-                    e->orbitDistance = 200.0f + (float)(rand() % 100);
-                    e->splitCount = 0;
-                    e->hitFlashTimer = 0.0f;
-                    e->slowTimer = 0.0f;
-                    e->slowAmount = 0.0f;
-                    e->isElite = false;
-                    e->isBoss = false;
-                    e->bossPhase = 0;
-                    e->bossAttackTimer = 0.0f;
-                    e->bossChargeTimer = 0.0f;
-                    e->bossCharging = false;
-                    break;
-
-                case ENEMY_SPLITTER:
-                    e->radius = 20.0f;
-                    e->speed = 60.0f;
-                    e->baseSpeed = 60.0f;
-                    e->health = 80.0f;
-                    e->maxHealth = 80.0f;
-                    e->damage = 20.0f;
-                    e->xpValue = 3;
-                    e->orbitAngle = 0.0f;
-                    e->orbitDistance = 0.0f;
-                    e->splitCount = 2;
-                    e->hitFlashTimer = 0.0f;
-                    e->slowTimer = 0.0f;
-                    e->slowAmount = 0.0f;
-                    e->isElite = false;
-                    e->isBoss = false;
-                    e->bossPhase = 0;
-                    e->bossAttackTimer = 0.0f;
-                    e->bossChargeTimer = 0.0f;
-                    e->bossCharging = false;
-                    break;
-
-                case ENEMY_BOSS:
-                    e->radius = BOSS_BASE_RADIUS;
-                    e->speed = BOSS_BASE_SPEED;
-                    e->baseSpeed = BOSS_BASE_SPEED;
-                    e->health = BOSS_BASE_HEALTH;
-                    e->maxHealth = BOSS_BASE_HEALTH;
-                    e->damage = BOSS_BASE_DAMAGE;
-                    e->xpValue = BOSS_XP_VALUE;
-                    e->orbitAngle = 0.0f;
-                    e->orbitDistance = 0.0f;
-                    e->splitCount = 0;
-                    e->hitFlashTimer = 0.0f;
-                    e->slowTimer = 0.0f;
-                    e->slowAmount = 0.0f;
-                    e->isElite = false;
-                    e->isBoss = true;
-                    e->bossPhase = 0;
-                    e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
-                    e->bossChargeTimer = 0.0f;
-                    e->bossCharging = false;
-                    break;
-
-                default:
-                    e->radius = 12.0f;
-                    e->speed = 100.0f;
-                    e->baseSpeed = 100.0f;
-                    e->health = 30.0f;
-                    e->maxHealth = 30.0f;
-                    e->damage = 10.0f;
-                    e->xpValue = 1;
-                    e->orbitAngle = 0.0f;
-                    e->orbitDistance = 0.0f;
-                    e->splitCount = 0;
-                    e->hitFlashTimer = 0.0f;
-                    e->slowTimer = 0.0f;
-                    e->slowAmount = 0.0f;
-                    e->isElite = false;
-                    e->isBoss = false;
-                    e->bossPhase = 0;
-                    e->bossAttackTimer = 0.0f;
-                    e->bossChargeTimer = 0.0f;
-                    e->bossCharging = false;
-                    break;
-            }
-
-            pool->count++;
-            return e;
-        }
-    }
-    return NULL;
-}
-
-Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health)
-{
-    for (int i = 0; i < MAX_ENEMIES; i++)
-    {
-        if (!pool->enemies[i].active)
-        {
-            Enemy *e = &pool->enemies[i];
-            e->pos = pos;
-            e->vel = (Vector2){ 0.0f, 0.0f };
-            e->type = ENEMY_SPLITTER;
-            e->active = true;
-            e->radius = radius;
-            e->speed = 60.0f + (2 - splitCount) * 15.0f;
-            e->baseSpeed = e->speed;
-            e->health = health;
-            e->maxHealth = health;
-            e->damage = 15.0f + (2 - splitCount) * 2.5f;
-            e->xpValue = (splitCount > 0) ? 1 : 2;
+        case ENEMY_CHASER:
+            e->radius = 12.0f;
+            e->speed = 100.0f;
+            e->baseSpeed = 100.0f;
+            e->health = 30.0f;
+            e->maxHealth = 30.0f;
+            e->damage = 10.0f;
+            e->xpValue = 1;
             e->orbitAngle = 0.0f;
             e->orbitDistance = 0.0f;
-            e->splitCount = splitCount;
+            e->splitCount = 0;
             e->hitFlashTimer = 0.0f;
             e->slowTimer = 0.0f;
             e->slowAmount = 0.0f;
-            e->isElite = false;  // Splitter children are never elite
+            e->isElite = false;
             e->isBoss = false;
             e->bossPhase = 0;
             e->bossAttackTimer = 0.0f;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            break;
 
-            pool->count++;
-            return e;
-        }
+        case ENEMY_ORBITER:
+            e->radius = 15.0f;
+            e->speed = 80.0f;
+            e->baseSpeed = 80.0f;
+            e->health = 50.0f;
+            e->maxHealth = 50.0f;
+            e->damage = 15.0f;
+            e->xpValue = 2;
+            e->orbitAngle = (float)(rand() % 360) * DEG2RAD;
+            e->orbitDistance = 200.0f + (float)(rand() % 100);
+            e->splitCount = 0;
+            e->hitFlashTimer = 0.0f;
+            e->slowTimer = 0.0f;
+            e->slowAmount = 0.0f;
+            e->isElite = false;
+            e->isBoss = false;
+            e->bossPhase = 0;
+            e->bossAttackTimer = 0.0f;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = false;
+            break;
+
+        case ENEMY_SPLITTER:
+            e->radius = 20.0f;
+            e->speed = 60.0f;
+            e->baseSpeed = 60.0f;
+            e->health = 80.0f;
+            e->maxHealth = 80.0f;
+            e->damage = 20.0f;
+            e->xpValue = 3;
+            e->orbitAngle = 0.0f;
+            e->orbitDistance = 0.0f;
+            e->splitCount = 2;
+            e->hitFlashTimer = 0.0f;
+            e->slowTimer = 0.0f;
+            e->slowAmount = 0.0f;
+            e->isElite = false;
+            e->isBoss = false;
+            e->bossPhase = 0;
+            e->bossAttackTimer = 0.0f;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = false;
+            break;
+
+        case ENEMY_BOSS:
+            e->radius = BOSS_BASE_RADIUS;
+            e->speed = BOSS_BASE_SPEED;
+            e->baseSpeed = BOSS_BASE_SPEED;
+            e->health = BOSS_BASE_HEALTH;
+            e->maxHealth = BOSS_BASE_HEALTH;
+            e->damage = BOSS_BASE_DAMAGE;
+            e->xpValue = BOSS_XP_VALUE;
+            e->orbitAngle = 0.0f;
+            e->orbitDistance = 0.0f;
+            e->splitCount = 0;
+            e->hitFlashTimer = 0.0f;
+            e->slowTimer = 0.0f;
+            e->slowAmount = 0.0f;
+            e->isElite = false;
+            e->isBoss = true;
+            e->bossPhase = 0;
+            e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = false;
+            break;
+
+        default:
+            e->radius = 12.0f;
+            e->speed = 100.0f;
+            e->baseSpeed = 100.0f;
+            e->health = 30.0f;
+            e->maxHealth = 30.0f;
+            e->damage = 10.0f;
+            e->xpValue = 1;
+            e->orbitAngle = 0.0f;
+            e->orbitDistance = 0.0f;
+            e->splitCount = 0;
+            e->hitFlashTimer = 0.0f;
+            e->slowTimer = 0.0f;
+            e->slowAmount = 0.0f;
+            e->isElite = false;
+            e->isBoss = false;
+            e->bossPhase = 0;
+            e->bossAttackTimer = 0.0f;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = false;
+            break;
     }
-    return NULL;
+
+    return e;
+}
+
+Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health)
+{
+    if (pool->freeCount <= 0) return NULL;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    Enemy *e = &pool->enemies[index];
+    e->pos = pos;
+    e->vel = (Vector2){ 0.0f, 0.0f };
+    e->type = ENEMY_SPLITTER;
+    e->active = true;
+    e->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
+
+    e->radius = radius;
+    e->speed = 60.0f + (2 - splitCount) * 15.0f;
+    e->baseSpeed = e->speed;
+    e->health = health;
+    e->maxHealth = health;
+    e->damage = 15.0f + (2 - splitCount) * 2.5f;
+    e->xpValue = (splitCount > 0) ? 1 : 2;
+    e->orbitAngle = 0.0f;
+    e->orbitDistance = 0.0f;
+    e->splitCount = splitCount;
+    e->hitFlashTimer = 0.0f;
+    e->slowTimer = 0.0f;
+    e->slowAmount = 0.0f;
+    e->isElite = false;  // Splitter children are never elite
+    e->isBoss = false;
+    e->bossPhase = 0;
+    e->bossAttackTimer = 0.0f;
+    e->bossChargeTimer = 0.0f;
+    e->bossCharging = false;
+
+    return e;
 }
 
 Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos)
@@ -218,24 +222,20 @@ Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber)
 
 bool EnemyPoolHasBoss(EnemyPool *pool)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        if (pool->enemies[i].active && pool->enemies[i].isBoss)
-        {
-            return true;
-        }
+        Enemy *e = &pool->enemies[pool->activeIndices[i]];
+        if (e->active && e->isBoss) return true;
     }
     return false;
 }
 
 Enemy* EnemyPoolGetBoss(EnemyPool *pool)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        if (pool->enemies[i].active && pool->enemies[i].isBoss)
-        {
-            return &pool->enemies[i];
-        }
+        Enemy *e = &pool->enemies[pool->activeIndices[i]];
+        if (e->active && e->isBoss) return e;
     }
     return NULL;
 }
@@ -269,9 +269,9 @@ Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance)
     Enemy *nearest = NULL;
     float nearestDist = maxDistance * maxDistance;  // Use squared distance for efficiency
 
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        Enemy *e = &pool->enemies[i];
+        Enemy *e = &pool->enemies[pool->activeIndices[i]];
         if (!e->active) continue;
 
         float dx = e->pos.x - pos.x;
@@ -288,11 +288,142 @@ Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance)
     return nearest;
 }
 
+void EnemyDeactivate(EnemyPool *pool, int index)
+{
+    if (index < 0 || index >= MAX_ENEMIES) return;
+    if (!pool->enemies[index].active) return;
+
+    int removeSlot = pool->enemies[index].activeIndex;
+    int lastIndex = pool->activeIndices[pool->count - 1];
+
+    pool->activeIndices[removeSlot] = lastIndex;
+    pool->enemies[lastIndex].activeIndex = removeSlot;
+    pool->count--;
+
+    pool->enemies[index].active = false;
+    pool->enemies[index].activeIndex = -1;
+    pool->freeIndices[pool->freeCount] = index;
+    pool->freeCount++;
+}
+
+static int EnemySpatialCellCoord(float value)
+{
+    return (int)floorf(value / ENEMY_SPATIAL_CELL_SIZE);
+}
+
+static unsigned int EnemySpatialHash(int cellX, int cellY)
+{
+    unsigned int hash = (unsigned int)(cellX * 73856093) ^ (unsigned int)(cellY * 19349663);
+    return hash & (ENEMY_SPATIAL_BUCKETS - 1);
+}
+
+void EnemySpatialGridBuild(EnemySpatialGrid *grid, EnemyPool *pool)
+{
+    for (int i = 0; i < ENEMY_SPATIAL_BUCKETS; i++)
+    {
+        grid->bucketHeads[i] = -1;
+    }
+
+    for (int i = 0; i < pool->count; i++)
+    {
+        int index = pool->activeIndices[i];
+        Enemy *e = &pool->enemies[index];
+        if (!e->active) continue;
+
+        int cellX = EnemySpatialCellCoord(e->pos.x);
+        int cellY = EnemySpatialCellCoord(e->pos.y);
+
+        grid->cellX[index] = cellX;
+        grid->cellY[index] = cellY;
+
+        unsigned int hash = EnemySpatialHash(cellX, cellY);
+        grid->next[index] = grid->bucketHeads[hash];
+        grid->bucketHeads[hash] = index;
+    }
+}
+
+void EnemySpatialGridForEachInRadius(EnemySpatialGrid *grid, EnemyPool *pool, Vector2 center, float radius, EnemySpatialVisit visit, void *user)
+{
+    float radiusSq = radius * radius;
+    int minCellX = EnemySpatialCellCoord(center.x - radius);
+    int maxCellX = EnemySpatialCellCoord(center.x + radius);
+    int minCellY = EnemySpatialCellCoord(center.y - radius);
+    int maxCellY = EnemySpatialCellCoord(center.y + radius);
+
+    bool stop = false;
+
+    for (int cellY = minCellY; cellY <= maxCellY && !stop; cellY++)
+    {
+        for (int cellX = minCellX; cellX <= maxCellX && !stop; cellX++)
+        {
+            unsigned int hash = EnemySpatialHash(cellX, cellY);
+            for (int index = grid->bucketHeads[hash]; index != -1; index = grid->next[index])
+            {
+                if (grid->cellX[index] != cellX || grid->cellY[index] != cellY) continue;
+
+                Enemy *e = &pool->enemies[index];
+                if (!e->active) continue;
+
+                float dx = e->pos.x - center.x;
+                float dy = e->pos.y - center.y;
+                float distSq = dx * dx + dy * dy;
+
+                if (distSq <= radiusSq)
+                {
+                    if (!visit(e, index, user))
+                    {
+                        stop = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+Enemy* EnemyFindNearestInGrid(EnemyPool *pool, EnemySpatialGrid *grid, Vector2 pos, float maxDistance)
+{
+    Enemy *nearest = NULL;
+    float nearestDist = maxDistance * maxDistance;
+
+    int minCellX = EnemySpatialCellCoord(pos.x - maxDistance);
+    int maxCellX = EnemySpatialCellCoord(pos.x + maxDistance);
+    int minCellY = EnemySpatialCellCoord(pos.y - maxDistance);
+    int maxCellY = EnemySpatialCellCoord(pos.y + maxDistance);
+
+    for (int cellY = minCellY; cellY <= maxCellY; cellY++)
+    {
+        for (int cellX = minCellX; cellX <= maxCellX; cellX++)
+        {
+            unsigned int hash = EnemySpatialHash(cellX, cellY);
+            for (int index = grid->bucketHeads[hash]; index != -1; index = grid->next[index])
+            {
+                if (grid->cellX[index] != cellX || grid->cellY[index] != cellY) continue;
+
+                Enemy *e = &pool->enemies[index];
+                if (!e->active) continue;
+
+                float dx = e->pos.x - pos.x;
+                float dy = e->pos.y - pos.y;
+                float distSq = dx * dx + dy * dy;
+
+                if (distSq < nearestDist)
+                {
+                    nearestDist = distSq;
+                    nearest = e;
+                }
+            }
+        }
+    }
+
+    return nearest;
+}
+
 void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        Enemy *e = &pool->enemies[i];
+        Enemy *e = &pool->enemies[pool->activeIndices[i]];
         if (!e->active) continue;
 
         // Update hit flash timer
@@ -434,12 +565,22 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
     }
 }
 
-void EnemyPoolDraw(EnemyPool *pool)
+void EnemyPoolDraw(EnemyPool *pool, Rectangle view)
 {
-    for (int i = 0; i < MAX_ENEMIES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        Enemy *e = &pool->enemies[i];
+        Enemy *e = &pool->enemies[pool->activeIndices[i]];
         if (!e->active) continue;
+
+        float cullRadius = e->radius;
+        if (e->isBoss) cullRadius += 35.0f;
+        else if (e->isElite) cullRadius += 12.0f;
+
+        if (e->pos.x + cullRadius < view.x || e->pos.x - cullRadius > view.x + view.width ||
+            e->pos.y + cullRadius < view.y || e->pos.y - cullRadius > view.y + view.height)
+        {
+            continue;
+        }
 
         // Check if hit flash is active
         bool isFlashing = e->hitFlashTimer > 0.0f;

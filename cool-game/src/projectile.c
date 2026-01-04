@@ -12,85 +12,111 @@ void ProjectilePoolInit(ProjectilePool *pool)
     for (int i = 0; i < MAX_PROJECTILES; i++)
     {
         pool->projectiles[i].active = false;
+        pool->projectiles[i].activeIndex = -1;
+        pool->freeIndices[i] = i;
     }
     pool->count = 0;
+    pool->freeCount = MAX_PROJECTILES;
 }
 
 Projectile* ProjectileSpawn(ProjectilePool *pool, Vector2 pos, Vector2 vel, float damage, float radius, float lifetime)
 {
-    for (int i = 0; i < MAX_PROJECTILES; i++)
-    {
-        if (!pool->projectiles[i].active)
-        {
-            Projectile *p = &pool->projectiles[i];
-            p->pos = pos;
-            p->vel = vel;
-            p->damage = damage;
-            p->radius = radius;
-            p->lifetime = lifetime;
-            p->weaponType = 0;
-            p->pierce = false;
-            p->active = true;
-            // Initialize extended fields with defaults
-            p->behavior = PROJ_BEHAVIOR_LINEAR;
-            p->effects = PROJ_EFFECT_NONE;
-            p->homingStrength = 0.0f;
-            p->orbitAngle = 0.0f;
-            p->orbitRadius = 0.0f;
-            p->orbitSpeed = 0.0f;
-            p->ownerPos = NULL;
-            p->pullStrength = 0.0f;
-            p->chainCount = 0;
-            p->slowAmount = 0.0f;
-            p->slowDuration = 0.0f;
-            p->color = NEON_YELLOW;
-            pool->count++;
-            return p;
-        }
-    }
-    return NULL;
+    if (pool->freeCount <= 0) return NULL;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    Projectile *p = &pool->projectiles[index];
+    p->pos = pos;
+    p->vel = vel;
+    p->damage = damage;
+    p->radius = radius;
+    p->lifetime = lifetime;
+    p->weaponType = 0;
+    p->pierce = false;
+    p->active = true;
+    p->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
+    // Initialize extended fields with defaults
+    p->behavior = PROJ_BEHAVIOR_LINEAR;
+    p->effects = PROJ_EFFECT_NONE;
+    p->homingStrength = 0.0f;
+    p->orbitAngle = 0.0f;
+    p->orbitRadius = 0.0f;
+    p->orbitSpeed = 0.0f;
+    p->ownerPos = NULL;
+    p->pullStrength = 0.0f;
+    p->chainCount = 0;
+    p->slowAmount = 0.0f;
+    p->slowDuration = 0.0f;
+    p->color = NEON_YELLOW;
+    return p;
 }
 
 Projectile* ProjectileSpawnEx(ProjectilePool *pool, ProjectileSpawnParams *params)
 {
-    for (int i = 0; i < MAX_PROJECTILES; i++)
-    {
-        if (!pool->projectiles[i].active)
-        {
-            Projectile *p = &pool->projectiles[i];
-            p->pos = params->pos;
-            p->vel = params->vel;
-            p->damage = params->damage;
-            p->radius = params->radius;
-            p->lifetime = params->lifetime;
-            p->weaponType = params->weaponType;
-            p->pierce = params->pierce;
-            p->active = true;
-            p->behavior = params->behavior;
-            p->effects = params->effects;
-            p->homingStrength = params->homingStrength;
-            p->orbitAngle = params->orbitAngle;
-            p->orbitRadius = params->orbitRadius;
-            p->orbitSpeed = params->orbitSpeed;
-            p->ownerPos = params->ownerPos;
-            p->pullStrength = params->pullStrength;
-            p->chainCount = params->chainCount;
-            p->slowAmount = params->slowAmount;
-            p->slowDuration = params->slowDuration;
-            p->color = params->color;
-            pool->count++;
-            return p;
-        }
-    }
-    return NULL;
+    if (pool->freeCount <= 0) return NULL;
+
+    int index = pool->freeIndices[pool->freeCount - 1];
+    pool->freeCount--;
+
+    Projectile *p = &pool->projectiles[index];
+    p->pos = params->pos;
+    p->vel = params->vel;
+    p->damage = params->damage;
+    p->radius = params->radius;
+    p->lifetime = params->lifetime;
+    p->weaponType = params->weaponType;
+    p->pierce = params->pierce;
+    p->active = true;
+    p->activeIndex = pool->count;
+    pool->activeIndices[pool->count] = index;
+    pool->count++;
+    p->behavior = params->behavior;
+    p->effects = params->effects;
+    p->homingStrength = params->homingStrength;
+    p->orbitAngle = params->orbitAngle;
+    p->orbitRadius = params->orbitRadius;
+    p->orbitSpeed = params->orbitSpeed;
+    p->ownerPos = params->ownerPos;
+    p->pullStrength = params->pullStrength;
+    p->chainCount = params->chainCount;
+    p->slowAmount = params->slowAmount;
+    p->slowDuration = params->slowDuration;
+    p->color = params->color;
+    return p;
 }
 
-void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies)
+void ProjectileDeactivate(ProjectilePool *pool, int index)
 {
-    for (int i = 0; i < MAX_PROJECTILES; i++)
+    if (index < 0 || index >= MAX_PROJECTILES) return;
+    if (!pool->projectiles[index].active) return;
+
+    int removeSlot = pool->projectiles[index].activeIndex;
+    int lastIndex = pool->activeIndices[pool->count - 1];
+
+    pool->activeIndices[removeSlot] = lastIndex;
+    pool->projectiles[lastIndex].activeIndex = removeSlot;
+    pool->count--;
+
+    pool->projectiles[index].active = false;
+    pool->projectiles[index].activeIndex = -1;
+    pool->freeIndices[pool->freeCount] = index;
+    pool->freeCount++;
+}
+
+void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies, struct EnemySpatialGrid *grid)
+{
+    for (int i = 0; i < pool->count; )
     {
-        Projectile *p = &pool->projectiles[i];
-        if (!p->active) continue;
+        int index = pool->activeIndices[i];
+        Projectile *p = &pool->projectiles[index];
+        if (!p->active)
+        {
+            ProjectileDeactivate(pool, index);
+            continue;
+        }
 
         switch (p->behavior)
         {
@@ -106,7 +132,14 @@ void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enem
                 Enemy *target = NULL;
                 if (enemies != NULL)
                 {
-                    target = EnemyFindNearest(enemies, p->pos, HOMING_MAX_RANGE);
+                    if (grid != NULL)
+                    {
+                        target = EnemyFindNearestInGrid(enemies, grid, p->pos, HOMING_MAX_RANGE);
+                    }
+                    else
+                    {
+                        target = EnemyFindNearest(enemies, p->pos, HOMING_MAX_RANGE);
+                    }
                 }
 
                 if (target != NULL)
@@ -155,18 +188,31 @@ void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enem
 
         if (p->lifetime <= 0.0f)
         {
-            p->active = false;
-            pool->count--;
+            ProjectileDeactivate(pool, index);
+            continue;
         }
+
+        i++;
     }
 }
 
-void ProjectilePoolDraw(ProjectilePool *pool)
+void ProjectilePoolDraw(ProjectilePool *pool, Rectangle view)
 {
-    for (int i = 0; i < MAX_PROJECTILES; i++)
+    for (int i = 0; i < pool->count; i++)
     {
-        Projectile *p = &pool->projectiles[i];
+        Projectile *p = &pool->projectiles[pool->activeIndices[i]];
         if (!p->active) continue;
+
+        float cullRadius = p->radius;
+        if (p->behavior == PROJ_BEHAVIOR_PULL)
+        {
+            cullRadius = p->radius * 3.0f;
+        }
+        if (p->pos.x + cullRadius < view.x || p->pos.x - cullRadius > view.x + view.width ||
+            p->pos.y + cullRadius < view.y || p->pos.y - cullRadius > view.y + view.height)
+        {
+            continue;
+        }
 
         // Draw with projectile's color
         DrawCircleV(p->pos, p->radius, p->color);

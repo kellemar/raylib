@@ -40,6 +40,7 @@ typedef struct Enemy {
     float bossAttackTimer;  // Time until next attack
     float bossChargeTimer;  // Charge-up before attack (anticipation)
     bool bossCharging;      // Is boss currently charging an attack
+    int activeIndex;        // Index in active list for O(1) removal
 } Enemy;
 
 // Elite enemy multipliers
@@ -51,7 +52,7 @@ typedef struct Enemy {
 #define ELITE_SPEED_MULT    0.8f    // Slightly slower (but tankier)
 
 // Boss enemy stats
-#define BOSS_SPAWN_INTERVAL 300.0f  // 5 minutes (300 seconds)
+#define BOSS_SPAWN_INTERVAL 60.0f  // 5 minutes (300 seconds)
 #define BOSS_BASE_HEALTH    2000.0f // High health pool
 #define BOSS_BASE_RADIUS    60.0f   // Large visual size
 #define BOSS_BASE_DAMAGE    30.0f   // High contact damage
@@ -62,12 +63,28 @@ typedef struct Enemy {
 
 typedef struct EnemyPool {
     Enemy enemies[MAX_ENEMIES];
+    int activeIndices[MAX_ENEMIES];
+    int freeIndices[MAX_ENEMIES];
+    int freeCount;
     int count;
 } EnemyPool;
 
+// Spatial grid for enemy queries
+#define ENEMY_SPATIAL_CELL_SIZE 128.0f
+#define ENEMY_SPATIAL_BUCKETS   1024
+
+typedef struct EnemySpatialGrid {
+    int bucketHeads[ENEMY_SPATIAL_BUCKETS];
+    int next[MAX_ENEMIES];
+    int cellX[MAX_ENEMIES];
+    int cellY[MAX_ENEMIES];
+} EnemySpatialGrid;
+
+typedef bool (*EnemySpatialVisit)(Enemy *enemy, int index, void *user);
+
 void EnemyPoolInit(EnemyPool *pool);
 void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt);
-void EnemyPoolDraw(EnemyPool *pool);
+void EnemyPoolDraw(EnemyPool *pool, Rectangle view);
 Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos);
 Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health);
 void EnemyApplySlow(Enemy *enemy, float amount, float duration);
@@ -76,5 +93,9 @@ Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
 Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber);
 bool EnemyPoolHasBoss(EnemyPool *pool);
 Enemy* EnemyPoolGetBoss(EnemyPool *pool);
+void EnemyDeactivate(EnemyPool *pool, int index);
+void EnemySpatialGridBuild(EnemySpatialGrid *grid, EnemyPool *pool);
+void EnemySpatialGridForEachInRadius(EnemySpatialGrid *grid, EnemyPool *pool, Vector2 center, float radius, EnemySpatialVisit visit, void *user);
+Enemy* EnemyFindNearestInGrid(EnemyPool *pool, EnemySpatialGrid *grid, Vector2 pos, float maxDistance);
 
 #endif

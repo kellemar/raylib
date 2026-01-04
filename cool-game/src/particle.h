@@ -13,16 +13,20 @@ typedef struct Particle {
     float lifetime;
     float maxLifetime;
     bool active;
+    int activeIndex;
 } Particle;
 
 typedef struct ParticlePool {
     Particle particles[MAX_PARTICLES];
+    int activeIndices[MAX_PARTICLES];
+    int freeIndices[MAX_PARTICLES];
+    int freeCount;
     int count;
 } ParticlePool;
 
 void ParticlePoolInit(ParticlePool *pool);
 void ParticlePoolUpdate(ParticlePool *pool, float dt);
-void ParticlePoolDraw(ParticlePool *pool);
+void ParticlePoolDraw(ParticlePool *pool, Rectangle view);
 void SpawnExplosion(ParticlePool *pool, Vector2 pos, Color color, int count);
 void SpawnHitParticles(ParticlePool *pool, Vector2 pos, Color color, int count);
 

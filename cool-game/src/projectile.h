@@ -7,6 +7,7 @@
 
 // Forward declaration to avoid circular includes
 struct EnemyPool;
+struct EnemySpatialGrid;
 
 // Projectile behavior types
 typedef enum ProjectileBehavior {
@@ -46,17 +47,22 @@ typedef struct Projectile {
     float slowAmount;               // Slow percentage (0.0 - 1.0)
     float slowDuration;             // How long the slow lasts
     Color color;                    // Projectile color for rendering
+    int activeIndex;                // Index in active list for O(1) removal
 } Projectile;
 
 typedef struct ProjectilePool {
     Projectile projectiles[MAX_PROJECTILES];
+    int activeIndices[MAX_PROJECTILES];
+    int freeIndices[MAX_PROJECTILES];
+    int freeCount;
     int count;
 } ProjectilePool;
 
 void ProjectilePoolInit(ProjectilePool *pool);
-void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies);
-void ProjectilePoolDraw(ProjectilePool *pool);
+void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies, struct EnemySpatialGrid *grid);
+void ProjectilePoolDraw(ProjectilePool *pool, Rectangle view);
 Projectile* ProjectileSpawn(ProjectilePool *pool, Vector2 pos, Vector2 vel, float damage, float radius, float lifetime);
+void ProjectileDeactivate(ProjectilePool *pool, int index);
 
 // Extended spawn for weapon variety system
 typedef struct ProjectileSpawnParams {
