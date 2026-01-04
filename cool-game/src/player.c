@@ -161,7 +161,7 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
         player->aimDir = Vector2Scale(toMouse, 1.0f / toMouseLength);
     }
 
-    WeaponFire(&player->weapon, projectiles, player->pos, player->aimDir);
+    WeaponFire(&player->weapon, projectiles, player->pos, player->aimDir, &player->pos);
 }
 
 void PlayerDraw(Player *player)
@@ -235,4 +235,23 @@ void PlayerTakeDamage(Player *player, float damage)
         player->health = 0.0f;
         player->alive = false;
     }
+}
+
+void PlayerSwitchWeapon(Player *player, WeaponType type)
+{
+    if (type >= 0 && type < WEAPON_COUNT)
+    {
+        WeaponInit(&player->weapon, type);
+    }
+}
+
+void PlayerCycleWeapon(Player *player, int direction)
+{
+    int newType = (int)player->weapon.type + direction;
+
+    // Wrap around
+    if (newType < 0) newType = WEAPON_COUNT - 1;
+    if (newType >= WEAPON_COUNT) newType = 0;
+
+    PlayerSwitchWeapon(player, (WeaponType)newType);
 }

@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "game.h"
 #include "types.h"
+#include "weapon.h"
 #include "raylib.h"
 #include <stdio.h>
 
@@ -10,7 +11,7 @@ void DrawHUD(GameData *game)
     int lineHeight = 26;
     int startY = 10;
 
-    DrawRectangle(5, 5, 180, 220, (Color){ 0, 0, 0, 150 });
+    DrawRectangle(5, 5, 180, 270, (Color){ 0, 0, 0, 150 });
 
     DrawText(TextFormat("TIME: %.1f", game->gameTime), padding, startY, 20, NEON_WHITE);
     DrawText(TextFormat("SCORE: %d", game->score), padding, startY + lineHeight, 20, NEON_YELLOW);
@@ -45,6 +46,12 @@ void DrawHUD(GameData *game)
     {
         DrawText("DASH: READY", padding, startY + lineHeight * 6 + 10, 16, NEON_PINK);
     }
+
+    // Show current weapon with color
+    const char *weaponName = WeaponGetName(game->player.weapon.type);
+    Color weaponColor = WeaponGetColor(game->player.weapon.type);
+    DrawText(TextFormat("WEAPON: %s", weaponName), padding, startY + lineHeight * 7 + 10, 14, weaponColor);
+    DrawText("[Q/E] Switch", padding, startY + lineHeight * 8 + 8, 12, GRAY);
 }
 
 void DrawTutorial(GameData *game)
@@ -68,16 +75,18 @@ void DrawTutorial(GameData *game)
     Color dashColor = (Color){ 255, 100, 255, a };
 
     // Background box
-    DrawRectangle(centerX - 220, baseY - 10, 440, 100, bgColor);
+    DrawRectangle(centerX - 220, baseY - 10, 440, 120, bgColor);
 
     // Control hints
     const char *moveText = "WASD / Arrow Keys - Move";
     const char *aimText = "Mouse - Aim";
     const char *dashText = "SPACE - Dash (invincible!)";
+    const char *weaponText = "Q / E - Switch Weapon";
     const char *collectText = "Collect green crystals for XP";
 
     DrawText(moveText, centerX - MeasureText(moveText, 18)/2, baseY, 18, textColor);
     DrawText(aimText, centerX - MeasureText(aimText, 18)/2, baseY + 22, 18, textColor);
     DrawText(dashText, centerX - MeasureText(dashText, 18)/2, baseY + 44, 18, dashColor);
-    DrawText(collectText, centerX - MeasureText(collectText, 16)/2, baseY + 68, 16, highlightColor);
+    DrawText(weaponText, centerX - MeasureText(weaponText, 18)/2, baseY + 66, 18, highlightColor);
+    DrawText(collectText, centerX - MeasureText(collectText, 16)/2, baseY + 90, 16, highlightColor);
 }

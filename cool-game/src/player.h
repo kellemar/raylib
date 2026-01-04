@@ -36,5 +36,7 @@ void PlayerInit(Player *player);
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera);
 void PlayerDraw(Player *player);
 void PlayerTakeDamage(Player *player, float damage);
+void PlayerSwitchWeapon(Player *player, WeaponType type);
+void PlayerCycleWeapon(Player *player, int direction);  // +1 next, -1 prev
 
 #endif

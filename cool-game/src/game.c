@@ -172,6 +172,41 @@ static Vector2 GetSpawnPosition(Vector2 playerPos)
     return Vector2Add(playerPos, offset);
 }
 
+static void ApplyBlackHolePull(ProjectilePool *projectiles, EnemyPool *enemies, float dt)
+{
+    // Black hole projectiles pull nearby enemies toward them
+    for (int i = 0; i < MAX_PROJECTILES; i++)
+    {
+        Projectile *p = &projectiles->projectiles[i];
+        if (!p->active || p->behavior != PROJ_BEHAVIOR_PULL) continue;
+
+        float pullRadius = p->radius * 5.0f;  // Pull radius is larger than collision radius
+
+        for (int j = 0; j < MAX_ENEMIES; j++)
+        {
+            Enemy *e = &enemies->enemies[j];
+            if (!e->active) continue;
+
+            float dx = p->pos.x - e->pos.x;
+            float dy = p->pos.y - e->pos.y;
+            float distSq = dx * dx + dy * dy;
+            float pullRadiusSq = pullRadius * pullRadius;
+
+            if (distSq < pullRadiusSq && distSq > 1.0f)
+            {
+                float dist = sqrtf(distSq);
+                // Pull force increases as enemies get closer
+                float pullFactor = 1.0f - (dist / pullRadius);
+                float pullForce = p->pullStrength * pullFactor * dt;
+
+                // Apply pull toward black hole
+                e->pos.x += (dx / dist) * pullForce;
+                e->pos.y += (dy / dist) * pullForce;
+            }
+        }
+    }
+}
+
 static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game)
 {
     for (int i = 0; i < MAX_PROJECTILES; i++)
@@ -189,7 +224,14 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                 e->health -= p->damage;
                 e->hitFlashTimer = 0.1f;
 
-                SpawnHitParticles(particles, p->pos, NEON_YELLOW, 5);
+                // Use projectile color for hit particles
+                SpawnHitParticles(particles, p->pos, p->color, 5);
+
+                // Apply slow effect from freeze ray
+                if (p->effects & PROJ_EFFECT_SLOW)
+                {
+                    EnemyApplySlow(e, p->slowAmount, p->slowDuration);
+                }
 
                 if (!p->pierce)
                 {
@@ -219,12 +261,12 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                         EnemySpawnSplitterChild(enemies, childPos1, childSplitCount, childRadius, childHealth);
                         EnemySpawnSplitterChild(enemies, childPos2, childSplitCount, childRadius, childHealth);
 
-                        SpawnExplosion(particles, deathPos, NEON_YELLOW, 10);
+                        SpawnExplosion(particles, deathPos, p->color, 10);
                     }
                     else
                     {
                         XPSpawn(xp, deathPos, e->xpValue);
-                        SpawnExplosion(particles, deathPos, NEON_ORANGE, 15);
+                        SpawnExplosion(particles, deathPos, p->color, 15);
                     }
 
                     PlayGameSound(SOUND_EXPLOSION);
@@ -791,7 +833,10 @@ void GameUpdate(GameData *game, float dt)
             if (game->scoreMultiplier > MULTIPLIER_MAX) game->scoreMultiplier = MULTIPLIER_MAX;
 
             PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
-            ProjectilePoolUpdate(&game->projectiles, scaledDt);
+            // Find nearest enemy for homing missiles
+            Enemy *nearestEnemy = EnemyFindNearest(&game->enemies, game->player.pos, 1000.0f);
+            Vector2 *nearestEnemyPos = nearestEnemy ? &nearestEnemy->pos : NULL;
+            ProjectilePoolUpdate(&game->projectiles, scaledDt, nearestEnemyPos);
             EnemyPoolUpdate(&game->enemies, game->player.pos, scaledDt);
             XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
             ParticlePoolUpdate(&game->particles, scaledDt);
@@ -807,6 +852,8 @@ void GameUpdate(GameData *game, float dt)
                 game->spawnTimer = 0.0f;
             }
 
+            // Apply black hole pull effect before collision checks
+            ApplyBlackHolePull(&game->projectiles, &game->enemies, scaledDt);
             CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, &game->particles, game);
             CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game);
 
@@ -836,6 +883,16 @@ void GameUpdate(GameData *game, float dt)
                     SaveHighScore(game->highScore);
                 }
                 game->state = STATE_GAMEOVER;
+            }
+
+            // Weapon switching with Q/E keys
+            if (IsKeyPressed(KEY_Q))
+            {
+                PlayerCycleWeapon(&game->player, -1);  // Previous weapon
+            }
+            if (IsKeyPressed(KEY_E))
+            {
+                PlayerCycleWeapon(&game->player, 1);   // Next weapon
             }
 
             if (IsKeyPressed(KEY_ESCAPE))

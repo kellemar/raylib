@@ -62,7 +62,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] Synthwave background track (procedural or looped)
 
 ### Phase 3: Depth (Week 4)
-- [ ] 8 weapon types (see Weapons section)
+- [x] 8 weapon types (see Weapons section)
 - [ ] 20+ upgrades (damage, speed, multishot, pierce, etc.)
 - [ ] Weapon evolution system (combine 2 maxed weapons → ultimate)
 - [ ] Elite enemies (larger, special attacks)
@@ -568,6 +568,23 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 ---
 
 ## CHANGELOG
+
+### 2026-01-04 — Weapon Variety System
+- **Added: 8 unique weapon types** with distinct behaviors:
+  - **Pulse Cannon** — Single shot, medium speed (default)
+  - **Spread Shot** — 3-way spread pattern
+  - **Homing Missiles** — Slow projectiles that seek nearest enemy
+  - **Lightning** — Fast piercing projectiles with chain effect
+  - **Orbit Shield** — Rotating projectiles that orbit the player
+  - **Flamethrower** — Rapid fire short-range cone with DOT
+  - **Freeze Ray** — Slows enemies on hit (visual ice effect)
+  - **Black Hole** — Pulls nearby enemies toward projectile
+- **Added: Weapon switching** — Press Q/E to cycle through weapons during gameplay
+- **Added: Weapon HUD display** — Shows current weapon name with color indicator
+- **Added: Slow effect system** — Enemies can be slowed (ice-blue visual, reduced speed)
+- **Added: Black hole pull effect** — Enemies within range are pulled toward black hole projectiles
+- **Updated: Projectile system** — Extended with behaviors (linear, homing, orbit, pull) and effects (slow, chain, DOT)
+- **Updated: Tutorial** — Added weapon switching controls hint
 
 ### 2026-01-04 — Settings Menu
 - **Added: Settings menu** — Press TAB from the main menu to access. Includes:

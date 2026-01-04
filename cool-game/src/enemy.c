@@ -30,6 +30,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                 case ENEMY_CHASER:
                     e->radius = 12.0f;
                     e->speed = 100.0f;
+                    e->baseSpeed = 100.0f;
                     e->health = 30.0f;
                     e->maxHealth = 30.0f;
                     e->damage = 10.0f;
@@ -38,11 +39,14 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitDistance = 0.0f;
                     e->splitCount = 0;
                     e->hitFlashTimer = 0.0f;
+                    e->slowTimer = 0.0f;
+                    e->slowAmount = 0.0f;
                     break;
 
                 case ENEMY_ORBITER:
                     e->radius = 15.0f;
                     e->speed = 80.0f;
+                    e->baseSpeed = 80.0f;
                     e->health = 50.0f;
                     e->maxHealth = 50.0f;
                     e->damage = 15.0f;
@@ -51,11 +55,14 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitDistance = 200.0f + (float)(rand() % 100);
                     e->splitCount = 0;
                     e->hitFlashTimer = 0.0f;
+                    e->slowTimer = 0.0f;
+                    e->slowAmount = 0.0f;
                     break;
 
                 case ENEMY_SPLITTER:
                     e->radius = 20.0f;
                     e->speed = 60.0f;
+                    e->baseSpeed = 60.0f;
                     e->health = 80.0f;
                     e->maxHealth = 80.0f;
                     e->damage = 20.0f;
@@ -64,11 +71,14 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitDistance = 0.0f;
                     e->splitCount = 2;
                     e->hitFlashTimer = 0.0f;
+                    e->slowTimer = 0.0f;
+                    e->slowAmount = 0.0f;
                     break;
 
                 default:
                     e->radius = 12.0f;
                     e->speed = 100.0f;
+                    e->baseSpeed = 100.0f;
                     e->health = 30.0f;
                     e->maxHealth = 30.0f;
                     e->damage = 10.0f;
@@ -77,6 +87,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->orbitDistance = 0.0f;
                     e->splitCount = 0;
                     e->hitFlashTimer = 0.0f;
+                    e->slowTimer = 0.0f;
+                    e->slowAmount = 0.0f;
                     break;
             }
 
@@ -100,6 +112,7 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
             e->active = true;
             e->radius = radius;
             e->speed = 60.0f + (2 - splitCount) * 15.0f;
+            e->baseSpeed = e->speed;
             e->health = health;
             e->maxHealth = health;
             e->damage = 15.0f + (2 - splitCount) * 2.5f;
@@ -108,12 +121,56 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
             e->orbitDistance = 0.0f;
             e->splitCount = splitCount;
             e->hitFlashTimer = 0.0f;
+            e->slowTimer = 0.0f;
+            e->slowAmount = 0.0f;
 
             pool->count++;
             return e;
         }
     }
     return NULL;
+}
+
+void EnemyApplySlow(Enemy *enemy, float amount, float duration)
+{
+    if (!enemy || !enemy->active) return;
+
+    // Apply new slow if stronger or refresh existing
+    if (amount >= enemy->slowAmount || enemy->slowTimer <= 0.0f)
+    {
+        enemy->slowAmount = amount;
+        enemy->slowTimer = duration;
+        enemy->speed = enemy->baseSpeed * (1.0f - amount);
+    }
+    else if (duration > enemy->slowTimer)
+    {
+        // Just refresh duration if new slow isn't stronger
+        enemy->slowTimer = duration;
+    }
+}
+
+Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance)
+{
+    Enemy *nearest = NULL;
+    float nearestDist = maxDistance * maxDistance;  // Use squared distance for efficiency
+
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+        Enemy *e = &pool->enemies[i];
+        if (!e->active) continue;
+
+        float dx = e->pos.x - pos.x;
+        float dy = e->pos.y - pos.y;
+        float distSq = dx * dx + dy * dy;
+
+        if (distSq < nearestDist)
+        {
+            nearestDist = distSq;
+            nearest = e;
+        }
+    }
+
+    return nearest;
 }
 
 void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
@@ -127,6 +184,18 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
         if (e->hitFlashTimer > 0.0f)
         {
             e->hitFlashTimer -= dt;
+        }
+
+        // Update slow effect
+        if (e->slowTimer > 0.0f)
+        {
+            e->slowTimer -= dt;
+            if (e->slowTimer <= 0.0f)
+            {
+                // Slow expired, restore speed
+                e->slowAmount = 0.0f;
+                e->speed = e->baseSpeed;
+            }
         }
 
         switch (e->type)
@@ -205,6 +274,7 @@ void EnemyPoolDraw(EnemyPool *pool)
 
         // Check if hit flash is active
         bool isFlashing = e->hitFlashTimer > 0.0f;
+        bool isSlowed = e->slowTimer > 0.0f;
 
         if (isFlashing)
         {
@@ -214,29 +284,58 @@ void EnemyPoolDraw(EnemyPool *pool)
         }
         else
         {
+            // Apply blue tint if slowed
+            Color outerColor, innerColor;
+
             switch (e->type)
             {
                 case ENEMY_CHASER:
-                    DrawCircleV(e->pos, e->radius, NEON_RED);
-                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
+                    outerColor = NEON_RED;
+                    innerColor = NEON_ORANGE;
                     break;
 
                 case ENEMY_ORBITER:
-                    DrawCircleV(e->pos, e->radius, NEON_CYAN);
-                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_PINK);
-                    DrawCircleLinesV(e->pos, e->radius + 3.0f, NEON_CYAN);
+                    outerColor = NEON_CYAN;
+                    innerColor = NEON_PINK;
                     break;
 
                 case ENEMY_SPLITTER:
-                    DrawCircleV(e->pos, e->radius, NEON_YELLOW);
-                    DrawCircleV(e->pos, e->radius * 0.7f, NEON_GREEN);
-                    DrawCircleV(e->pos, e->radius * 0.4f, NEON_YELLOW);
+                    outerColor = NEON_YELLOW;
+                    innerColor = NEON_GREEN;
                     break;
 
                 default:
-                    DrawCircleV(e->pos, e->radius, NEON_RED);
-                    DrawCircleV(e->pos, e->radius * 0.6f, NEON_ORANGE);
+                    outerColor = NEON_RED;
+                    innerColor = NEON_ORANGE;
                     break;
+            }
+
+            // Apply ice-blue tint when slowed
+            if (isSlowed)
+            {
+                outerColor = (Color){ 150, 200, 255, 255 };  // Ice blue
+                innerColor = (Color){ 200, 230, 255, 255 };  // Lighter ice blue
+            }
+
+            DrawCircleV(e->pos, e->radius, outerColor);
+            DrawCircleV(e->pos, e->radius * 0.6f, innerColor);
+
+            // Additional decorations for specific types
+            if (!isSlowed)
+            {
+                if (e->type == ENEMY_ORBITER)
+                {
+                    DrawCircleLinesV(e->pos, e->radius + 3.0f, NEON_CYAN);
+                }
+                else if (e->type == ENEMY_SPLITTER)
+                {
+                    DrawCircleV(e->pos, e->radius * 0.4f, NEON_YELLOW);
+                }
+            }
+            else
+            {
+                // Draw ice ring when slowed
+                DrawCircleLinesV(e->pos, e->radius + 2.0f, (Color){ 150, 200, 255, 150 });
             }
         }
 

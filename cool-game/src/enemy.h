@@ -27,6 +27,10 @@ typedef struct Enemy {
     float orbitDistance;
     int splitCount;
     float hitFlashTimer;
+    // Status effects
+    float slowTimer;        // Remaining slow duration
+    float slowAmount;       // Speed reduction (0.0 - 1.0)
+    float baseSpeed;        // Original speed before slow
 } Enemy;
 
 typedef struct EnemyPool {
@@ -39,5 +43,7 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt);
 void EnemyPoolDraw(EnemyPool *pool);
 Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos);
 Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health);
+void EnemyApplySlow(Enemy *enemy, float amount, float duration);
+Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance);
 
 #endif
