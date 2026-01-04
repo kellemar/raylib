@@ -1321,6 +1321,21 @@ make         # MUST PASS - zero warnings
   - [x] RGB separation effect
 - **Status**: `[x]`
 
+#### P8.1.4 — Implement chromatic aberration shader
+- **Description**: RGB separation effect when player is low HP
+- **Dependencies**: P8.1.2
+- **Actions**:
+  1. Create `resources/shaders/chromatic.fs` with radial RGB separation
+  2. Add intensity uniform that scales with health (0 at 50%+, 1.0 at 0%)
+  3. Add pulsing effect using time uniform
+  4. Integrate into shader pipeline between bloom and CRT
+- **Verification**:
+  - [x] `make run` — no effect when health > 50%
+  - [x] RGB separation visible when health < 50%
+  - [x] Effect pulses and intensifies as health decreases
+  - [x] Stronger aberration toward screen edges
+- **Status**: `[x]`
+
 ---
 
 ### 8.2 Visual Enhancements
@@ -1632,12 +1647,12 @@ make         # MUST PASS - zero warnings
 | 5 | Particles & Juice | 7 | 7 ✓ |
 | 6 | Additional Enemies | 5 | 5 ✓ |
 | 7 | Audio | 4 | 4 ✓ |
-| 8 | Visual Polish | 6 | 6 ✓ |
+| 8 | Visual Polish | 7 | 7 ✓ |
 | 9 | Menus & Polish | 4 | 4 ✓ |
 | 10 | Final Polish | 5 | 5 ✓ |
 | 11 | Quick Wins (Game Feel) | 4 | 4 ✓ |
 | 12 | Post-Review Bug Fixes | 3 | 3 ✓ |
-| **Total** | | **91** | **90** |
+| **Total** | | **92** | **91** |
 
 ### Estimated Time
 
@@ -1792,6 +1807,9 @@ After completing each phase, verify:
 - [x] Background grid visible in world space
 - [x] Grid moves with camera (world-aligned, 64px spacing)
 - [x] All visual effects work together without performance issues
+- [x] Chromatic aberration activates when health < 50%
+- [x] Chromatic effect pulses and intensifies near death
+- [x] Chromatic aberration integrates with bloom/CRT pipeline
 
 ### Phase 9 Verification ✓
 - [x] **`make test` passes** — 27 tests, 1160 assertions
@@ -1880,4 +1898,4 @@ Following comprehensive code review, the following issues were identified and fi
 
 ---
 
-*Last updated: 2026-01-04 — Phase 12 (Bug Fixes) Complete (90/91 tasks, 98.9%)*
+*Last updated: 2026-01-04 — Chromatic aberration added (91/92 tasks, 98.9%)*

@@ -55,7 +55,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] Hitstop (2-3 frame freeze on big kills)
 - [x] Neon glow shader (bloom post-processing)
 - [x] CRT scanline overlay shader
-- [ ] Chromatic aberration on damage
+- [x] Chromatic aberration on damage
 - [x] Camera lerp (smooth follow with slight lag)
 - [x] Slow-mo on level up / near-death
 - [x] Sound effects (pew pew, explosions, pickups)
@@ -438,7 +438,7 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 - [ ] **Impact frames**: Single bright frame on explosions
 - [x] **Sound layering**: Never more than 8 concurrent sounds
 - [x] **Music ducking**: Music quiets during level-up screen
-- [ ] **Chromatic aberration**: Pulses when player is low HP
+- [x] **Chromatic aberration**: Pulses when player is low HP
 - [x] **Dash ability**: SPACE to dash with invincibility
 - [x] **Slow-mo**: Time slows near death and during level-up
 - [x] **Tutorial**: Control hints shown for first 20 seconds
@@ -568,6 +568,9 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 ---
 
 ## CHANGELOG
+
+### 2026-01-04 — New Features
+- **Added: Chromatic aberration** — Pulsing RGB separation effect that activates when player health drops below 50%. Intensity scales inversely with health (full effect near death). Uses radial aberration that's stronger at screen edges.
 
 ### 2026-01-04 — Bug Fixes
 - **Fixed: Multi-shot spread pattern** — `projectileCount` upgrade was being applied but `WeaponFire()` only spawned a single projectile. Now spawns multiple projectiles in a spread pattern when `projectileCount > 1`, making the Multi Shot upgrade functional.
