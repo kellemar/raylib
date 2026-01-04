@@ -11,12 +11,14 @@
 #include "unlocks.h"
 #include "leaderboard.h"
 #include "character.h"
+#include "achievement.h"
 #include <stdbool.h>
 
 typedef enum GameState {
     STATE_MENU,
     STATE_SETTINGS,        // Settings menu
     STATE_LEADERBOARD,     // High scores display
+    STATE_ACHIEVEMENTS,    // Achievements display
     STATE_CHARACTER_SELECT,// Character selection screen
     STATE_STARTING,        // "Get Ready" transition screen
     STATE_PLAYING,
@@ -92,6 +94,11 @@ typedef struct GameData {
     // Character selection
     CharacterType selectedCharacter;  // Currently selected character
     int characterSelection;           // Cursor position in character select
+    // Achievement system
+    AchievementData achievements;          // Persistent achievement data
+    AchievementType pendingAchievement;    // Achievement to display (-1 if none)
+    float achievementDisplayTimer;         // Time to show achievement popup
+    int achievementSelection;              // Cursor position in achievements screen
 } GameData;
 
 void GameInit(GameData *game);

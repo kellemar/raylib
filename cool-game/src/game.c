@@ -137,6 +137,18 @@ static int GetXPForLevel(int level)
     return 10 * level * level;
 }
 
+// Achievement helper: earn achievement and queue popup
+static void TryEarnAchievement(GameData *game, AchievementType type)
+{
+    if (AchievementEarn(&game->achievements, type))
+    {
+        // Newly earned - show popup
+        game->pendingAchievement = type;
+        game->achievementDisplayTimer = 3.0f;  // Show for 3 seconds
+        AchievementSave(&game->achievements);
+    }
+}
+
 static Vector2 GetSpawnPosition(Vector2 playerPos)
 {
     // Spawn enemies in a ring around the player (400-600 units away)
@@ -273,10 +285,22 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                     game->score += (int)(e->xpValue * 10 * game->scoreMultiplier);
                     game->killCount++;
 
+                    // Achievement: First Blood (first kill ever)
+                    TryEarnAchievement(game, ACH_FIRST_BLOOD);
+
+                    // Achievement: Centurion (100 kills this run)
+                    if (game->killCount >= 100)
+                    {
+                        TryEarnAchievement(game, ACH_CENTURION);
+                    }
+
                     // Track boss kills for unlocks
                     if (e->isBoss)
                     {
                         game->bossKillsThisRun++;
+
+                        // Achievement: Boss Hunter (first boss kill)
+                        TryEarnAchievement(game, ACH_BOSS_HUNTER);
                     }
 
                     // Hitstop: brief freeze on kill (more frames for bigger enemies)
@@ -726,6 +750,12 @@ void GameInit(GameData *game)
     // Load persistent unlocks
     UnlocksLoad(&game->unlocks);
 
+    // Load persistent achievements
+    AchievementLoad(&game->achievements);
+    game->pendingAchievement = (AchievementType)-1;
+    game->achievementDisplayTimer = 0.0f;
+    game->achievementSelection = 0;
+
     // Load and apply settings
     LoadSettings(&game->settings);
     ApplySettings(game);
@@ -778,6 +808,11 @@ void GameUpdate(GameData *game, float dt)
             {
                 game->state = STATE_LEADERBOARD;
             }
+            if (IsKeyPressed(KEY_A))
+            {
+                game->achievementSelection = 0;
+                game->state = STATE_ACHIEVEMENTS;
+            }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
 
@@ -794,6 +829,36 @@ void GameUpdate(GameData *game, float dt)
             }
 
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_L))
+            {
+                game->state = STATE_MENU;
+            }
+            break;
+
+        case STATE_ACHIEVEMENTS:
+            // Initialize and update starfield (shared with menu)
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            // Scroll through achievements with up/down
+            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
+            {
+                game->achievementSelection--;
+                if (game->achievementSelection < 0) game->achievementSelection = ACHIEVEMENT_COUNT - 1;
+            }
+            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
+            {
+                game->achievementSelection++;
+                if (game->achievementSelection >= ACHIEVEMENT_COUNT) game->achievementSelection = 0;
+            }
+
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_A))
             {
                 game->state = STATE_MENU;
             }
@@ -960,10 +1025,34 @@ void GameUpdate(GameData *game, float dt)
             game->gameTime += scaledDt;
             game->tutorialTimer += dt;  // Tutorial uses real time
 
+            // Update achievement popup timer
+            if (game->achievementDisplayTimer > 0.0f)
+            {
+                game->achievementDisplayTimer -= dt;
+            }
+
+            // Achievement: Survivor (3 minutes)
+            if (game->gameTime >= 180.0f)
+            {
+                TryEarnAchievement(game, ACH_SURVIVOR);
+            }
+
+            // Achievement: Veteran (10 minutes)
+            if (game->gameTime >= 600.0f)
+            {
+                TryEarnAchievement(game, ACH_VETERAN);
+            }
+
             // Update score multiplier (increases slowly while not hit)
             game->timeSinceLastHit += scaledDt;
             game->scoreMultiplier = 1.0f + (game->timeSinceLastHit / MULTIPLIER_GROWTH_RATE);
             if (game->scoreMultiplier > MULTIPLIER_MAX) game->scoreMultiplier = MULTIPLIER_MAX;
+
+            // Achievement: Immortal (no damage for 1 minute)
+            if (game->timeSinceLastHit >= 60.0f)
+            {
+                TryEarnAchievement(game, ACH_IMMORTAL);
+            }
 
             PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
             // Pass enemy pool so each homing projectile can find its own target
@@ -1068,6 +1157,19 @@ void GameUpdate(GameData *game, float dt)
                 MusicPause();
                 GenerateRandomUpgrades(game->upgradeOptions, 3);
                 game->timeScale = 0.3f;  // Slow-mo during level up
+
+                // Achievement: Level 5
+                if (game->player.level >= 5)
+                {
+                    TryEarnAchievement(game, ACH_LEVEL_5);
+                }
+
+                // Achievement: Level 10
+                if (game->player.level >= 10)
+                {
+                    TryEarnAchievement(game, ACH_LEVEL_10);
+                }
+
                 game->state = STATE_LEVELUP;
             }
 
@@ -1092,6 +1194,46 @@ void GameUpdate(GameData *game, float dt)
                 UnlocksCheckNewUnlocks(&game->unlocks);
                 UnlocksSave(&game->unlocks);
 
+                // Update achievement stats
+                game->achievements.totalKills += game->killCount;
+                game->achievements.totalBossKills += game->bossKillsThisRun;
+                if (game->gameTime > game->achievements.longestSurvival)
+                {
+                    game->achievements.longestSurvival = game->gameTime;
+                }
+                if (game->player.level > game->achievements.highestLevel)
+                {
+                    game->achievements.highestLevel = game->player.level;
+                }
+
+                // Achievement: Slayer (1000 total kills)
+                if (game->achievements.totalKills >= 1000)
+                {
+                    TryEarnAchievement(game, ACH_SLAYER);
+                }
+
+                // Achievement: Boss Slayer (5 total boss kills)
+                if (game->achievements.totalBossKills >= 5)
+                {
+                    TryEarnAchievement(game, ACH_BOSS_SLAYER);
+                }
+
+                // Achievement: Completionist (all characters unlocked)
+                bool allCharsUnlocked = true;
+                for (int i = 0; i < CHARACTER_COUNT; i++)
+                {
+                    if (!UnlocksHasCharacter(&game->unlocks, (CharacterType)i))
+                    {
+                        allCharsUnlocked = false;
+                        break;
+                    }
+                }
+                if (allCharsUnlocked)
+                {
+                    TryEarnAchievement(game, ACH_COMPLETIONIST);
+                }
+
+                AchievementSave(&game->achievements);
                 game->state = STATE_GAMEOVER;
             }
 
@@ -1135,6 +1277,7 @@ void GameUpdate(GameData *game, float dt)
                 {
                     PlayerEvolveWeapon(&game->player);
                     PlayGameSound(SOUND_LEVELUP);  // Extra fanfare for evolution
+                    TryEarnAchievement(game, ACH_FULLY_EVOLVED);
                 }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
@@ -1147,6 +1290,7 @@ void GameUpdate(GameData *game, float dt)
                 {
                     PlayerEvolveWeapon(&game->player);
                     PlayGameSound(SOUND_LEVELUP);
+                    TryEarnAchievement(game, ACH_FULLY_EVOLVED);
                 }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
@@ -1159,6 +1303,7 @@ void GameUpdate(GameData *game, float dt)
                 {
                     PlayerEvolveWeapon(&game->player);
                     PlayGameSound(SOUND_LEVELUP);
+                    TryEarnAchievement(game, ACH_FULLY_EVOLVED);
                 }
                 MusicResume();
                 game->timeScale = 1.0f;  // Restore normal speed
@@ -1199,15 +1344,22 @@ static void DrawSceneToTexture(GameData *game)
         switch (game->state)
         {
             case STATE_MENU:
+            {
                 DrawMenuStars();
-                DrawText("NEON VOID", SCREEN_WIDTH/2 - MeasureText("NEON VOID", 60)/2, 200, 60, NEON_CYAN);
-                DrawText(TextFormat("High Score: %d", game->highScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("High Score: %d", game->highScore), 24)/2, 280, 24, NEON_YELLOW);
-                DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 340, 20, NEON_PINK);
-                DrawText("Press L for Leaderboard", SCREEN_WIDTH/2 - MeasureText("Press L for Leaderboard", 20)/2, 380, 20, NEON_YELLOW);
-                DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 420, 20, NEON_CYAN);
+                DrawText("NEON VOID", SCREEN_WIDTH/2 - MeasureText("NEON VOID", 60)/2, 180, 60, NEON_CYAN);
+                DrawText(TextFormat("High Score: %d", game->highScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("High Score: %d", game->highScore), 24)/2, 260, 24, NEON_YELLOW);
+                DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 320, 20, NEON_PINK);
+                DrawText("Press L for Leaderboard", SCREEN_WIDTH/2 - MeasureText("Press L for Leaderboard", 20)/2, 355, 20, NEON_YELLOW);
+                DrawText("Press A for Achievements", SCREEN_WIDTH/2 - MeasureText("Press A for Achievements", 20)/2, 390, 20, NEON_GREEN);
+                DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 425, 20, NEON_CYAN);
                 DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 460, 20, GRAY);
-                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 530, 16, (Color){ 100, 100, 100, 255 });
+                // Achievement progress
+                int earnedCount = AchievementGetEarnedCount(&game->achievements);
+                const char *achText = TextFormat("Achievements: %d/%d", earnedCount, ACHIEVEMENT_COUNT);
+                DrawText(achText, SCREEN_WIDTH/2 - MeasureText(achText, 16)/2, 505, 16, (Color){ 150, 150, 150, 255 });
+                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 540, 16, (Color){ 100, 100, 100, 255 });
                 break;
+            }
 
             case STATE_LEADERBOARD:
             {
@@ -1262,6 +1414,69 @@ static void DrawSceneToTexture(GameData *game)
             case STATE_SETTINGS:
                 DrawSettingsMenu(game);
                 break;
+
+            case STATE_ACHIEVEMENTS:
+            {
+                DrawMenuStars();
+                DrawText("ACHIEVEMENTS", SCREEN_WIDTH/2 - MeasureText("ACHIEVEMENTS", 50)/2, 40, 50, NEON_CYAN);
+
+                // Show earned count
+                int earnedCount = AchievementGetEarnedCount(&game->achievements);
+                const char *progressText = TextFormat("%d / %d Unlocked", earnedCount, ACHIEVEMENT_COUNT);
+                DrawText(progressText, SCREEN_WIDTH/2 - MeasureText(progressText, 20)/2, 100, 20, NEON_GREEN);
+
+                // Draw achievement list
+                int startY = 140;
+                int itemHeight = 45;
+                int boxWidth = 700;
+                int boxX = (SCREEN_WIDTH - boxWidth) / 2;
+
+                for (int i = 0; i < ACHIEVEMENT_COUNT; i++)
+                {
+                    int y = startY + i * itemHeight;
+                    AchievementDef def = GetAchievementDef((AchievementType)i);
+                    bool isEarned = AchievementIsEarned(&game->achievements, (AchievementType)i);
+                    bool isSelected = (i == game->achievementSelection);
+
+                    // Box background
+                    Color bgColor = isSelected ? (Color){ 50, 40, 70, 230 } : (Color){ 30, 25, 45, 200 };
+                    if (isEarned) bgColor = isSelected ? (Color){ 40, 60, 40, 230 } : (Color){ 25, 45, 25, 200 };
+                    DrawRectangle(boxX, y, boxWidth, itemHeight - 5, bgColor);
+
+                    // Selection indicator
+                    if (isSelected)
+                    {
+                        DrawRectangleLinesEx((Rectangle){ (float)boxX, (float)y, (float)boxWidth, (float)(itemHeight - 5) }, 2.0f, NEON_CYAN);
+                    }
+
+                    // Trophy icon (earned = gold, unearned = gray)
+                    Color trophyColor = isEarned ? NEON_YELLOW : (Color){ 60, 60, 60, 255 };
+                    DrawCircle(boxX + 25, y + 20, 12, trophyColor);
+                    if (isEarned)
+                    {
+                        DrawText("*", boxX + 19, y + 8, 24, VOID_BLACK);
+                    }
+                    else
+                    {
+                        DrawText("?", boxX + 19, y + 10, 20, (Color){ 40, 40, 40, 255 });
+                    }
+
+                    // Achievement name and description
+                    Color nameColor = isEarned ? NEON_GREEN : (Color){ 120, 120, 120, 255 };
+                    Color descColor = isEarned ? (Color){ 180, 180, 180, 255 } : (Color){ 80, 80, 80, 255 };
+                    DrawText(def.name, boxX + 50, y + 6, 20, nameColor);
+                    DrawText(def.description, boxX + 50, y + 26, 14, descColor);
+
+                    // Checkmark for earned
+                    if (isEarned)
+                    {
+                        DrawText("EARNED", boxX + boxWidth - 80, y + 12, 18, NEON_GREEN);
+                    }
+                }
+
+                DrawText("W/S or Up/Down: Navigate - ESC or ENTER: Back", SCREEN_WIDTH/2 - MeasureText("W/S or Up/Down: Navigate - ESC or ENTER: Back", 16)/2, SCREEN_HEIGHT - 40, 16, GRAY);
+                break;
+            }
 
             case STATE_CHARACTER_SELECT:
             {
@@ -1394,6 +1609,40 @@ static void DrawSceneToTexture(GameData *game)
                 EndMode2D();
                 DrawHUD(game);
                 DrawTutorial(game);
+
+                // Achievement notification popup
+                if (game->achievementDisplayTimer > 0.0f && game->pendingAchievement >= 0)
+                {
+                    AchievementDef def = GetAchievementDef(game->pendingAchievement);
+
+                    // Slide in from top
+                    float slideProgress = 1.0f;
+                    if (game->achievementDisplayTimer > 2.5f)
+                    {
+                        slideProgress = (3.0f - game->achievementDisplayTimer) / 0.5f;  // Slide in
+                    }
+                    else if (game->achievementDisplayTimer < 0.5f)
+                    {
+                        slideProgress = game->achievementDisplayTimer / 0.5f;  // Slide out
+                    }
+
+                    int popupWidth = 350;
+                    int popupHeight = 70;
+                    int popupX = SCREEN_WIDTH / 2 - popupWidth / 2;
+                    int popupY = (int)(-popupHeight + (popupHeight + 20) * slideProgress);
+
+                    // Draw popup background
+                    DrawRectangle(popupX, popupY, popupWidth, popupHeight, (Color){ 30, 50, 30, 230 });
+                    DrawRectangleLinesEx((Rectangle){ (float)popupX, (float)popupY, (float)popupWidth, (float)popupHeight }, 3.0f, NEON_GREEN);
+
+                    // Trophy icon
+                    DrawCircle(popupX + 35, popupY + 35, 20, NEON_YELLOW);
+                    DrawText("*", popupX + 27, popupY + 18, 30, VOID_BLACK);
+
+                    // Achievement text
+                    DrawText("ACHIEVEMENT UNLOCKED!", popupX + 65, popupY + 10, 16, NEON_GREEN);
+                    DrawText(def.name, popupX + 65, popupY + 32, 22, NEON_WHITE);
+                }
                 break;
 
             case STATE_PAUSED:
