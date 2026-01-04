@@ -135,6 +135,12 @@ void EnemyApplySlow(Enemy *enemy, float amount, float duration)
 {
     if (!enemy || !enemy->active) return;
 
+    // Validate inputs
+    if (amount <= 0.0f || duration <= 0.0f) return;
+
+    // Clamp slow amount to valid range (0.0 - 1.0)
+    if (amount > 1.0f) amount = 1.0f;
+
     // Apply new slow if stronger or refresh existing
     if (amount >= enemy->slowAmount || enemy->slowTimer <= 0.0f)
     {
