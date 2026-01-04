@@ -68,7 +68,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] Elite enemies (larger, special attacks)
 - [x] Boss every 5 minutes
 - [x] Permanent unlocks (new starting weapons, characters)
-- [ ] Leaderboard (local high scores)
+- [x] Leaderboard (local high scores)
 
 ### Phase 4: Polish (Week 5)
 - [x] Main menu with neon animations
@@ -631,6 +631,16 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
   - **Special Upgrades** (6): Double Tap, Vampirism, Explosive Shots, Ricochet, Heat Seeker (Homing), Time Warp (Slow Aura)
 - **Added rarity system**: Common (white), Uncommon (green), Rare (yellow) with color-coded UI
 - **Implemented new mechanics**: Armor (damage reduction), HP regen, lifesteal, critical hits, dash damage, enemy slow aura
+
+---
+
+### 2026-01-05 — Leaderboard System
+- **Added top 10 leaderboard** replacing simple high score
+- **Entry data**: Score, level reached, kills, survival time, date
+- **Leaderboard screen**: Accessible via L from menu or game over
+- **Auto-save**: Adds entry on game over with rank feedback
+- **Persistence**: Binary file save/load (leaderboard.dat)
+- **Tests updated**: 139 tests passing (9 new leaderboard tests)
 
 ---
 

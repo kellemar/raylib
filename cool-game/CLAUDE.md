@@ -374,6 +374,39 @@ float UnlocksGetMagnetBonus(UnlockData *unlocks);
 - [x] Phase 15: Elite Enemies (complete)
 - [x] Phase 16: Boss Enemy System (complete)
 - [x] Phase 17: Permanent Unlocks (complete)
+- [x] Phase 18: Leaderboard System (complete)
+
+## LEADERBOARD SYSTEM
+
+Top 10 high scores saved to `leaderboard.dat`.
+
+### Leaderboard Entry Data
+| Field | Description |
+|-------|-------------|
+| score | Final score achieved |
+| level | Level reached |
+| kills | Enemies killed |
+| survivalTime | Time survived (seconds) |
+| day/month/year | Date played |
+
+### Key Functions
+```c
+void LeaderboardInit(Leaderboard *lb);
+void LeaderboardLoad(Leaderboard *lb);
+void LeaderboardSave(Leaderboard *lb);
+int LeaderboardAddEntry(Leaderboard *lb, int score, int level, int kills, float survivalTime);
+bool LeaderboardIsHighScore(Leaderboard *lb, int score);
+int LeaderboardGetMinScore(Leaderboard *lb);
+LeaderboardEntry* LeaderboardGetEntry(Leaderboard *lb, int position);
+int LeaderboardGetHighScore(Leaderboard *lb);
+
+#define LEADERBOARD_MAX_ENTRIES 10
+```
+
+### Accessing the Leaderboard
+- **From Menu**: Press L
+- **From Game Over**: Press L
+- **Returns to**: Menu (press ESC or ENTER)
 
 ## TESTING WITH PEEKABOO
 

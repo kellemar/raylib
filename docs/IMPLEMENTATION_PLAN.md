@@ -1657,7 +1657,8 @@ make         # MUST PASS - zero warnings
 | 15 | Elite Enemies | 1 | 1 ✓ |
 | 16 | Boss Enemy System | 1 | 1 ✓ |
 | 17 | Permanent Unlocks | 1 | 1 ✓ |
-| **Total** | | **97** | **97** |
+| 18 | Leaderboard System | 1 | 1 ✓ |
+| **Total** | | **98** | **98** |
 
 ### Estimated Time
 
@@ -2029,4 +2030,27 @@ Added persistent meta-progression system with save/load:
 
 ---
 
-*Last updated: 2026-01-05 — Permanent Unlocks added (97/97 tasks, 100%)*
+### 2026-01-05 — Leaderboard System
+
+Added top 10 high score leaderboard:
+
+| Feature | Implementation |
+|---------|----------------|
+| Entry data | Score, level, kills, survival time, date |
+| Leaderboard screen | Dedicated view with column headers |
+| Access points | L from menu, L from game over |
+| Rank feedback | "NEW HIGH SCORE! Rank #X" on game over if placed |
+| Persistence | Binary file (leaderboard.dat) |
+| Sorting | Descending by score with displacement |
+
+**Key code changes:**
+- `leaderboard.h`: New file - LeaderboardEntry struct, Leaderboard struct (max 10)
+- `leaderboard.c`: New file - Init, Load, Save, AddEntry, IsHighScore, GetMinScore
+- `game.h`: Added STATE_LEADERBOARD, Leaderboard and leaderboardPosition to GameData
+- `game.c`: Leaderboard screen drawing, L key handling in menu and game over
+
+**Tests updated:** 139 tests passing (added 9 leaderboard tests)
+
+---
+
+*Last updated: 2026-01-05 — Leaderboard System added (98/98 tasks, 100%)*
