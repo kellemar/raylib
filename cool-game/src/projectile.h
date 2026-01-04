@@ -5,6 +5,9 @@
 #include "types.h"
 #include <stdbool.h>
 
+// Forward declaration to avoid circular includes
+struct EnemyPool;
+
 // Projectile behavior types
 typedef enum ProjectileBehavior {
     PROJ_BEHAVIOR_LINEAR,       // Standard straight-line movement
@@ -51,7 +54,7 @@ typedef struct ProjectilePool {
 } ProjectilePool;
 
 void ProjectilePoolInit(ProjectilePool *pool);
-void ProjectilePoolUpdate(ProjectilePool *pool, float dt, Vector2 *nearestEnemyPos);
+void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies);
 void ProjectilePoolDraw(ProjectilePool *pool);
 Projectile* ProjectileSpawn(ProjectilePool *pool, Vector2 pos, Vector2 vel, float damage, float radius, float lifetime);
 

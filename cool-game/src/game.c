@@ -833,10 +833,8 @@ void GameUpdate(GameData *game, float dt)
             if (game->scoreMultiplier > MULTIPLIER_MAX) game->scoreMultiplier = MULTIPLIER_MAX;
 
             PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
-            // Find nearest enemy for homing missiles
-            Enemy *nearestEnemy = EnemyFindNearest(&game->enemies, game->player.pos, 1000.0f);
-            Vector2 *nearestEnemyPos = nearestEnemy ? &nearestEnemy->pos : NULL;
-            ProjectilePoolUpdate(&game->projectiles, scaledDt, nearestEnemyPos);
+            // Pass enemy pool so each homing projectile can find its own target
+            ProjectilePoolUpdate(&game->projectiles, scaledDt, &game->enemies);
             EnemyPoolUpdate(&game->enemies, game->player.pos, scaledDt);
             XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
             ParticlePoolUpdate(&game->particles, scaledDt);

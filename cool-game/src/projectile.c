@@ -1,7 +1,11 @@
 #include "projectile.h"
+#include "enemy.h"
 #include "raymath.h"
 #include <stddef.h>
 #include <math.h>
+
+// Maximum distance for homing projectiles to acquire targets
+#define HOMING_MAX_RANGE 500.0f
 
 void ProjectilePoolInit(ProjectilePool *pool)
 {
@@ -81,7 +85,7 @@ Projectile* ProjectileSpawnEx(ProjectilePool *pool, ProjectileSpawnParams *param
     return NULL;
 }
 
-void ProjectilePoolUpdate(ProjectilePool *pool, float dt, Vector2 *nearestEnemyPos)
+void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enemies)
 {
     for (int i = 0; i < MAX_PROJECTILES; i++)
     {
@@ -98,10 +102,16 @@ void ProjectilePoolUpdate(ProjectilePool *pool, float dt, Vector2 *nearestEnemyP
 
             case PROJ_BEHAVIOR_HOMING:
             {
-                // Move toward nearest enemy if available
-                if (nearestEnemyPos != NULL)
+                // Each projectile finds its own nearest enemy
+                Enemy *target = NULL;
+                if (enemies != NULL)
                 {
-                    Vector2 toTarget = Vector2Subtract(*nearestEnemyPos, p->pos);
+                    target = EnemyFindNearest(enemies, p->pos, HOMING_MAX_RANGE);
+                }
+
+                if (target != NULL)
+                {
+                    Vector2 toTarget = Vector2Subtract(target->pos, p->pos);
                     float dist = Vector2Length(toTarget);
                     if (dist > 1.0f)
                     {
