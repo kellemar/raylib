@@ -66,6 +66,11 @@ void PlayerInitWithCharacter(Player *player, CharacterType type)
     player->characterType = type;
     player->primaryColor = def.primaryColor;
     player->secondaryColor = def.secondaryColor;
+
+    // Squash/stretch effect
+    player->squashScale = 1.0f;
+    player->stretchScale = 1.0f;
+    player->prevVel = (Vector2){ 0.0f, 0.0f };
 }
 
 void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
@@ -174,6 +179,47 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2
     player->vel = Vector2Scale(input, player->speed);
     player->pos = Vector2Add(player->pos, Vector2Scale(player->vel, dt));
 
+    // Squash/stretch effect: calculate based on velocity magnitude and direction change
+    float velMag = Vector2Length(player->vel);
+    float prevVelMag = Vector2Length(player->prevVel);
+
+    // Direction change detection (dot product of normalized velocities)
+    float dirChange = 0.0f;
+    if (velMag > 10.0f && prevVelMag > 10.0f)
+    {
+        Vector2 velNorm = Vector2Scale(player->vel, 1.0f / velMag);
+        Vector2 prevNorm = Vector2Scale(player->prevVel, 1.0f / prevVelMag);
+        dirChange = 1.0f - Vector2DotProduct(velNorm, prevNorm);  // 0 = same dir, 2 = opposite
+    }
+
+    // Target squash: more squash when moving fast or changing direction
+    float targetSquash = 1.0f;
+    float targetStretch = 1.0f;
+
+    if (velMag > 50.0f)
+    {
+        // Squash based on speed (up to 15% squash at max speed)
+        float speedFactor = fminf(velMag / player->speed, 1.0f);
+        targetSquash = 1.0f + speedFactor * 0.15f;   // Wider when moving
+        targetStretch = 1.0f - speedFactor * 0.10f;  // Shorter when moving
+    }
+
+    // Additional squash on direction change
+    if (dirChange > 0.3f)
+    {
+        float changeFactor = fminf(dirChange, 1.0f);
+        targetSquash += changeFactor * 0.2f;   // Extra squash on turn
+        targetStretch -= changeFactor * 0.15f;
+    }
+
+    // Smoothly interpolate toward target (spring-like behavior)
+    float lerpSpeed = 12.0f * dt;
+    player->squashScale += (targetSquash - player->squashScale) * lerpSpeed;
+    player->stretchScale += (targetStretch - player->stretchScale) * lerpSpeed;
+
+    // Store velocity for next frame
+    player->prevVel = player->vel;
+
     // Update trail positions (subtle effect)
     player->trailUpdateTimer += dt;
     float trailInterval = 0.04f;
@@ -254,16 +300,43 @@ void PlayerDraw(Player *player)
 
     if (visible)
     {
-        // Draw with character colors
-        DrawCircleV(player->pos, player->radius, player->primaryColor);
+        // Calculate ellipse radii based on squash/stretch
+        // Squash in the direction of movement (stretch perpendicular)
+        float baseRadius = player->radius;
+        float radiusX = baseRadius;
+        float radiusY = baseRadius;
+
+        float velLen = Vector2Length(player->vel);
+        if (velLen > 50.0f)
+        {
+            // Determine primary movement axis
+            float absVelX = fabsf(player->vel.x);
+            float absVelY = fabsf(player->vel.y);
+
+            if (absVelX > absVelY)
+            {
+                // Moving mostly horizontal: stretch X, squash Y
+                radiusX = baseRadius * player->squashScale;
+                radiusY = baseRadius * player->stretchScale;
+            }
+            else
+            {
+                // Moving mostly vertical: stretch Y, squash X
+                radiusX = baseRadius * player->stretchScale;
+                radiusY = baseRadius * player->squashScale;
+            }
+        }
+
+        // Draw with character colors using ellipses
+        DrawEllipse((int)player->pos.x, (int)player->pos.y, radiusX, radiusY, player->primaryColor);
         Color innerColor = (Color){
             (unsigned char)(player->primaryColor.r * 0.6f + 100),
             (unsigned char)(player->primaryColor.g * 0.6f + 100),
             (unsigned char)(player->primaryColor.b * 0.6f + 100),
             200
         };
-        DrawCircleV(player->pos, player->radius * 0.6f, innerColor);
-        DrawCircleV(player->pos, player->radius * 0.3f, NEON_WHITE);
+        DrawEllipse((int)player->pos.x, (int)player->pos.y, radiusX * 0.6f, radiusY * 0.6f, innerColor);
+        DrawEllipse((int)player->pos.x, (int)player->pos.y, radiusX * 0.3f, radiusY * 0.3f, NEON_WHITE);
 
         Vector2 aimEnd = Vector2Add(player->pos, Vector2Scale(player->aimDir, player->radius + 12.0f));
         DrawLineEx(player->pos, aimEnd, 3.0f, player->secondaryColor);

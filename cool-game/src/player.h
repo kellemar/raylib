@@ -47,6 +47,10 @@ typedef struct Player {
     CharacterType characterType;
     Color primaryColor;
     Color secondaryColor;
+    // Squash/stretch effect
+    float squashScale;         // Current horizontal scale (1.0 = normal)
+    float stretchScale;        // Current vertical scale (1.0 = normal)
+    Vector2 prevVel;           // Previous frame velocity for direction change detection
 } Player;
 
 void PlayerInit(Player *player);
