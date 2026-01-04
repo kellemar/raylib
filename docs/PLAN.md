@@ -63,7 +63,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 
 ### Phase 3: Depth (Week 4)
 - [x] 8 weapon types (see Weapons section)
-- [ ] 20+ upgrades (damage, speed, multishot, pierce, etc.)
+- [x] 20+ upgrades (damage, speed, multishot, pierce, etc.)
 - [ ] Weapon evolution system (combine 2 maxed weapons → ultimate)
 - [ ] Elite enemies (larger, special attacks)
 - [ ] Boss every 5 minutes
@@ -602,6 +602,16 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Fixed: Multi-shot spread pattern** — `projectileCount` upgrade was being applied but `WeaponFire()` only spawned a single projectile. Now spawns multiple projectiles in a spread pattern when `projectileCount > 1`, making the Multi Shot upgrade functional.
 - **Fixed: Enemy spawn position bounds** — Enemies were incorrectly clamped to `SCREEN_WIDTH/HEIGHT` bounds, which limited spawning to a fixed region. Since the camera follows the player into infinite world space, this was incorrect. Enemies now spawn in a ring around the player regardless of world position.
 - **Fixed: High score file read validation** — `fread()` return value was ignored in `LoadHighScore()`, which could result in garbage data on read failure. Now properly validates the return value and defaults to 0 on failure.
+
+---
+
+### 2026-01-05 — 22 Upgrade System
+- **Expanded upgrade system from 6 to 22 types** organized into three categories:
+  - **Weapon Upgrades** (8): Damage, Fire Rate, Multi Shot, Piercing, Long Range, Big Bullets, Quick Draw, Critical Eye
+  - **Player Upgrades** (8): Swift Feet, Vitality, Magnetism, Tough Skin, Regeneration, Dash Strike, Wisdom (XP), Force Push (Knockback)
+  - **Special Upgrades** (6): Double Tap, Vampirism, Explosive Shots, Ricochet, Heat Seeker (Homing), Time Warp (Slow Aura)
+- **Added rarity system**: Common (white), Uncommon (green), Rare (yellow) with color-coded UI
+- **Implemented new mechanics**: Armor (damage reduction), HP regen, lifesteal, critical hits, dash damage, enemy slow aura
 
 ---
 

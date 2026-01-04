@@ -1652,7 +1652,8 @@ make         # MUST PASS - zero warnings
 | 10 | Final Polish | 5 | 5 ✓ |
 | 11 | Quick Wins (Game Feel) | 4 | 4 ✓ |
 | 12 | Post-Review Bug Fixes | 3 | 3 ✓ |
-| **Total** | | **92** | **91** |
+| 13 | 22 Upgrade System | 1 | 1 ✓ |
+| **Total** | | **93** | **92** |
 
 ### Estimated Time
 
@@ -1898,4 +1899,26 @@ Following comprehensive code review, the following issues were identified and fi
 
 ---
 
-*Last updated: 2026-01-04 — Chromatic aberration added (91/92 tasks, 98.9%)*
+### 2026-01-05 — 22 Upgrade System
+
+Expanded the upgrade system from 6 to 22 types with rarity tiers:
+
+| Category | Upgrades Added |
+|----------|----------------|
+| Weapon | Pierce, Range, Proj Size, Cooldown, Crit Chance |
+| Player | Armor, Regen, Dash Damage, XP Boost, Knockback |
+| Special | Double Shot, Vampirism, Explosive, Ricochet, Homing Boost, Slow Aura |
+
+**New mechanics implemented:**
+- Armor: Flat damage reduction (min 1 damage)
+- Regen: HP per second with timer accumulator
+- Vampirism: Lifesteal on hit
+- Critical hits: Chance for 2x damage with visual feedback
+- Dash damage: Deal damage to enemies while dashing
+- Slow aura: Slow nearby enemies around player
+
+**Tests updated:** 97 tests passing (added 11 new upgrade tests)
+
+---
+
+*Last updated: 2026-01-05 — 22 Upgrade System added (92/92 tasks, 100%)*

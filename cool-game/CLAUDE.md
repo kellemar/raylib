@@ -16,7 +16,7 @@ cool-game/
 │   ├── enemy.h/c       # Enemy pool, AI, spawning
 │   ├── particle.h/c    # Particle effects (explosions, hit sparks)
 │   ├── xp.h/c          # XP crystals, magnet collection
-│   ├── upgrade.h/c     # Upgrade definitions and application
+│   ├── upgrade.h/c     # 22 upgrade types with rarity system
 │   └── ui.h/c          # HUD rendering (health, XP, score, etc)
 ├── tests/
 │   ├── minunit.h       # Lightweight test framework
@@ -156,6 +156,47 @@ When modifying camera or adding camera-dependent features:
 | STATE_LEVELUP | XP threshold | 1/2/3 | Upgrade selection |
 | STATE_GAMEOVER | Player death | ENTER | Final score display |
 
+## UPGRADE SYSTEM (22 Types)
+
+### Weapon Upgrades (8)
+| Type | Name | Effect | Rarity |
+|------|------|--------|--------|
+| UPGRADE_DAMAGE | Power Up | +25% Damage | Common |
+| UPGRADE_FIRE_RATE | Rapid Fire | +20% Fire Rate | Common |
+| UPGRADE_PROJECTILE_COUNT | Multi Shot | +1 Projectile | Uncommon |
+| UPGRADE_PIERCE | Piercing | Shots pierce enemies | Uncommon |
+| UPGRADE_RANGE | Long Range | +30% Projectile Range | Common |
+| UPGRADE_PROJ_SIZE | Big Bullets | +25% Projectile Size | Common |
+| UPGRADE_COOLDOWN | Quick Draw | -15% Weapon Cooldown | Common |
+| UPGRADE_CRIT_CHANCE | Critical Eye | +10% Crit Chance | Uncommon |
+
+### Player Upgrades (8)
+| Type | Name | Effect | Rarity |
+|------|------|--------|--------|
+| UPGRADE_SPEED | Swift Feet | +10% Move Speed | Common |
+| UPGRADE_MAX_HEALTH | Vitality | +20 Max HP | Common |
+| UPGRADE_MAGNET | Magnetism | +50% Pickup Range | Common |
+| UPGRADE_ARMOR | Tough Skin | +5 Armor | Common |
+| UPGRADE_REGEN | Regeneration | +1 HP per second | Uncommon |
+| UPGRADE_DASH_DAMAGE | Dash Strike | Deal damage while dashing | Uncommon |
+| UPGRADE_XP_BOOST | Wisdom | +25% XP Gain | Common |
+| UPGRADE_KNOCKBACK | Force Push | +50% Knockback | Common |
+
+### Special Upgrades (6)
+| Type | Name | Effect | Rarity |
+|------|------|--------|--------|
+| UPGRADE_DOUBLE_SHOT | Double Tap | Fire twice per shot | Rare |
+| UPGRADE_VAMPIRISM | Vampirism | 1% Lifesteal on hit | Rare |
+| UPGRADE_EXPLOSIVE | Explosive Shots | Shots explode on hit | Rare |
+| UPGRADE_RICOCHET | Ricochet | Shots bounce once | Rare |
+| UPGRADE_HOMING_BOOST | Heat Seeker | +100% Homing Strength | Uncommon |
+| UPGRADE_SLOW_AURA | Time Warp | Slow nearby enemies | Rare |
+
+### Rarity Colors
+- **Common**: White border
+- **Uncommon**: Green border
+- **Rare**: Yellow/Gold border
+
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
 - [x] Phase 1: Player System (complete)
@@ -168,6 +209,7 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 8: Visual Polish (complete)
 - [x] Phase 9: Menus & Polish (complete)
 - [x] Phase 10: Final Polish (complete)
+- [x] Phase 13: 22 Upgrade System (complete)
 
 ## TESTING WITH PEEKABOO
 
