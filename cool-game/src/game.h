@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "raylib.h"
+#include "player.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -17,6 +18,7 @@ typedef struct GameData {
     float gameTime;
     int score;
     bool isPaused;
+    Player player;
 } GameData;
 
 void GameInit(GameData *game);

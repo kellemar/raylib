@@ -7,6 +7,7 @@ void GameInit(GameData *game)
     game->gameTime = 0.0f;
     game->score = 0;
     game->isPaused = false;
+    PlayerInit(&game->player);
 }
 
 void GameUpdate(GameData *game, float dt)
@@ -19,13 +20,25 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_PLAYING;
                 game->gameTime = 0.0f;
                 game->score = 0;
+                PlayerInit(&game->player);
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
 
         case STATE_PLAYING:
             game->gameTime += dt;
+            PlayerUpdate(&game->player, dt);
+
+            if (!game->player.alive)
+            {
+                game->state = STATE_GAMEOVER;
+            }
+
             if (IsKeyPressed(KEY_ESCAPE)) game->state = STATE_PAUSED;
+
+#ifdef DEBUG
+            if (IsKeyPressed(KEY_P)) PlayerTakeDamage(&game->player, 10.0f);
+#endif
             break;
 
         case STATE_PAUSED:
@@ -55,9 +68,11 @@ void GameDraw(GameData *game)
 
         case STATE_PLAYING:
             ClearBackground(VOID_BLACK);
+            PlayerDraw(&game->player);
             DrawText(TextFormat("TIME: %.1f", game->gameTime), 10, 10, 20, NEON_WHITE);
             DrawText(TextFormat("SCORE: %d", game->score), 10, 40, 20, NEON_YELLOW);
-            DrawText("STATE: PLAYING", 10, SCREEN_HEIGHT - 30, 20, NEON_GREEN);
+            DrawText(TextFormat("LEVEL: %d", game->player.level), 10, 70, 20, NEON_CYAN);
+            DrawText(TextFormat("HP: %.0f/%.0f", game->player.health, game->player.maxHealth), 10, 100, 20, NEON_GREEN);
             break;
 
         case STATE_PAUSED:

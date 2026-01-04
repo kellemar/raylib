@@ -9,7 +9,7 @@ cool-game/
 │   ├── main.c          # Entry point, game loop
 │   ├── game.h/c        # Game state machine, core loop
 │   ├── types.h         # Constants, colors, pool sizes
-│   ├── player.h/c      # Player entity (TODO)
+│   ├── player.h/c      # Player entity, movement, aiming, health
 │   ├── enemy.h/c       # Enemy pool and AI (TODO)
 │   ├── projectile.h/c  # Projectile pool (TODO)
 │   ├── weapon.h/c      # Weapon definitions (TODO)
@@ -67,7 +67,7 @@ make clean      # Remove build artifacts
 
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
-- [ ] Phase 1: Player System
+- [x] Phase 1: Player System (complete)
 - [ ] Phase 2: Weapons & Projectiles
 - [ ] Phase 3: Enemies
 - [ ] Phase 4: XP & Leveling
