@@ -432,9 +432,9 @@
   6. Declare: `void ProjectilePoolDraw(ProjectilePool *pool)`
   7. Declare: `Projectile* ProjectileSpawn(ProjectilePool *pool, Vector2 pos, Vector2 vel, float damage, float radius)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Header has proper include guard
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Header has proper include guard
+- **Status**: `[x]`
 
 #### P2.1.2 — Create projectile.c with pool management
 - **Description**: Implement projectile pool logic
@@ -450,9 +450,9 @@
      - Return pointer to projectile
   4. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] No linker errors
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] No linker errors
+- **Status**: `[x]`
 
 #### P2.1.3 — Implement projectile update logic
 - **Description**: Move projectiles and handle lifetime
@@ -466,10 +466,10 @@
      - If lifetime <= 0, set active = false, decrement count
      - If pos is far outside screen bounds, deactivate
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Projectiles move (verify with debug output)
-  - [ ] Projectiles deactivate after lifetime expires
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Projectiles move (verify with debug output)
+  - [x] Projectiles deactivate after lifetime expires
+- **Status**: `[x]`
 
 #### P2.1.4 — Implement projectile rendering
 - **Description**: Draw active projectiles
@@ -481,9 +481,9 @@
      - Draw filled circle at pos with radius
      - Use bright color (NEON_PINK or YELLOW)
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Projectiles are visible when spawned
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Projectiles are visible when spawned
+- **Status**: `[x]`
 
 #### P2.1.5 — Integrate projectiles into game
 - **Description**: Add ProjectilePool to game loop
@@ -494,10 +494,10 @@
   3. Call `ProjectilePoolUpdate()` in GameUpdate()
   4. Call `ProjectilePoolDraw()` in GameDraw() (before player)
 - **Verification**:
-  - [ ] `make` compiles and runs
-  - [ ] No crashes
-  - [ ] Can test spawn with temporary keypress code
-- **Status**: `[ ]`
+  - [x] `make` compiles and runs
+  - [x] No crashes
+  - [x] Can test spawn with temporary keypress code
+- **Status**: `[x]`
 
 ---
 
@@ -524,8 +524,8 @@
   6. Declare: `bool WeaponCanFire(Weapon *weapon)`
   7. Declare: `void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P2.2.2 — Create weapon.c with pulse cannon stats
 - **Description**: Implement weapon initialization
@@ -545,8 +545,8 @@
   4. Implement `WeaponCanFire()`: return cooldown <= 0
   5. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P2.2.3 — Implement weapon firing
 - **Description**: Spawn projectiles when firing
@@ -558,9 +558,9 @@
      - Call ProjectileSpawn() with weapon stats
      - Set cooldown = 1.0 / fireRate
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Manual test: call WeaponFire() and verify projectile spawns
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Manual test: call WeaponFire() and verify projectile spawns
+- **Status**: `[x]`
 
 #### P2.2.4 — Add weapon to player
 - **Description**: Integrate weapon into player struct
@@ -570,9 +570,9 @@
   2. In `PlayerInit()`: call `WeaponInit(&player->weapon, WEAPON_PULSE_CANNON)`
   3. In `PlayerUpdate()`: call `WeaponUpdate(&player->weapon, dt)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Player has initialized weapon
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Player has initialized weapon
+- **Status**: `[x]`
 
 #### P2.2.5 — Implement auto-fire mechanic
 - **Description**: Weapon fires automatically toward aim direction
@@ -583,11 +583,11 @@
      - Call `WeaponFire(&player->weapon, projectiles, player->pos, player->aimDir)`
   3. Update function calls in game.c
 - **Verification**:
-  - [ ] `make run` — projectiles fire automatically toward mouse
-  - [ ] Fire rate matches weapon settings (~5/sec)
-  - [ ] Projectiles travel in correct direction
-  - [ ] Projectiles disappear after lifetime
-- **Status**: `[ ]`
+  - [x] `make run` — projectiles fire automatically toward mouse
+  - [x] Fire rate matches weapon settings (~5/sec)
+  - [x] Projectiles travel in correct direction
+  - [x] Projectiles disappear after lifetime
+- **Status**: `[x]`
 
 ---
 
@@ -1504,7 +1504,7 @@
 |-------|-------------|-------|------|
 | 0 | Project Setup | 9 | 8 ✓ |
 | 1 | Player System | 14 | 14 ✓ |
-| 2 | Weapons & Projectiles | 10 | 0 |
+| 2 | Weapons & Projectiles | 10 | 10 ✓ |
 | 3 | Enemies | 10 | 0 |
 | 4 | XP & Leveling | 10 | 0 |
 | 5 | Particles & Juice | 7 | 0 |
@@ -1513,7 +1513,7 @@
 | 8 | Visual Polish | 6 | 0 |
 | 9 | Menus & Polish | 4 | 0 |
 | 10 | Final Polish | 5 | 0 |
-| **Total** | | **84** | **22** |
+| **Total** | | **84** | **32** |
 
 ### Estimated Time
 
@@ -1555,6 +1555,16 @@ After completing each phase, verify:
 - [x] Death transitions to GAMEOVER state
 - [x] New game resets player properly
 
+### Phase 2 Verification ✓
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Projectiles fire automatically toward mouse/aim direction
+- [x] Fire rate matches weapon settings (~5/sec)
+- [x] Projectiles travel in correct direction (toward aim)
+- [x] Projectiles disappear after lifetime (2 seconds)
+- [x] Projectiles rendered as yellow circles
+- [x] New game resets projectile pool properly
+
 ---
 
 ## NOTES FOR ENGINEERS
@@ -1568,4 +1578,4 @@ After completing each phase, verify:
 
 ---
 
-*Last updated: 2026-01-04 — Phase 1 Complete (22/84 tasks, 26.2%)*
+*Last updated: 2026-01-04 — Phase 2 Complete (32/84 tasks, 38.1%)*
