@@ -132,3 +132,7 @@ tools/rexm/rexm
 # CI
 emsdk-cache/
 raylib.com/
+
+# Game binaries
+cool-game/neon_void
+cool-game/test_runner
