@@ -186,18 +186,17 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 Vector2 rotDir = Vector2Rotate(dir, angle);
                 Vector2 vel = Vector2Scale(rotDir, weapon->projectileSpeed);
 
-                ProjectileSpawnParams params = {
-                    .pos = pos,
-                    .vel = vel,
-                    .damage = weapon->damage,
-                    .radius = weapon->projectileRadius,
-                    .lifetime = weapon->projectileLifetime,
-                    .weaponType = weapon->type,
-                    .pierce = weapon->pierce,
-                    .behavior = PROJ_BEHAVIOR_LINEAR,
-                    .effects = PROJ_EFFECT_NONE,
-                    .color = projColor,
-                };
+                ProjectileSpawnParams params = { 0 };
+                params.pos = pos;
+                params.vel = vel;
+                params.damage = weapon->damage;
+                params.radius = weapon->projectileRadius;
+                params.lifetime = weapon->projectileLifetime;
+                params.weaponType = weapon->type;
+                params.pierce = weapon->pierce;
+                params.behavior = PROJ_BEHAVIOR_LINEAR;
+                params.effects = PROJ_EFFECT_NONE;
+                params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
             break;
@@ -213,19 +212,18 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 Vector2 rotDir = Vector2Rotate(dir, angle);
                 Vector2 vel = Vector2Scale(rotDir, weapon->projectileSpeed);
 
-                ProjectileSpawnParams params = {
-                    .pos = pos,
-                    .vel = vel,
-                    .damage = weapon->damage,
-                    .radius = weapon->projectileRadius,
-                    .lifetime = weapon->projectileLifetime,
-                    .weaponType = weapon->type,
-                    .pierce = false,
-                    .behavior = PROJ_BEHAVIOR_HOMING,
-                    .effects = PROJ_EFFECT_NONE,
-                    .homingStrength = 5.0f,  // Turn rate
-                    .color = projColor,
-                };
+                ProjectileSpawnParams params = { 0 };
+                params.pos = pos;
+                params.vel = vel;
+                params.damage = weapon->damage;
+                params.radius = weapon->projectileRadius;
+                params.lifetime = weapon->projectileLifetime;
+                params.weaponType = weapon->type;
+                params.pierce = false;
+                params.behavior = PROJ_BEHAVIOR_HOMING;
+                params.effects = PROJ_EFFECT_NONE;
+                params.homingStrength = 5.0f;
+                params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
             break;
@@ -235,19 +233,18 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
         {
             Vector2 vel = Vector2Scale(dir, weapon->projectileSpeed);
 
-            ProjectileSpawnParams params = {
-                .pos = pos,
-                .vel = vel,
-                .damage = weapon->damage,
-                .radius = weapon->projectileRadius,
-                .lifetime = weapon->projectileLifetime,
-                .weaponType = weapon->type,
-                .pierce = true,  // Lightning pierces
-                .behavior = PROJ_BEHAVIOR_LINEAR,
-                .effects = PROJ_EFFECT_CHAIN,
-                .chainCount = weapon->chainCount,
-                .color = projColor,
-            };
+            ProjectileSpawnParams params = { 0 };
+            params.pos = pos;
+            params.vel = vel;
+            params.damage = weapon->damage;
+            params.radius = weapon->projectileRadius;
+            params.lifetime = weapon->projectileLifetime;
+            params.weaponType = weapon->type;
+            params.pierce = true;
+            params.behavior = PROJ_BEHAVIOR_LINEAR;
+            params.effects = PROJ_EFFECT_CHAIN;
+            params.chainCount = weapon->chainCount;
+            params.color = projColor;
             ProjectileSpawnEx(pool, &params);
             break;
         }
@@ -258,25 +255,24 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
             {
                 float angle = weapon->orbitSpawnAngle + (i * 2.0f * PI / weapon->projectileCount);
 
-                ProjectileSpawnParams params = {
-                    .pos = pos,
-                    .vel = (Vector2){ 0, 0 },
-                    .damage = weapon->damage,
-                    .radius = weapon->projectileRadius,
-                    .lifetime = weapon->projectileLifetime,
-                    .weaponType = weapon->type,
-                    .pierce = true,
-                    .behavior = PROJ_BEHAVIOR_ORBIT,
-                    .effects = PROJ_EFFECT_NONE,
-                    .orbitAngle = angle,
-                    .orbitRadius = 60.0f,  // Distance from player
-                    .orbitSpeed = 3.0f,    // Radians per second
-                    .ownerPos = ownerPosPtr,
-                    .color = projColor,
-                };
+                ProjectileSpawnParams params = { 0 };
+                params.pos = pos;
+                params.vel = (Vector2){ 0, 0 };
+                params.damage = weapon->damage;
+                params.radius = weapon->projectileRadius;
+                params.lifetime = weapon->projectileLifetime;
+                params.weaponType = weapon->type;
+                params.pierce = true;
+                params.behavior = PROJ_BEHAVIOR_ORBIT;
+                params.effects = PROJ_EFFECT_NONE;
+                params.orbitAngle = angle;
+                params.orbitRadius = 60.0f;
+                params.orbitSpeed = 3.0f;
+                params.ownerPos = ownerPosPtr;
+                params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
-            weapon->orbitSpawnAngle += 0.5f;  // Offset next spawn
+            weapon->orbitSpawnAngle += 0.5f;
             break;
         }
 
@@ -291,18 +287,17 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 float speedVariation = weapon->projectileSpeed * (0.8f + (float)(rand() % 40) / 100.0f);
                 Vector2 vel = Vector2Scale(rotDir, speedVariation);
 
-                ProjectileSpawnParams params = {
-                    .pos = pos,
-                    .vel = vel,
-                    .damage = weapon->damage,
-                    .radius = weapon->projectileRadius * (0.7f + (float)(rand() % 60) / 100.0f),
-                    .lifetime = weapon->projectileLifetime,
-                    .weaponType = weapon->type,
-                    .pierce = false,
-                    .behavior = PROJ_BEHAVIOR_LINEAR,
-                    .effects = PROJ_EFFECT_DOT,
-                    .color = projColor,
-                };
+                ProjectileSpawnParams params = { 0 };
+                params.pos = pos;
+                params.vel = vel;
+                params.damage = weapon->damage;
+                params.radius = weapon->projectileRadius * (0.7f + (float)(rand() % 60) / 100.0f);
+                params.lifetime = weapon->projectileLifetime;
+                params.weaponType = weapon->type;
+                params.pierce = false;
+                params.behavior = PROJ_BEHAVIOR_LINEAR;
+                params.effects = PROJ_EFFECT_DOT;
+                params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
             break;
@@ -318,20 +313,19 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
                 Vector2 rotDir = Vector2Rotate(dir, angle);
                 Vector2 vel = Vector2Scale(rotDir, weapon->projectileSpeed);
 
-                ProjectileSpawnParams params = {
-                    .pos = pos,
-                    .vel = vel,
-                    .damage = weapon->damage,
-                    .radius = weapon->projectileRadius,
-                    .lifetime = weapon->projectileLifetime,
-                    .weaponType = weapon->type,
-                    .pierce = false,
-                    .behavior = PROJ_BEHAVIOR_LINEAR,
-                    .effects = PROJ_EFFECT_SLOW,
-                    .slowAmount = 0.5f,      // 50% slow
-                    .slowDuration = 2.0f,    // 2 seconds
-                    .color = projColor,
-                };
+                ProjectileSpawnParams params = { 0 };
+                params.pos = pos;
+                params.vel = vel;
+                params.damage = weapon->damage;
+                params.radius = weapon->projectileRadius;
+                params.lifetime = weapon->projectileLifetime;
+                params.weaponType = weapon->type;
+                params.pierce = false;
+                params.behavior = PROJ_BEHAVIOR_LINEAR;
+                params.effects = PROJ_EFFECT_SLOW;
+                params.slowAmount = 0.5f;
+                params.slowDuration = 2.0f;
+                params.color = projColor;
                 ProjectileSpawnEx(pool, &params);
             }
             break;
@@ -341,19 +335,18 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir, 
         {
             Vector2 vel = Vector2Scale(dir, weapon->projectileSpeed);
 
-            ProjectileSpawnParams params = {
-                .pos = pos,
-                .vel = vel,
-                .damage = weapon->damage,
-                .radius = weapon->projectileRadius,
-                .lifetime = weapon->projectileLifetime,
-                .weaponType = weapon->type,
-                .pierce = true,  // Black hole doesn't disappear on hit
-                .behavior = PROJ_BEHAVIOR_PULL,
-                .effects = PROJ_EFFECT_NONE,
-                .pullStrength = 200.0f,  // Pull force
-                .color = projColor,
-            };
+            ProjectileSpawnParams params = { 0 };
+            params.pos = pos;
+            params.vel = vel;
+            params.damage = weapon->damage;
+            params.radius = weapon->projectileRadius;
+            params.lifetime = weapon->projectileLifetime;
+            params.weaponType = weapon->type;
+            params.pierce = true;
+            params.behavior = PROJ_BEHAVIOR_PULL;
+            params.effects = PROJ_EFFECT_NONE;
+            params.pullStrength = 200.0f;
+            params.color = projColor;
             ProjectileSpawnEx(pool, &params);
             break;
         }
