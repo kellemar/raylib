@@ -56,8 +56,34 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
 
                 if (e->health <= 0.0f)
                 {
-                    XPSpawn(xp, e->pos, e->xpValue);
-                    SpawnExplosion(particles, e->pos, NEON_ORANGE, 15);
+                    Vector2 deathPos = e->pos;
+                    EnemyType deathType = e->type;
+                    int deathSplitCount = e->splitCount;
+                    float deathRadius = e->radius;
+                    float deathMaxHealth = e->maxHealth;
+
+                    if (deathType == ENEMY_SPLITTER && deathSplitCount > 0)
+                    {
+                        float childRadius = deathRadius * 0.7f;
+                        float childHealth = deathMaxHealth * 0.5f;
+                        int childSplitCount = deathSplitCount - 1;
+
+                        Vector2 offset1 = { -deathRadius, 0.0f };
+                        Vector2 offset2 = { deathRadius, 0.0f };
+                        Vector2 childPos1 = Vector2Add(deathPos, offset1);
+                        Vector2 childPos2 = Vector2Add(deathPos, offset2);
+
+                        EnemySpawnSplitterChild(enemies, childPos1, childSplitCount, childRadius, childHealth);
+                        EnemySpawnSplitterChild(enemies, childPos2, childSplitCount, childRadius, childHealth);
+
+                        SpawnExplosion(particles, deathPos, NEON_YELLOW, 10);
+                    }
+                    else
+                    {
+                        XPSpawn(xp, deathPos, e->xpValue);
+                        SpawnExplosion(particles, deathPos, NEON_ORANGE, 15);
+                    }
+
                     TriggerScreenShake(game, 3.0f, 0.15f);
                     e->active = false;
                     enemies->count--;
@@ -222,7 +248,8 @@ void GameUpdate(GameData *game, float dt)
             if (game->spawnTimer >= spawnInterval)
             {
                 Vector2 spawnPos = GetSpawnPosition(game->player.pos);
-                EnemySpawn(&game->enemies, ENEMY_CHASER, spawnPos);
+                EnemyType enemyType = (EnemyType)GetEnemyTypeForTime(game->gameTime);
+                EnemySpawn(&game->enemies, enemyType, spawnPos);
                 game->spawnTimer = 0.0f;
             }
 

@@ -1130,11 +1130,11 @@ make         # MUST PASS - zero warnings
      - Move in circle around player
      - Slowly decrease orbitDistance (spiral inward)
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Orbiter circles player when spawned
-  - [ ] Orbiter slowly closes in
-  - [ ] Orbiter can be killed
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Orbiter circles player when spawned
+  - [x] Orbiter slowly closes in
+  - [x] Orbiter can be killed
+- **Status**: `[x]`
 
 #### P6.1.2 — Add Orbiter to spawn system
 - **Description**: Orbiters spawn after 30 seconds
@@ -1147,10 +1147,10 @@ make         # MUST PASS - zero warnings
      - > 60s: 50/50
   3. Use in spawn system
 - **Verification**:
-  - [ ] `make run` — only Chasers before 30s
-  - [ ] Orbiters start appearing after 30s
-  - [ ] Mix of enemies mid-game
-- **Status**: `[ ]`
+  - [x] `make run` — only Chasers before 30s
+  - [x] Orbiters start appearing after 30s
+  - [x] Mix of enemies mid-game
+- **Status**: `[x]`
 
 ---
 
@@ -1165,10 +1165,10 @@ make         # MUST PASS - zero warnings
   3. Splitter stats: speed = 60, health = 80, radius = 20, xpValue = 3
   4. Implement Splitter AI: move toward player (like Chaser but slower)
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Splitter moves toward player
-  - [ ] Splitter is larger than Chaser
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Splitter moves toward player
+  - [x] Splitter is larger than Chaser
+- **Status**: `[x]`
 
 #### P6.2.2 — Implement split mechanic
 - **Description**: Spawn smaller enemies on death
@@ -1180,11 +1180,11 @@ make         # MUST PASS - zero warnings
        - New Splitters have: splitCount - 1, radius * 0.7, health * 0.5
      - If splitCount == 0: die normally (spawn XP)
 - **Verification**:
-  - [ ] `make run` — killing Splitter spawns 2 smaller ones
-  - [ ] Small Splitters spawn even smaller ones
-  - [ ] Eventually no more splits occur
-  - [ ] XP only from final kills
-- **Status**: `[ ]`
+  - [x] `make run` — killing Splitter spawns 2 smaller ones
+  - [x] Small Splitters spawn even smaller ones
+  - [x] Eventually no more splits occur
+  - [x] XP only from final kills
+- **Status**: `[x]`
 
 #### P6.2.3 — Add Splitter to spawn system
 - **Description**: Splitters spawn after 60 seconds
@@ -1194,9 +1194,9 @@ make         # MUST PASS - zero warnings
      - > 60s: include Splitter in rotation
      - > 90s: increase Splitter probability
 - **Verification**:
-  - [ ] `make run` — Splitters appear after 60s
-  - [ ] Game remains playable with Splitters
-- **Status**: `[ ]`
+  - [x] `make run` — Splitters appear after 60s
+  - [x] Game remains playable with Splitters
+- **Status**: `[x]`
 
 ---
 
@@ -1543,12 +1543,12 @@ make         # MUST PASS - zero warnings
 | 3 | Enemies | 10 | 10 ✓ |
 | 4 | XP & Leveling | 10 | 10 ✓ |
 | 5 | Particles & Juice | 7 | 7 ✓ |
-| 6 | Additional Enemies | 5 | 0 |
+| 6 | Additional Enemies | 5 | 5 ✓ |
 | 7 | Audio | 4 | 0 |
 | 8 | Visual Polish | 6 | 0 |
 | 9 | Menus & Polish | 4 | 0 |
 | 10 | Final Polish | 5 | 0 |
-| **Total** | | **84** | **59** |
+| **Total** | | **84** | **64** |
 
 ### Estimated Time
 
@@ -1653,6 +1653,23 @@ After completing each phase, verify:
 - [x] HUD has semi-transparent background for readability
 - [x] All game states (PLAYING, PAUSED, LEVELUP) use camera
 
+### Phase 6 Verification ✓
+- [x] **`make test` passes** — 27 tests, 1160 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Orbiter enemy circles player with spiral-in behavior
+- [x] Orbiter has distinct cyan/pink visual
+- [x] Splitter enemy moves toward player (slower than Chaser)
+- [x] Splitter has distinct yellow/green visual
+- [x] Killing Splitter spawns 2 smaller child Splitters
+- [x] Child Splitters spawn even smaller ones (splitCount - 1)
+- [x] Final split (splitCount == 0) drops XP normally
+- [x] GetEnemyTypeForTime returns only Chaser before 30s
+- [x] Orbiters start appearing after 30s
+- [x] Splitters start appearing after 60s
+- [x] Enemy mix increases diversity over time (90s+)
+- [x] Game remains playable with all enemy types
+
 ---
 
 ## NOTES FOR ENGINEERS
@@ -1675,4 +1692,4 @@ If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 5 Complete (59/84 tasks, 70.2%)*
+*Last updated: 2026-01-04 — Phase 6 Complete (64/84 tasks, 76.2%)*

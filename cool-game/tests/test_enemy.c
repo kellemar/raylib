@@ -5,6 +5,8 @@
 
 typedef enum EnemyType {
     ENEMY_CHASER,
+    ENEMY_ORBITER,
+    ENEMY_SPLITTER,
     ENEMY_TYPE_COUNT
 } EnemyType;
 
@@ -19,6 +21,9 @@ typedef struct Enemy {
     EnemyType type;
     int xpValue;
     int active;
+    float orbitAngle;
+    float orbitDistance;
+    int splitCount;
 } Enemy;
 
 typedef struct EnemyPool {
@@ -50,6 +55,41 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             switch (type)
             {
                 case ENEMY_CHASER:
+                    e->radius = 12.0f;
+                    e->speed = 100.0f;
+                    e->health = 30.0f;
+                    e->maxHealth = 30.0f;
+                    e->damage = 10.0f;
+                    e->xpValue = 1;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 0.0f;
+                    e->splitCount = 0;
+                    break;
+
+                case ENEMY_ORBITER:
+                    e->radius = 15.0f;
+                    e->speed = 80.0f;
+                    e->health = 50.0f;
+                    e->maxHealth = 50.0f;
+                    e->damage = 15.0f;
+                    e->xpValue = 2;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 200.0f;
+                    e->splitCount = 0;
+                    break;
+
+                case ENEMY_SPLITTER:
+                    e->radius = 20.0f;
+                    e->speed = 60.0f;
+                    e->health = 80.0f;
+                    e->maxHealth = 80.0f;
+                    e->damage = 20.0f;
+                    e->xpValue = 3;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 0.0f;
+                    e->splitCount = 2;
+                    break;
+
                 default:
                     e->radius = 12.0f;
                     e->speed = 100.0f;
@@ -57,6 +97,9 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->maxHealth = 30.0f;
                     e->damage = 10.0f;
                     e->xpValue = 1;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 0.0f;
+                    e->splitCount = 0;
                     break;
             }
 
@@ -168,11 +211,50 @@ static const char* test_enemy_reuse_slot(void)
     return 0;
 }
 
+static const char* test_enemy_spawn_orbiter_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawn(&pool, ENEMY_ORBITER, pos);
+
+    mu_assert_float_eq(15.0f, e->radius);
+    mu_assert_float_eq(80.0f, e->speed);
+    mu_assert_float_eq(50.0f, e->health);
+    mu_assert_float_eq(50.0f, e->maxHealth);
+    mu_assert_float_eq(15.0f, e->damage);
+    mu_assert_int_eq(2, e->xpValue);
+    mu_assert_float_eq(200.0f, e->orbitDistance);
+    mu_assert_int_eq(0, e->splitCount);
+    return 0;
+}
+
+static const char* test_enemy_spawn_splitter_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawn(&pool, ENEMY_SPLITTER, pos);
+
+    mu_assert_float_eq(20.0f, e->radius);
+    mu_assert_float_eq(60.0f, e->speed);
+    mu_assert_float_eq(80.0f, e->health);
+    mu_assert_float_eq(80.0f, e->maxHealth);
+    mu_assert_float_eq(20.0f, e->damage);
+    mu_assert_int_eq(3, e->xpValue);
+    mu_assert_int_eq(2, e->splitCount);
+    return 0;
+}
+
 const char* run_enemy_tests(void)
 {
     mu_run_test(test_enemy_pool_init);
     mu_run_test(test_enemy_spawn_single);
     mu_run_test(test_enemy_spawn_chaser_stats);
+    mu_run_test(test_enemy_spawn_orbiter_stats);
+    mu_run_test(test_enemy_spawn_splitter_stats);
     mu_run_test(test_enemy_spawn_multiple);
     mu_run_test(test_enemy_pool_full);
     mu_run_test(test_enemy_reuse_slot);

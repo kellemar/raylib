@@ -131,7 +131,7 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 3: Enemies (complete)
 - [x] Phase 4: XP & Leveling (complete)
 - [x] Phase 5: Particles & Juice (complete)
-- [ ] Phase 6: Additional Enemies
+- [x] Phase 6: Additional Enemies (complete)
 - [ ] Phase 7: Audio
 - [ ] Phase 8: Visual Polish
 - [ ] Phase 9: Menus & Polish

@@ -1,5 +1,6 @@
 #include "minunit.h"
 #include "../src/utils.h"
+#include <stdlib.h>
 
 static const char* test_clamp_within_range(void)
 {
@@ -118,6 +119,54 @@ static const char* test_circle_collision_different_radii(void)
     return 0;
 }
 
+static const char* test_enemy_type_for_time_early(void)
+{
+    srand(12345);
+    for (int i = 0; i < 100; i++)
+    {
+        int result = GetEnemyTypeForTime(15.0f);
+        mu_assert_int_eq(0, result);
+    }
+    return 0;
+}
+
+static const char* test_enemy_type_for_time_mid(void)
+{
+    srand(12345);
+    int hasChaser = 0;
+    int hasOrbiter = 0;
+    for (int i = 0; i < 200; i++)
+    {
+        int result = GetEnemyTypeForTime(45.0f);
+        mu_assert(result >= 0 && result <= 1, "Mid-game should return 0 or 1");
+        if (result == 0) hasChaser = 1;
+        if (result == 1) hasOrbiter = 1;
+    }
+    mu_assert_true(hasChaser);
+    mu_assert_true(hasOrbiter);
+    return 0;
+}
+
+static const char* test_enemy_type_for_time_late(void)
+{
+    srand(12345);
+    int hasChaser = 0;
+    int hasOrbiter = 0;
+    int hasSplitter = 0;
+    for (int i = 0; i < 300; i++)
+    {
+        int result = GetEnemyTypeForTime(100.0f);
+        mu_assert(result >= 0 && result <= 2, "Late-game should return 0, 1, or 2");
+        if (result == 0) hasChaser = 1;
+        if (result == 1) hasOrbiter = 1;
+        if (result == 2) hasSplitter = 1;
+    }
+    mu_assert_true(hasChaser);
+    mu_assert_true(hasOrbiter);
+    mu_assert_true(hasSplitter);
+    return 0;
+}
+
 const char* run_utils_tests(void)
 {
     mu_run_test(test_clamp_within_range);
@@ -136,5 +185,8 @@ const char* run_utils_tests(void)
     mu_run_test(test_circle_collision_not_touching);
     mu_run_test(test_circle_collision_same_center);
     mu_run_test(test_circle_collision_different_radii);
+    mu_run_test(test_enemy_type_for_time_early);
+    mu_run_test(test_enemy_type_for_time_mid);
+    mu_run_test(test_enemy_type_for_time_late);
     return 0;
 }

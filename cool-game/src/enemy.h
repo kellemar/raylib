@@ -7,6 +7,8 @@
 
 typedef enum EnemyType {
     ENEMY_CHASER,
+    ENEMY_ORBITER,
+    ENEMY_SPLITTER,
     ENEMY_TYPE_COUNT
 } EnemyType;
 
@@ -21,6 +23,9 @@ typedef struct Enemy {
     EnemyType type;
     int xpValue;
     bool active;
+    float orbitAngle;
+    float orbitDistance;
+    int splitCount;
 } Enemy;
 
 typedef struct EnemyPool {
@@ -32,5 +37,6 @@ void EnemyPoolInit(EnemyPool *pool);
 void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt);
 void EnemyPoolDraw(EnemyPool *pool);
 Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos);
+Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health);
 
 #endif
