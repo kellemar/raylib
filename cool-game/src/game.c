@@ -11,37 +11,11 @@
 #define XP_COLLECT_RADIUS 15.0f
 #define CAMERA_LERP_SPEED 5.0f
 #define GRID_SIZE 64
-#define HIGHSCORE_FILE "highscore.dat"
 #define SETTINGS_FILE "settings.dat"
 #define BLACK_HOLE_PULL_RADIUS_MULT 5.0f
 
 static const Color GRID_COLOR = { 30, 25, 40, 100 };
 
-// High score persistence
-static int LoadHighScore(void)
-{
-    int score = 0;
-    FILE *file = fopen(HIGHSCORE_FILE, "rb");
-    if (file != NULL)
-    {
-        if (fread(&score, sizeof(int), 1, file) != 1)
-        {
-            score = 0;  // Handle read failure
-        }
-        fclose(file);
-    }
-    return score;
-}
-
-static void SaveHighScore(int score)
-{
-    FILE *file = fopen(HIGHSCORE_FILE, "wb");
-    if (file != NULL)
-    {
-        fwrite(&score, sizeof(int), 1, file);
-        fclose(file);
-    }
-}
 
 // Settings persistence
 static void LoadSettings(GameSettings *settings)
@@ -727,8 +701,12 @@ void GameInit(GameData *game)
     game->score = 0;
     game->isPaused = false;
     game->spawnTimer = 0.0f;
-    game->highScore = LoadHighScore();
     game->killCount = 0;
+    game->leaderboardPosition = -1;
+
+    // Load leaderboard
+    LeaderboardLoad(&game->leaderboard);
+    game->highScore = LeaderboardGetHighScore(&game->leaderboard);
     game->scoreMultiplier = 1.0f;
     game->timeSinceLastHit = 0.0f;
     game->hitstopFrames = 0;
@@ -796,7 +774,29 @@ void GameUpdate(GameData *game, float dt)
                 game->settingsSelection = 0;
                 game->state = STATE_SETTINGS;
             }
+            if (IsKeyPressed(KEY_L))
+            {
+                game->state = STATE_LEADERBOARD;
+            }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
+            break;
+
+        case STATE_LEADERBOARD:
+            // Initialize and update starfield (shared with menu)
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_L))
+            {
+                game->state = STATE_MENU;
+            }
             break;
 
         case STATE_SETTINGS:
@@ -1030,12 +1030,17 @@ void GameUpdate(GameData *game, float dt)
             if (!game->player.alive)
             {
                 MusicStop();
-                // Update high score if beaten
-                if (game->score > game->highScore)
-                {
-                    game->highScore = game->score;
-                    SaveHighScore(game->highScore);
-                }
+
+                // Add to leaderboard
+                game->leaderboardPosition = LeaderboardAddEntry(
+                    &game->leaderboard,
+                    game->score,
+                    game->player.level,
+                    game->killCount,
+                    game->gameTime
+                );
+                LeaderboardSave(&game->leaderboard);
+                game->highScore = LeaderboardGetHighScore(&game->leaderboard);
 
                 // Save run stats to unlocks
                 UnlocksAddRunStats(&game->unlocks, game->killCount, game->bossKillsThisRun,
@@ -1123,6 +1128,11 @@ void GameUpdate(GameData *game, float dt)
                 IntroMusicStart();  // Restart intro music on menu
                 game->state = STATE_MENU;
             }
+            if (IsKeyPressed(KEY_L))
+            {
+                IntroMusicStart();
+                game->state = STATE_LEADERBOARD;
+            }
             break;
     }
 }
@@ -1148,11 +1158,62 @@ static void DrawSceneToTexture(GameData *game)
                 DrawMenuStars();
                 DrawText("NEON VOID", SCREEN_WIDTH/2 - MeasureText("NEON VOID", 60)/2, 200, 60, NEON_CYAN);
                 DrawText(TextFormat("High Score: %d", game->highScore), SCREEN_WIDTH/2 - MeasureText(TextFormat("High Score: %d", game->highScore), 24)/2, 280, 24, NEON_YELLOW);
-                DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 350, 20, NEON_PINK);
-                DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 390, 20, NEON_CYAN);
-                DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 430, 20, GRAY);
-                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 520, 16, (Color){ 100, 100, 100, 255 });
+                DrawText("Press ENTER to Start", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Start", 20)/2, 340, 20, NEON_PINK);
+                DrawText("Press L for Leaderboard", SCREEN_WIDTH/2 - MeasureText("Press L for Leaderboard", 20)/2, 380, 20, NEON_YELLOW);
+                DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 420, 20, NEON_CYAN);
+                DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 460, 20, GRAY);
+                DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 530, 16, (Color){ 100, 100, 100, 255 });
                 break;
+
+            case STATE_LEADERBOARD:
+            {
+                DrawMenuStars();
+                DrawText("LEADERBOARD", SCREEN_WIDTH/2 - MeasureText("LEADERBOARD", 50)/2, 50, 50, NEON_CYAN);
+
+                // Column headers
+                int startY = 120;
+                int rankX = 150;
+                int scoreX = 280;
+                int levelX = 450;
+                int killsX = 550;
+                int timeX = 680;
+                int dateX = 820;
+
+                DrawText("RANK", rankX, startY, 20, NEON_PINK);
+                DrawText("SCORE", scoreX, startY, 20, NEON_PINK);
+                DrawText("LVL", levelX, startY, 20, NEON_PINK);
+                DrawText("KILLS", killsX, startY, 20, NEON_PINK);
+                DrawText("TIME", timeX, startY, 20, NEON_PINK);
+                DrawText("DATE", dateX, startY, 20, NEON_PINK);
+
+                // Draw entries
+                for (int i = 0; i < LEADERBOARD_MAX_ENTRIES; i++)
+                {
+                    int y = startY + 40 + i * 35;
+                    Color rowColor = (i % 2 == 0) ? WHITE : (Color){ 180, 180, 180, 255 };
+
+                    LeaderboardEntry *entry = LeaderboardGetEntry(&game->leaderboard, i);
+                    if (entry != NULL)
+                    {
+                        DrawText(TextFormat("#%d", i + 1), rankX, y, 20, rowColor);
+                        DrawText(TextFormat("%d", entry->score), scoreX, y, 20, rowColor);
+                        DrawText(TextFormat("%d", entry->level), levelX, y, 20, rowColor);
+                        DrawText(TextFormat("%d", entry->kills), killsX, y, 20, rowColor);
+                        int minutes = (int)entry->survivalTime / 60;
+                        int seconds = (int)entry->survivalTime % 60;
+                        DrawText(TextFormat("%d:%02d", minutes, seconds), timeX, y, 20, rowColor);
+                        DrawText(TextFormat("%d/%d/%d", entry->month, entry->day, entry->year), dateX, y, 20, rowColor);
+                    }
+                    else
+                    {
+                        DrawText(TextFormat("#%d", i + 1), rankX, y, 20, (Color){ 80, 80, 80, 255 });
+                        DrawText("---", scoreX, y, 20, (Color){ 80, 80, 80, 255 });
+                    }
+                }
+
+                DrawText("Press ESC or ENTER to return", SCREEN_WIDTH/2 - MeasureText("Press ESC or ENTER to return", 18)/2, SCREEN_HEIGHT - 60, 18, GRAY);
+                break;
+            }
 
             case STATE_SETTINGS:
                 DrawSettingsMenu(game);
@@ -1237,13 +1298,28 @@ static void DrawSceneToTexture(GameData *game)
                 break;
 
             case STATE_GAMEOVER:
-                DrawText("GAME OVER", SCREEN_WIDTH/2 - MeasureText("GAME OVER", 60)/2, 200, 60, NEON_RED);
-                DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - MeasureText(TextFormat("Final Score: %d", game->score), 30)/2, 300, 30, NEON_YELLOW);
-                DrawText(TextFormat("Enemies Killed: %d", game->killCount), SCREEN_WIDTH/2 - MeasureText(TextFormat("Enemies Killed: %d", game->killCount), 20)/2, 340, 20, NEON_ORANGE);
-                DrawText(TextFormat("Level Reached: %d", game->player.level), SCREEN_WIDTH/2 - MeasureText(TextFormat("Level Reached: %d", game->player.level), 20)/2, 370, 20, NEON_CYAN);
-                DrawText(TextFormat("Time Survived: %.1fs", game->gameTime), SCREEN_WIDTH/2 - MeasureText(TextFormat("Time Survived: %.1fs", game->gameTime), 20)/2, 400, 20, NEON_WHITE);
-                DrawText("Press ENTER to Return to Menu", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Return to Menu", 20)/2, 470, 20, NEON_CYAN);
+            {
+                DrawText("GAME OVER", SCREEN_WIDTH/2 - MeasureText("GAME OVER", 60)/2, 160, 60, NEON_RED);
+
+                // Show leaderboard position if made it
+                if (game->leaderboardPosition >= 0)
+                {
+                    const char *rankText = TextFormat("NEW HIGH SCORE! Rank #%d", game->leaderboardPosition + 1);
+                    DrawText(rankText, SCREEN_WIDTH/2 - MeasureText(rankText, 28)/2, 240, 28, NEON_GREEN);
+                }
+
+                int statsY = (game->leaderboardPosition >= 0) ? 290 : 260;
+                DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - MeasureText(TextFormat("Final Score: %d", game->score), 30)/2, statsY, 30, NEON_YELLOW);
+                DrawText(TextFormat("Enemies Killed: %d", game->killCount), SCREEN_WIDTH/2 - MeasureText(TextFormat("Enemies Killed: %d", game->killCount), 20)/2, statsY + 45, 20, NEON_ORANGE);
+                DrawText(TextFormat("Level Reached: %d", game->player.level), SCREEN_WIDTH/2 - MeasureText(TextFormat("Level Reached: %d", game->player.level), 20)/2, statsY + 75, 20, NEON_CYAN);
+                int minutes = (int)game->gameTime / 60;
+                int seconds = (int)game->gameTime % 60;
+                DrawText(TextFormat("Time Survived: %d:%02d", minutes, seconds), SCREEN_WIDTH/2 - MeasureText(TextFormat("Time Survived: %d:%02d", minutes, seconds), 20)/2, statsY + 105, 20, NEON_WHITE);
+
+                DrawText("Press ENTER to Return to Menu", SCREEN_WIDTH/2 - MeasureText("Press ENTER to Return to Menu", 20)/2, statsY + 170, 20, NEON_CYAN);
+                DrawText("Press L to View Leaderboard", SCREEN_WIDTH/2 - MeasureText("Press L to View Leaderboard", 18)/2, statsY + 200, 18, GRAY);
                 break;
+            }
         }
     EndTextureMode();
 }

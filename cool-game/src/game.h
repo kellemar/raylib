@@ -9,11 +9,13 @@
 #include "upgrade.h"
 #include "particle.h"
 #include "unlocks.h"
+#include "leaderboard.h"
 #include <stdbool.h>
 
 typedef enum GameState {
     STATE_MENU,
     STATE_SETTINGS,    // Settings menu
+    STATE_LEADERBOARD, // High scores display
     STATE_STARTING,    // "Get Ready" transition screen
     STATE_PLAYING,
     STATE_PAUSED,
@@ -82,6 +84,9 @@ typedef struct GameData {
     // Permanent unlocks
     UnlockData unlocks;        // Persistent unlock data
     int bossKillsThisRun;      // Boss kills this run (for unlock tracking)
+    // Leaderboard
+    Leaderboard leaderboard;   // Top 10 high scores
+    int leaderboardPosition;   // Position this run placed (-1 if didn't qualify)
 } GameData;
 
 void GameInit(GameData *game);
