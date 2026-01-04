@@ -567,4 +567,13 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 
 ---
 
+## CHANGELOG
+
+### 2026-01-04 — Bug Fixes
+- **Fixed: Multi-shot spread pattern** — `projectileCount` upgrade was being applied but `WeaponFire()` only spawned a single projectile. Now spawns multiple projectiles in a spread pattern when `projectileCount > 1`, making the Multi Shot upgrade functional.
+- **Fixed: Enemy spawn position bounds** — Enemies were incorrectly clamped to `SCREEN_WIDTH/HEIGHT` bounds, which limited spawning to a fixed region. Since the camera follows the player into infinite world space, this was incorrect. Enemies now spawn in a ring around the player regardless of world position.
+- **Fixed: High score file read validation** — `fread()` return value was ignored in `LoadHighScore()`, which could result in garbage data on read failure. Now properly validates the return value and defaults to 0 on failure.
+
+---
+
 *"In the neon void, geometry is war."*

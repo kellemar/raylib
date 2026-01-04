@@ -1636,7 +1636,8 @@ make         # MUST PASS - zero warnings
 | 9 | Menus & Polish | 4 | 4 ✓ |
 | 10 | Final Polish | 5 | 5 ✓ |
 | 11 | Quick Wins (Game Feel) | 4 | 4 ✓ |
-| **Total** | | **88** | **87** |
+| 12 | Post-Review Bug Fixes | 3 | 3 ✓ |
+| **Total** | | **91** | **90** |
 
 ### Estimated Time
 
@@ -1860,4 +1861,23 @@ If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 11 Complete (87/88 tasks, 98.9%)*
+## CHANGELOG
+
+### 2026-01-04 — Post-Review Bug Fixes
+
+Following comprehensive code review, the following issues were identified and fixed:
+
+| Commit | File | Issue | Fix |
+|--------|------|-------|-----|
+| `7eef1561` | weapon.c | `projectileCount` upgraded but never used in `WeaponFire()` | Now spawns multiple projectiles in spread pattern |
+| `1d48196c` | game.c | `GetSpawnPosition()` clamped to screen bounds (invalid with infinite world) | Removed bounds clamping, enemies spawn relative to player |
+| `bead0ed3` | game.c | `fread()` return value ignored in `LoadHighScore()` | Added validation, defaults to 0 on failure |
+
+**All fixes verified:**
+- 86 tests passing
+- Zero compiler warnings
+- Manual gameplay testing confirmed
+
+---
+
+*Last updated: 2026-01-04 — Phase 12 (Bug Fixes) Complete (90/91 tasks, 98.9%)*
