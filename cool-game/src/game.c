@@ -348,12 +348,28 @@ void GameInitShaders(GameData *game)
         game->crtEnabled = true;
         game->crtTimeLoc = GetShaderLocation(game->crtShader, "time");
     }
+
+    // Load chromatic aberration shader with validation
+    game->chromaticShader = LoadShader(0, "resources/shaders/chromatic.fs");
+    game->chromaticIntensityLoc = -1;
+    game->chromaticTimeLoc = -1;
+    game->chromaticIntensity = 0.0f;
+    if (game->chromaticShader.id == 0)
+    {
+        TraceLog(LOG_WARNING, "SHADER: Failed to load chromatic.fs - chromatic aberration disabled");
+    }
+    else
+    {
+        game->chromaticIntensityLoc = GetShaderLocation(game->chromaticShader, "intensity");
+        game->chromaticTimeLoc = GetShaderLocation(game->chromaticShader, "time");
+    }
 }
 
 void GameCleanupShaders(GameData *game)
 {
     UnloadShader(game->bloomShader);
     UnloadShader(game->crtShader);
+    UnloadShader(game->chromaticShader);
     UnloadRenderTexture(game->renderTarget);
     UnloadRenderTexture(game->renderTarget2);
 }
@@ -529,6 +545,17 @@ void GameUpdate(GameData *game, float dt)
             else
             {
                 game->timeScale = 1.0f;  // Normal speed
+            }
+
+            // Chromatic aberration: intensity increases as health decreases below 50%
+            if (healthPercent < 0.5f && healthPercent > 0.0f)
+            {
+                // Scale from 0 at 50% health to 1.0 at 0% health
+                game->chromaticIntensity = 1.0f - (healthPercent / 0.5f);
+            }
+            else
+            {
+                game->chromaticIntensity = 0.0f;
             }
 
             game->gameTime += scaledDt;
@@ -770,13 +797,18 @@ void GameDraw(GameData *game)
 
     if (game->shadersEnabled)
     {
-        // Update CRT time uniform
+        // Update shader time uniforms
         float time = (float)GetTime();
         SetShaderValue(game->crtShader, game->crtTimeLoc, &time, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(game->chromaticShader, game->chromaticTimeLoc, &time, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(game->chromaticShader, game->chromaticIntensityLoc, &game->chromaticIntensity, SHADER_UNIFORM_FLOAT);
+
+        // Determine if chromatic aberration should be applied
+        bool applyChromatic = (game->chromaticShader.id != 0) && (game->chromaticIntensity > 0.01f);
 
         if (game->crtEnabled)
         {
-            // Two-pass shader chain: Scene -> Bloom -> CRT -> Screen
+            // Multi-pass shader chain: Scene -> Bloom -> [Chromatic] -> CRT -> Screen
             // Pass 1: Apply bloom to renderTarget, output to renderTarget2
             BeginTextureMode(game->renderTarget2);
                 ClearBackground(BLACK);
@@ -785,17 +817,53 @@ void GameDraw(GameData *game)
                 EndShaderMode();
             EndTextureMode();
 
-            // Pass 2: Apply CRT to renderTarget2, output to screen
-            BeginShaderMode(game->crtShader);
-                DrawTexturePro(game->renderTarget2.texture, sourceRec, destRec, origin, 0.0f, WHITE);
-            EndShaderMode();
+            if (applyChromatic)
+            {
+                // Pass 2: Apply chromatic to renderTarget2, output to renderTarget
+                BeginTextureMode(game->renderTarget);
+                    ClearBackground(BLACK);
+                    BeginShaderMode(game->chromaticShader);
+                        DrawTexturePro(game->renderTarget2.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                    EndShaderMode();
+                EndTextureMode();
+
+                // Pass 3: Apply CRT to renderTarget, output to screen
+                BeginShaderMode(game->crtShader);
+                    DrawTexturePro(game->renderTarget.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                EndShaderMode();
+            }
+            else
+            {
+                // Pass 2: Apply CRT to renderTarget2, output to screen (no chromatic)
+                BeginShaderMode(game->crtShader);
+                    DrawTexturePro(game->renderTarget2.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                EndShaderMode();
+            }
         }
         else
         {
-            // Bloom only: Apply directly to screen
-            BeginShaderMode(game->bloomShader);
-                DrawTexturePro(game->renderTarget.texture, sourceRec, destRec, origin, 0.0f, WHITE);
-            EndShaderMode();
+            // No CRT - simpler chain
+            if (applyChromatic)
+            {
+                // Bloom -> Chromatic -> Screen
+                BeginTextureMode(game->renderTarget2);
+                    ClearBackground(BLACK);
+                    BeginShaderMode(game->bloomShader);
+                        DrawTexturePro(game->renderTarget.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                    EndShaderMode();
+                EndTextureMode();
+
+                BeginShaderMode(game->chromaticShader);
+                    DrawTexturePro(game->renderTarget2.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                EndShaderMode();
+            }
+            else
+            {
+                // Bloom only: Apply directly to screen
+                BeginShaderMode(game->bloomShader);
+                    DrawTexturePro(game->renderTarget.texture, sourceRec, destRec, origin, 0.0f, WHITE);
+                EndShaderMode();
+            }
         }
     }
     else

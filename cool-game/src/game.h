@@ -39,10 +39,14 @@ typedef struct GameData {
     RenderTexture2D renderTarget2;
     Shader bloomShader;
     Shader crtShader;
+    Shader chromaticShader;
     int bloomIntensityLoc;
     int crtTimeLoc;
+    int chromaticIntensityLoc;
+    int chromaticTimeLoc;
     bool shadersEnabled;
     bool crtEnabled;
+    float chromaticIntensity;  // Current chromatic aberration intensity (0-1)
     // Phase 9: Menu & Polish
     int highScore;    // Best score across sessions (persisted to file)
     int killCount;    // Enemies killed this run
