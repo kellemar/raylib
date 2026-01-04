@@ -376,6 +376,7 @@ float UnlocksGetMagnetBonus(UnlockData *unlocks);
 - [x] Phase 17: Permanent Unlocks (complete)
 - [x] Phase 18: Leaderboard System (complete)
 - [x] Phase 19: Character Select (complete)
+- [x] Phase 20: Achievement System (complete)
 
 ## CHARACTER SELECT SYSTEM
 
@@ -434,6 +435,44 @@ int LeaderboardGetHighScore(Leaderboard *lb);
 - **From Menu**: Press L
 - **From Game Over**: Press L
 - **Returns to**: Menu (press ESC or ENTER)
+
+## ACHIEVEMENT SYSTEM
+
+12 achievements with persistent tracking saved to `achievements.dat`.
+
+### Achievements
+| Achievement | Type | Requirement |
+|-------------|------|-------------|
+| First Blood | Combat | Kill your first enemy |
+| Centurion | Combat | Kill 100 enemies in one run |
+| Slayer | Combat | Kill 1000 enemies total |
+| Boss Hunter | Combat | Defeat your first boss |
+| Boss Slayer | Combat | Defeat 5 bosses total |
+| Survivor | Survival | Survive for 3 minutes |
+| Veteran | Survival | Survive for 10 minutes |
+| Immortal | Survival | No damage for 1 minute |
+| Rising Star | Progression | Reach level 5 |
+| Champion | Progression | Reach level 10 |
+| Fully Evolved | Progression | Evolve a weapon |
+| Completionist | Progression | Unlock all characters |
+
+### Key Functions
+```c
+AchievementDef GetAchievementDef(AchievementType type);
+bool AchievementIsEarned(AchievementData *data, AchievementType type);
+bool AchievementEarn(AchievementData *data, AchievementType type);
+void AchievementInit(AchievementData *data);
+void AchievementSave(AchievementData *data);
+void AchievementLoad(AchievementData *data);
+int AchievementGetEarnedCount(AchievementData *data);
+
+#define ACHIEVEMENT_COUNT 12
+```
+
+### Accessing Achievements
+- **From Menu**: Press A
+- **Returns to**: Menu (press ESC or ENTER)
+- **Notification**: Popup appears when achievement unlocked during gameplay
 
 ## TESTING WITH PEEKABOO
 

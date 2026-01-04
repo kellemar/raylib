@@ -76,7 +76,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 - [x] Settings (volume, screen shake toggle, CRT filter toggle)
 - [x] Pause menu
 - [x] Tutorial overlay (first 30 seconds)
-- [ ] Achievement system
+- [x] Achievement system
 - [x] Stats screen post-death
 
 ---
@@ -653,6 +653,19 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Auto-save**: Adds entry on game over with rank feedback
 - **Persistence**: Binary file save/load (leaderboard.dat)
 - **Tests updated**: 139 tests passing (9 new leaderboard tests)
+
+---
+
+### 2026-01-05 — Achievement System
+- **Added 12 achievements** with persistent tracking:
+  - **Combat**: First Blood, Centurion (100 kills), Slayer (1000 total), Boss Hunter, Boss Slayer (5 total)
+  - **Survival**: Survivor (3 min), Veteran (10 min), Immortal (1 min no damage)
+  - **Progression**: Rising Star (lvl 5), Champion (lvl 10), Fully Evolved, Completionist
+- **Achievement screen** accessible via A from menu with scrollable list
+- **Notification popup** slides in from top when achievement unlocked
+- **Progress tracking**: Total kills, boss kills, survival time persist across sessions
+- **Visual indicators**: Gold trophy for earned, gray for unearned
+- **Tests updated**: 154 tests passing (7 new achievement tests)
 
 ---
 
