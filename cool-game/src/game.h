@@ -4,6 +4,7 @@
 #include "raylib.h"
 #include "projectile.h"
 #include "player.h"
+#include "enemy.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -21,6 +22,8 @@ typedef struct GameData {
     bool isPaused;
     Player player;
     ProjectilePool projectiles;
+    EnemyPool enemies;
+    float spawnTimer;
 } GameData;
 
 void GameInit(GameData *game);

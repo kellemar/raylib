@@ -1,0 +1,140 @@
+#include "minunit.h"
+#include "../src/utils.h"
+
+static const char* test_clamp_within_range(void)
+{
+    mu_assert_float_eq(5.0f, ClampFloat(5.0f, 0.0f, 10.0f));
+    return 0;
+}
+
+static const char* test_clamp_below_min(void)
+{
+    mu_assert_float_eq(0.0f, ClampFloat(-5.0f, 0.0f, 10.0f));
+    return 0;
+}
+
+static const char* test_clamp_above_max(void)
+{
+    mu_assert_float_eq(10.0f, ClampFloat(15.0f, 0.0f, 10.0f));
+    return 0;
+}
+
+static const char* test_clamp_at_boundaries(void)
+{
+    mu_assert_float_eq(0.0f, ClampFloat(0.0f, 0.0f, 10.0f));
+    mu_assert_float_eq(10.0f, ClampFloat(10.0f, 0.0f, 10.0f));
+    return 0;
+}
+
+static const char* test_spawn_interval_at_start(void)
+{
+    mu_assert_float_eq(2.0f, GetSpawnInterval(0.0f));
+    return 0;
+}
+
+static const char* test_spawn_interval_decreases(void)
+{
+    float interval_at_50s = GetSpawnInterval(50.0f);
+    mu_assert_float_eq(1.5f, interval_at_50s);
+    return 0;
+}
+
+static const char* test_spawn_interval_minimum(void)
+{
+    mu_assert_float_eq(0.3f, GetSpawnInterval(200.0f));
+    mu_assert_float_eq(0.3f, GetSpawnInterval(500.0f));
+    return 0;
+}
+
+static const char* test_spawn_interval_at_170s(void)
+{
+    float interval = GetSpawnInterval(170.0f);
+    mu_assert_float_eq(0.3f, interval);
+    return 0;
+}
+
+static const char* test_vector2_distance_sq_same_point(void)
+{
+    Vector2 a = { 5.0f, 5.0f };
+    Vector2 b = { 5.0f, 5.0f };
+    mu_assert_float_eq(0.0f, Vector2DistanceSq(a, b));
+    return 0;
+}
+
+static const char* test_vector2_distance_sq_horizontal(void)
+{
+    Vector2 a = { 0.0f, 0.0f };
+    Vector2 b = { 3.0f, 0.0f };
+    mu_assert_float_eq(9.0f, Vector2DistanceSq(a, b));
+    return 0;
+}
+
+static const char* test_vector2_distance_sq_diagonal(void)
+{
+    Vector2 a = { 0.0f, 0.0f };
+    Vector2 b = { 3.0f, 4.0f };
+    mu_assert_float_eq(25.0f, Vector2DistanceSq(a, b));
+    return 0;
+}
+
+static const char* test_circle_collision_overlapping(void)
+{
+    Vector2 c1 = { 0.0f, 0.0f };
+    Vector2 c2 = { 5.0f, 0.0f };
+    mu_assert_true(CheckCircleCollision(c1, 3.0f, c2, 3.0f));
+    return 0;
+}
+
+static const char* test_circle_collision_touching(void)
+{
+    Vector2 c1 = { 0.0f, 0.0f };
+    Vector2 c2 = { 6.0f, 0.0f };
+    mu_assert_false(CheckCircleCollision(c1, 3.0f, c2, 3.0f));
+    return 0;
+}
+
+static const char* test_circle_collision_not_touching(void)
+{
+    Vector2 c1 = { 0.0f, 0.0f };
+    Vector2 c2 = { 10.0f, 0.0f };
+    mu_assert_false(CheckCircleCollision(c1, 3.0f, c2, 3.0f));
+    return 0;
+}
+
+static const char* test_circle_collision_same_center(void)
+{
+    Vector2 c1 = { 5.0f, 5.0f };
+    Vector2 c2 = { 5.0f, 5.0f };
+    mu_assert_true(CheckCircleCollision(c1, 1.0f, c2, 1.0f));
+    return 0;
+}
+
+static const char* test_circle_collision_different_radii(void)
+{
+    Vector2 c1 = { 0.0f, 0.0f };
+    Vector2 c2 = { 8.0f, 0.0f };
+    mu_assert_true(CheckCircleCollision(c1, 5.0f, c2, 5.0f));
+    mu_assert_false(CheckCircleCollision(c1, 3.0f, c2, 3.0f));
+    return 0;
+}
+
+const char* run_utils_tests(void)
+{
+    mu_run_test(test_clamp_within_range);
+    mu_run_test(test_clamp_below_min);
+    mu_run_test(test_clamp_above_max);
+    mu_run_test(test_clamp_at_boundaries);
+    mu_run_test(test_spawn_interval_at_start);
+    mu_run_test(test_spawn_interval_decreases);
+    mu_run_test(test_spawn_interval_minimum);
+    mu_run_test(test_spawn_interval_at_170s);
+    mu_run_test(test_vector2_distance_sq_same_point);
+    mu_run_test(test_vector2_distance_sq_horizontal);
+    mu_run_test(test_vector2_distance_sq_diagonal);
+    mu_run_test(test_circle_collision_overlapping);
+    mu_run_test(test_circle_collision_touching);
+    mu_run_test(test_circle_collision_not_touching);
+    mu_run_test(test_circle_collision_same_center);
+    mu_run_test(test_circle_collision_different_radii);
+    return 0;
+}

@@ -6,7 +6,7 @@
 #
 #**************************************************************************************************
 
-.PHONY: all clean run
+.PHONY: all clean run test
 
 # Define compiler and flags
 CC = clang
@@ -34,6 +34,11 @@ SRC_DIR = src
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:.c=.o)
 
+# Test files
+TEST_DIR = tests
+TEST_SRCS = $(TEST_DIR)/test_main.c $(TEST_DIR)/test_utils.c $(TEST_DIR)/test_enemy.c
+TEST_TARGET = test_runner
+
 # Output
 TARGET = neon_void
 
@@ -51,7 +56,12 @@ $(RAYLIB_LIB):
 	$(MAKE) -C $(RAYLIB_SRC)
 
 clean:
-	rm -f $(SRC_DIR)/*.o $(TARGET)
+	rm -f $(SRC_DIR)/*.o $(TARGET) $(TEST_TARGET)
 
 run: $(TARGET)
 	./$(TARGET)
+
+# Test target - compiles and runs unit tests without raylib dependency
+test: $(SRC_DIR)/utils.c $(TEST_SRCS)
+	$(CC) $(CFLAGS) -I$(SRC_DIR) $(SRC_DIR)/utils.c $(TEST_SRCS) -lm -o $(TEST_TARGET)
+	./$(TEST_TARGET)
