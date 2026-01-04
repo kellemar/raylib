@@ -51,9 +51,10 @@ make clean
 | **WASD** / **Arrow Keys** | Move |
 | **Mouse** | Aim |
 | **SPACE** | Dash (invincible, 1.5s cooldown) |
-| **Q** / **E** | Cycle weapons |
+| **Q** / **E** | Cycle weapons (during gameplay) |
 | **1** / **2** / **3** | Select upgrade on level-up |
-| **ESC** | Pause game |
+| **ESC** | Pause / Go back |
+| **Q** | Quit (from main menu only) |
 | **L** | Leaderboard (menu/game over) |
 | **A** | Achievements (menu) |
 | **TAB** | Settings (menu) |

@@ -826,7 +826,7 @@ void GameUpdate(GameData *game, float dt)
                 game->achievementSelection = 0;
                 game->state = STATE_ACHIEVEMENTS;
             }
-            if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
+            if (IsKeyPressed(KEY_Q)) CloseWindow();
             break;
 
         case STATE_LEADERBOARD:
@@ -1387,7 +1387,7 @@ static void DrawSceneToTexture(GameData *game)
                 DrawText("Press L for Leaderboard", SCREEN_WIDTH/2 - MeasureText("Press L for Leaderboard", 20)/2, 355, 20, NEON_YELLOW);
                 DrawText("Press A for Achievements", SCREEN_WIDTH/2 - MeasureText("Press A for Achievements", 20)/2, 390, 20, NEON_GREEN);
                 DrawText("Press TAB for Settings", SCREEN_WIDTH/2 - MeasureText("Press TAB for Settings", 20)/2, 425, 20, NEON_CYAN);
-                DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 460, 20, GRAY);
+                DrawText("Press Q to Quit", SCREEN_WIDTH/2 - MeasureText("Press Q to Quit", 20)/2, 460, 20, GRAY);
                 // Achievement progress
                 int earnedCount = AchievementGetEarnedCount(&game->achievements);
                 const char *achText = TextFormat("Achievements: %d/%d", earnedCount, ACHIEVEMENT_COUNT);
