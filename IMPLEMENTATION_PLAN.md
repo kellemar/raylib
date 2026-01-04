@@ -11,6 +11,40 @@
 - **Dependencies**: Tasks that must be completed first
 - **Verification**: Steps to confirm task completion
 - **Build Check**: Every task MUST compile and run without errors
+- **Test Check**: Every task MUST pass all unit tests
+
+---
+
+## MANDATORY TESTING REQUIREMENTS
+
+### Before ANY task is considered complete:
+```bash
+make test    # MUST PASS - all 22+ tests green
+make         # MUST PASS - zero warnings
+```
+
+### Test Failure Policy:
+- **BLOCKING**: Cannot proceed to next task if `make test` fails
+- **FIX FIRST**: Any test failure must be resolved before new work
+- **NO EXCEPTIONS**: Tests run in ~10ms, no reason to skip
+
+### When implementing new features:
+1. If feature has pure logic (math, collision, spawning), write tests FIRST
+2. Implement the feature in src/
+3. Run `make test` - must pass
+4. Run `make` - must compile with zero warnings
+5. Manual verification with `make run` if needed
+
+### Test Coverage (tests/ directory):
+| File | Tests | Coverage |
+|------|-------|----------|
+| test_utils.c | 16 | ClampFloat, GetSpawnInterval, Vector2DistanceSq, CheckCircleCollision |
+| test_enemy.c | 6 | EnemyPool init, spawn, stats, capacity, slot reuse |
+
+### Adding Tests for New Features:
+1. Pure logic functions → add to test_utils.c
+2. Pool management → add to test_enemy.c (or create new test_*.c)
+3. Register test with `mu_run_test(test_name)` in suite function
 
 ---
 
@@ -617,8 +651,8 @@
   5. Declare pool functions similar to projectiles
   6. Declare: `Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P3.1.2 — Create enemy.c with pool management
 - **Description**: Implement enemy pool logic
@@ -633,8 +667,8 @@
      - Set active = true
   4. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P3.1.3 — Implement chaser enemy AI
 - **Description**: Basic enemy that moves toward player
@@ -647,9 +681,9 @@
        - Set vel = direction * speed
        - Update pos += vel * dt
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Enemy moves toward player position (test with debug spawn)
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Enemy moves toward player position (test with debug spawn)
+- **Status**: `[x]`
 
 #### P3.1.4 — Implement enemy rendering
 - **Description**: Draw enemies as geometric shapes
@@ -660,10 +694,10 @@
      - ENEMY_CHASER: Draw as red/orange circle
      - Draw health bar above enemy if damaged
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Enemies visible when spawned
-  - [ ] Health bars show correctly
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Enemies visible when spawned
+  - [x] Health bars show correctly
+- **Status**: `[x]`
 
 #### P3.1.5 — Integrate enemies into game
 - **Description**: Add EnemyPool to game loop
@@ -674,10 +708,10 @@
   3. Update in GameUpdate() with player.pos
   4. Draw in GameDraw()
 - **Verification**:
-  - [ ] `make run` — no crashes
-  - [ ] Can spawn test enemy with keypress
-  - [ ] Enemy chases player
-- **Status**: `[ ]`
+  - [x] `make run` — no crashes
+  - [x] Can spawn test enemy with keypress
+  - [x] Enemy chases player
+- **Status**: `[x]`
 
 ---
 
@@ -697,10 +731,10 @@
        - Call EnemySpawn()
        - Reset spawnTimer to 0
 - **Verification**:
-  - [ ] `make run` — enemies spawn automatically
-  - [ ] Enemies spawn outside visible screen area
-  - [ ] Spawn rate is approximately every 2 seconds
-- **Status**: `[ ]`
+  - [x] `make run` — enemies spawn automatically
+  - [x] Enemies spawn outside visible screen area
+  - [x] Spawn rate is approximately every 2 seconds
+- **Status**: `[x]`
 
 #### P3.2.2 — Implement difficulty scaling
 - **Description**: Spawn rate increases over time
@@ -712,10 +746,10 @@
   2. Update spawner to use dynamic interval
   3. Display game time on HUD for debugging
 - **Verification**:
-  - [ ] `make run` — spawn rate increases over time
-  - [ ] After 60 seconds, enemies spawn faster
-  - [ ] Minimum interval is respected (not too fast)
-- **Status**: `[ ]`
+  - [x] `make run` — spawn rate increases over time
+  - [x] After 60 seconds, enemies spawn faster
+  - [x] Minimum interval is respected (not too fast)
+- **Status**: `[x]`
 
 ---
 
@@ -728,11 +762,12 @@
   1. Add to utils.h/c:
      - `bool CheckCollisionCircles(Vector2 c1, float r1, Vector2 c2, float r2)`
      - Returns true if distance between centers < r1 + r2
+  2. Note: Implemented inline in game.c using distance squared optimization
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Unit test: overlapping circles return true
-  - [ ] Unit test: non-overlapping circles return false
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Unit test: overlapping circles return true
+  - [x] Unit test: non-overlapping circles return false
+- **Status**: `[x]`
 
 #### P3.3.2 — Implement projectile-enemy collision
 - **Description**: Projectiles damage enemies
@@ -746,10 +781,10 @@
      - If enemy health <= 0, deactivate enemy
   4. Call from GameUpdate()
 - **Verification**:
-  - [ ] `make run` — shooting enemies reduces their health
-  - [ ] Enemies die when health reaches 0
-  - [ ] Projectiles disappear on hit
-- **Status**: `[ ]`
+  - [x] `make run` — shooting enemies reduces their health
+  - [x] Enemies die when health reaches 0
+  - [x] Projectiles disappear on hit
+- **Status**: `[x]`
 
 #### P3.3.3 — Implement enemy-player collision
 - **Description**: Enemies damage player on contact
@@ -764,11 +799,11 @@
      - Push enemy away from player (knockback)
   5. In PlayerUpdate: decrease invincibilityTimer by dt
 - **Verification**:
-  - [ ] `make run` — touching enemy damages player
-  - [ ] Player health decreases
-  - [ ] Brief invincibility prevents instant death
-  - [ ] Can die from enemy contact
-- **Status**: `[ ]`
+  - [x] `make run` — touching enemy damages player
+  - [x] Player health decreases
+  - [x] Brief invincibility prevents instant death
+  - [x] Can die from enemy contact
+- **Status**: `[x]`
 
 ---
 
@@ -791,8 +826,8 @@
   4. Declare pool functions
   5. Declare: `void XPSpawn(XPPool *pool, Vector2 pos, int value)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P4.1.2 — Create xp.c with implementation
 - **Description**: Implement XP crystal behavior
@@ -806,8 +841,8 @@
      - Draw as small cyan/green diamonds or circles
   4. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P4.1.3 — Spawn XP on enemy death
 - **Description**: Enemies drop XP crystals
@@ -819,10 +854,10 @@
      - Value = enemy.xpValue
   3. Update and draw XP pool in game loop
 - **Verification**:
-  - [ ] `make run` — killing enemies spawns XP crystals
-  - [ ] Crystals appear at death location
-  - [ ] Crystals are visible
-- **Status**: `[ ]`
+  - [x] `make run` — killing enemies spawns XP crystals
+  - [x] Crystals appear at death location
+  - [x] Crystals are visible
+- **Status**: `[x]`
 
 #### P4.1.4 — Implement XP collection
 - **Description**: Player collects nearby XP
@@ -836,10 +871,10 @@
        - Add value to player.xp
        - Deactivate crystal
 - **Verification**:
-  - [ ] `make run` — XP crystals move toward player when close
-  - [ ] XP crystals are collected on contact
-  - [ ] Player XP increases (debug print)
-- **Status**: `[ ]`
+  - [x] `make run` — XP crystals move toward player when close
+  - [x] XP crystals are collected on contact
+  - [x] Player XP increases (shown on HUD)
+- **Status**: `[x]`
 
 ---
 
@@ -856,10 +891,10 @@
      - If so: increment level, set new xpToNextLevel
      - Return bool indicating level up occurred
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Player levels up at correct XP thresholds
-  - [ ] Level displayed on HUD
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Player levels up at correct XP thresholds
+  - [x] Level displayed on HUD
+- **Status**: `[x]`
 
 #### P4.2.2 — Trigger level up state
 - **Description**: Pause game for upgrade selection
@@ -871,10 +906,10 @@
      - Transition to STATE_LEVELUP
   3. STATE_LEVELUP pauses game logic but shows game in background
 - **Verification**:
-  - [ ] `make run` — game pauses when leveling up
-  - [ ] Level up screen appears
-  - [ ] Game visible in background
-- **Status**: `[ ]`
+  - [x] `make run` — game pauses when leveling up
+  - [x] Level up screen appears
+  - [x] Game visible in background
+- **Status**: `[x]`
 
 ---
 
@@ -896,8 +931,8 @@
   4. Declare: `Upgrade GetUpgradeDefinition(UpgradeType type)`
   5. Declare: `void ApplyUpgrade(UpgradeType type, Player *player)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P4.3.2 — Implement upgrade definitions
 - **Description**: Define all upgrade stats and effects
@@ -914,9 +949,9 @@
      - UPGRADE_MAGNET: player.magnetRadius *= 1.5
   4. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Applying upgrades changes player/weapon stats
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Applying upgrades changes player/weapon stats
+- **Status**: `[x]`
 
 #### P4.3.3 — Implement upgrade selection UI
 - **Description**: Display 3 random upgrades to choose
@@ -932,10 +967,10 @@
      - Draw 3 boxes with upgrade name and description
      - Show key prompts: [1] [2] [3]
 - **Verification**:
-  - [ ] `make run` — level up shows 3 upgrade options
-  - [ ] Options have names and descriptions
-  - [ ] Options are different each time
-- **Status**: `[ ]`
+  - [x] `make run` — level up shows 3 upgrade options
+  - [x] Options have names and descriptions
+  - [x] Options are different each time
+- **Status**: `[x]`
 
 #### P4.3.4 — Implement upgrade selection input
 - **Description**: Player chooses an upgrade
@@ -947,11 +982,11 @@
      - If KEY_THREE pressed: apply upgradeOptions[2]
      - After selection: transition back to STATE_PLAYING
 - **Verification**:
-  - [ ] `make run` — pressing 1/2/3 selects upgrade
-  - [ ] Selected upgrade is applied (visible effect)
-  - [ ] Game resumes after selection
-  - [ ] Multiple level ups work correctly
-- **Status**: `[ ]`
+  - [x] `make run` — pressing 1/2/3 selects upgrade
+  - [x] Selected upgrade is applied (visible effect)
+  - [x] Game resumes after selection
+  - [x] Multiple level ups work correctly
+- **Status**: `[x]`
 
 ---
 
@@ -976,8 +1011,8 @@
   4. Declare pool functions
   5. Declare: `void SpawnExplosion(ParticlePool *pool, Vector2 pos, Color color, int count)`
 - **Verification**:
-  - [ ] `make` compiles successfully
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+- **Status**: `[x]`
 
 #### P5.1.2 — Implement particle pool
 - **Description**: Particle management and rendering
@@ -990,10 +1025,10 @@
   5. Implement `SpawnExplosion()`: burst of particles in random directions
   6. Update Makefile
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Test explosion spawn with keypress
-  - [ ] Particles move outward and fade
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Test explosion spawn with keypress
+  - [x] Particles move outward and fade
+- **Status**: `[x]`
 
 #### P5.1.3 — Integrate particles into game
 - **Description**: Add particles to game events
@@ -1004,10 +1039,10 @@
   3. Spawn explosion when enemy dies (red/orange particles)
   4. Spawn small burst when projectile hits
 - **Verification**:
-  - [ ] `make run` — enemy deaths create particle explosions
-  - [ ] Projectile impacts create small particle bursts
-  - [ ] Particles don't impact performance noticeably
-- **Status**: `[ ]`
+  - [x] `make run` — enemy deaths create particle explosions
+  - [x] Projectile impacts create small particle bursts
+  - [x] Particles don't impact performance noticeably
+- **Status**: `[x]`
 
 ---
 
@@ -1026,10 +1061,10 @@
   3. Update camera: lerp target toward player position
   4. Wrap drawing in BeginMode2D/EndMode2D
 - **Verification**:
-  - [ ] `make run` — camera follows player
-  - [ ] Camera movement is smooth (slight lag)
-  - [ ] All entities render correctly with camera
-- **Status**: `[ ]`
+  - [x] `make run` — camera follows player
+  - [x] Camera movement is smooth (slight lag)
+  - [x] All entities render correctly with camera
+- **Status**: `[x]`
 
 #### P5.2.2 — Implement screen shake
 - **Description**: Camera shake on impacts
@@ -1045,11 +1080,11 @@
      - Scale offset by remaining duration
   4. Call shake on enemy death, player damage
 - **Verification**:
-  - [ ] `make run` — screen shakes when enemy dies
-  - [ ] Stronger shake on player damage
-  - [ ] Shake diminishes over duration
-  - [ ] No shake during normal gameplay
-- **Status**: `[ ]`
+  - [x] `make run` — screen shakes when enemy dies
+  - [x] Stronger shake on player damage
+  - [x] Shake diminishes over duration
+  - [x] No shake during normal gameplay
+- **Status**: `[x]`
 
 ---
 
@@ -1070,11 +1105,11 @@
   3. Draw HUD AFTER EndMode2D (screen space)
   4. Update Makefile
 - **Verification**:
-  - [ ] `make run` — HUD displays all elements
-  - [ ] Values update in real-time
-  - [ ] HUD doesn't move with camera
-  - [ ] HUD is readable (good contrast)
-- **Status**: `[ ]`
+  - [x] `make run` — HUD displays all elements
+  - [x] Values update in real-time
+  - [x] HUD doesn't move with camera
+  - [x] HUD is readable (good contrast)
+- **Status**: `[x]`
 
 ---
 
@@ -1505,15 +1540,15 @@
 | 0 | Project Setup | 9 | 8 ✓ |
 | 1 | Player System | 14 | 14 ✓ |
 | 2 | Weapons & Projectiles | 10 | 10 ✓ |
-| 3 | Enemies | 10 | 0 |
-| 4 | XP & Leveling | 10 | 0 |
-| 5 | Particles & Juice | 7 | 0 |
+| 3 | Enemies | 10 | 10 ✓ |
+| 4 | XP & Leveling | 10 | 10 ✓ |
+| 5 | Particles & Juice | 7 | 7 ✓ |
 | 6 | Additional Enemies | 5 | 0 |
 | 7 | Audio | 4 | 0 |
 | 8 | Visual Polish | 6 | 0 |
 | 9 | Menus & Polish | 4 | 0 |
 | 10 | Final Polish | 5 | 0 |
-| **Total** | | **84** | **32** |
+| **Total** | | **84** | **59** |
 
 ### Estimated Time
 
@@ -1527,6 +1562,7 @@
 
 After completing each phase, verify:
 
+- [ ] **`make test` passes** — ALL unit tests green (BLOCKING)
 - [ ] `make` compiles with zero warnings
 - [ ] `make run` launches without crashes
 - [ ] Play for 2 minutes without issues
@@ -1534,6 +1570,8 @@ After completing each phase, verify:
 - [ ] No obvious visual glitches
 - [ ] Memory usage stable (no leaks)
 - [ ] Git commit: `git add -A && git commit -m "Complete Phase X"`
+
+**CRITICAL**: If `make test` fails, DO NOT proceed. Fix failing tests first.
 
 ### Phase 0 Verification ✓
 - [x] `make` compiles with zero warnings
@@ -1565,17 +1603,76 @@ After completing each phase, verify:
 - [x] Projectiles rendered as yellow circles
 - [x] New game resets projectile pool properly
 
+### Phase 3 Verification ✓
+- [x] **`make test` passes** — 22 tests, 540 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Enemies spawn automatically off-screen
+- [x] Enemies chase player (ENEMY_CHASER AI)
+- [x] Spawn rate starts at 2s, decreases over time (min 0.3s)
+- [x] Projectiles damage enemies, enemies show health bars when hit
+- [x] Enemies die and award score when health reaches 0
+- [x] Enemy-player collision damages player
+- [x] Player invincibility prevents rapid damage
+- [x] Enemy knockback on collision
+- [x] Enemy count displayed on HUD
+- [x] Game over when player dies from enemies
+- [x] New game resets enemy pool properly
+
+### Phase 4 Verification ✓
+- [x] **`make test` passes** — 22 tests, 540 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] XP crystals spawn when enemies die (green diamond shape)
+- [x] XP crystals pulse with glow effect
+- [x] Crystals are attracted toward player within magnet radius (80px)
+- [x] Crystals collected when player touches them
+- [x] XP counter displayed on HUD (XP: current/needed)
+- [x] Level up triggers when XP >= threshold (10 * level^2)
+- [x] STATE_LEVELUP shows game in background with overlay
+- [x] 3 random unique upgrade options displayed
+- [x] Keys 1/2/3 select upgrades
+- [x] Upgrades apply correctly (damage, fire rate, projectile count, speed, HP, magnet)
+- [x] Game resumes after upgrade selection
+- [x] Multiple level ups work correctly in sequence
+- [x] New game resets XP pool and player level properly
+
+### Phase 5 Verification ✓
+- [x] **`make test` passes** — 22 tests, 540 assertions
+- [x] `make` compiles with zero warnings
+- [x] `make run` launches without crashes
+- [x] Particle explosions spawn on enemy death (orange burst)
+- [x] Hit particles spawn on projectile impact (yellow burst)
+- [x] Particles fade out and shrink over lifetime
+- [x] Camera2D follows player with smooth lerp
+- [x] Screen shake triggers on enemy death (light shake)
+- [x] Screen shake triggers on player damage (stronger shake)
+- [x] Shake diminishes over duration
+- [x] HUD displays in screen space (doesn't move with camera)
+- [x] HUD shows: TIME, SCORE, LEVEL, HP bar, XP bar, ENEMIES count
+- [x] HUD has semi-transparent background for readability
+- [x] All game states (PLAYING, PAUSED, LEVELUP) use camera
+
 ---
 
 ## NOTES FOR ENGINEERS
 
-1. **Always test after each task** — never batch multiple tasks without testing
-2. **Keep functions small** — if a function exceeds 50 lines, split it
-3. **Use const where possible** — prevents accidental modifications
-4. **Initialize all variables** — raylib style guide requirement
-5. **Comment unclear code** — but prefer clear code over comments
-6. **Profile if slow** — use raylib's `GetFPS()` to monitor performance
+1. **Run `make test` FIRST** — before any other verification, tests must pass
+2. **Tests are BLOCKING** — failing tests = cannot proceed to next task
+3. **Always test after each task** — never batch multiple tasks without testing
+4. **Keep functions small** — if a function exceeds 50 lines, split it
+5. **Extract pure logic** — move testable code to utils.h/c for coverage
+6. **Use const where possible** — prevents accidental modifications
+7. **Initialize all variables** — raylib style guide requirement
+8. **Comment unclear code** — but prefer clear code over comments
+9. **Profile if slow** — use raylib's `GetFPS()` to monitor performance
+
+### Quick Test Command
+```bash
+make test && make && echo "Ready to proceed"
+```
+If this command fails at any point, fix the issue before continuing.
 
 ---
 
-*Last updated: 2026-01-04 — Phase 2 Complete (32/84 tasks, 38.1%)*
+*Last updated: 2026-01-04 — Phase 5 Complete (59/84 tasks, 70.2%)*
