@@ -1,4 +1,5 @@
 #include "weapon.h"
+#include "audio.h"
 #include "raymath.h"
 
 void WeaponInit(Weapon *weapon, WeaponType type)
@@ -41,6 +42,7 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir)
 
     Vector2 vel = Vector2Scale(dir, weapon->projectileSpeed);
     ProjectileSpawn(pool, pos, vel, weapon->damage, weapon->projectileRadius, weapon->projectileLifetime);
+    PlayGameSound(SOUND_SHOOT);
 
     weapon->cooldown = 1.0f / weapon->fireRate;
 }

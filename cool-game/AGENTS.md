@@ -17,7 +17,8 @@ cool-game/
 │   ├── xp.h/c          # XP crystals, magnet collection
 │   ├── upgrade.h/c     # Upgrade definitions and application
 │   ├── particle.h/c    # Particle effects (explosions, hit sparks)
-│   └── ui.h/c          # HUD rendering (health, XP, score, etc)
+│   ├── ui.h/c          # HUD rendering (health, XP, score, etc)
+│   └── audio.h/c       # Sound effects and music management
 ├── tests/
 │   ├── minunit.h       # Lightweight test framework
 │   ├── test_main.c     # Test runner
@@ -61,7 +62,8 @@ make test && make && echo "Ready to proceed"
 | HUD rendering | src/ui.h/c | DrawHUD (screen-space UI) |
 | Pure logic/math | src/utils.h/c | Collision, spawn interval |
 | Enemy types/AI | src/enemy.h/c | ENEMY_CHASER, EnemyPool |
-| Unit tests | tests/ | MinUnit framework, 22 tests |
+| Audio/music | src/audio.h/c | Sound effects, background music |
+| Unit tests | tests/ | MinUnit framework, 27 tests |
 | Implementation plan | ../IMPLEMENTATION_PLAN.md | Task breakdown by phase |
 
 ## CONVENTIONS
@@ -132,7 +134,7 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 4: XP & Leveling (complete)
 - [x] Phase 5: Particles & Juice (complete)
 - [x] Phase 6: Additional Enemies (complete)
-- [ ] Phase 7: Audio
+- [x] Phase 7: Audio (complete)
 - [ ] Phase 8: Visual Polish
 - [ ] Phase 9: Menus & Polish
 - [ ] Phase 10: Final Polish

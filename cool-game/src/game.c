@@ -2,6 +2,7 @@
 #include "types.h"
 #include "utils.h"
 #include "ui.h"
+#include "audio.h"
 #include "raymath.h"
 #include <math.h>
 #include <stdio.h>
@@ -84,6 +85,7 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                         SpawnExplosion(particles, deathPos, NEON_ORANGE, 15);
                     }
 
+                    PlayGameSound(SOUND_EXPLOSION);
                     TriggerScreenShake(game, 3.0f, 0.15f);
                     e->active = false;
                     enemies->count--;
@@ -109,6 +111,7 @@ static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, Parti
         if (CheckCircleCollision(player->pos, player->radius, e->pos, e->radius))
         {
             PlayerTakeDamage(player, e->damage);
+            PlayGameSound(SOUND_HIT);
             SpawnHitParticles(particles, player->pos, NEON_RED, 10);
             TriggerScreenShake(game, 8.0f, 0.25f);
 
@@ -230,6 +233,7 @@ void GameUpdate(GameData *game, float dt)
                 XPPoolInit(&game->xp);
                 ParticlePoolInit(&game->particles);
                 InitCamera(game);
+                MusicStart();
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
@@ -257,41 +261,63 @@ void GameUpdate(GameData *game, float dt)
             CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game);
 
             int collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
-            game->player.xp += collectedXP;
+            if (collectedXP > 0)
+            {
+                game->player.xp += collectedXP;
+                PlayGameSound(SOUND_PICKUP);
+            }
 
             if (CheckLevelUp(&game->player))
             {
+                PlayGameSound(SOUND_LEVELUP);
+                MusicPause();
                 GenerateRandomUpgrades(game->upgradeOptions, 3);
                 game->state = STATE_LEVELUP;
             }
 
             if (!game->player.alive)
             {
+                MusicStop();
                 game->state = STATE_GAMEOVER;
             }
 
-            if (IsKeyPressed(KEY_ESCAPE)) game->state = STATE_PAUSED;
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                MusicPause();
+                game->state = STATE_PAUSED;
+            }
             break;
 
         case STATE_PAUSED:
-            if (IsKeyPressed(KEY_ESCAPE)) game->state = STATE_PLAYING;
-            if (IsKeyPressed(KEY_Q)) game->state = STATE_MENU;
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                MusicResume();
+                game->state = STATE_PLAYING;
+            }
+            if (IsKeyPressed(KEY_Q))
+            {
+                MusicStop();
+                game->state = STATE_MENU;
+            }
             break;
 
         case STATE_LEVELUP:
             if (IsKeyPressed(KEY_ONE) || IsKeyPressed(KEY_KP_1))
             {
                 ApplyUpgrade(game->upgradeOptions[0], &game->player);
+                MusicResume();
                 game->state = STATE_PLAYING;
             }
             else if (IsKeyPressed(KEY_TWO) || IsKeyPressed(KEY_KP_2))
             {
                 ApplyUpgrade(game->upgradeOptions[1], &game->player);
+                MusicResume();
                 game->state = STATE_PLAYING;
             }
             else if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3))
             {
                 ApplyUpgrade(game->upgradeOptions[2], &game->player);
+                MusicResume();
                 game->state = STATE_PLAYING;
             }
             break;
