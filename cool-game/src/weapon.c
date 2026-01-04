@@ -40,9 +40,18 @@ void WeaponFire(Weapon *weapon, ProjectilePool *pool, Vector2 pos, Vector2 dir)
 {
     if (!WeaponCanFire(weapon)) return;
 
-    Vector2 vel = Vector2Scale(dir, weapon->projectileSpeed);
-    ProjectileSpawn(pool, pos, vel, weapon->damage, weapon->projectileRadius, weapon->projectileLifetime);
-    PlayGameSound(SOUND_SHOOT);
+    // Spread angle for multi-shot (radians between projectiles)
+    float spreadAngle = 0.15f;
+    float startAngle = -spreadAngle * (weapon->projectileCount - 1) / 2.0f;
 
+    for (int i = 0; i < weapon->projectileCount; i++)
+    {
+        float angle = startAngle + i * spreadAngle;
+        Vector2 rotDir = Vector2Rotate(dir, angle);
+        Vector2 vel = Vector2Scale(rotDir, weapon->projectileSpeed);
+        ProjectileSpawn(pool, pos, vel, weapon->damage, weapon->projectileRadius, weapon->projectileLifetime);
+    }
+
+    PlayGameSound(SOUND_SHOOT);
     weapon->cooldown = 1.0f / weapon->fireRate;
 }
