@@ -21,7 +21,7 @@ void PlayerInit(Player *player)
     WeaponInit(&player->weapon, WEAPON_PULSE_CANNON);
 }
 
-void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles)
+void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera)
 {
     if (!player->alive) return;
 
@@ -56,13 +56,9 @@ void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles)
     player->vel = Vector2Scale(input, player->speed);
     player->pos = Vector2Add(player->pos, Vector2Scale(player->vel, dt));
 
-    if (player->pos.x < player->radius) player->pos.x = player->radius;
-    if (player->pos.x > SCREEN_WIDTH - player->radius) player->pos.x = SCREEN_WIDTH - player->radius;
-    if (player->pos.y < player->radius) player->pos.y = player->radius;
-    if (player->pos.y > SCREEN_HEIGHT - player->radius) player->pos.y = SCREEN_HEIGHT - player->radius;
-
-    Vector2 mousePos = GetMousePosition();
-    Vector2 toMouse = Vector2Subtract(mousePos, player->pos);
+    Vector2 mouseScreenPos = GetMousePosition();
+    Vector2 mouseWorldPos = GetScreenToWorld2D(mouseScreenPos, camera);
+    Vector2 toMouse = Vector2Subtract(mouseWorldPos, player->pos);
     float toMouseLength = Vector2Length(toMouse);
 
     if (IsGamepadAvailable(0))

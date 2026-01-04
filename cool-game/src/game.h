@@ -7,6 +7,7 @@
 #include "enemy.h"
 #include "xp.h"
 #include "upgrade.h"
+#include "particle.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -26,12 +27,17 @@ typedef struct GameData {
     ProjectilePool projectiles;
     EnemyPool enemies;
     XPPool xp;
+    ParticlePool particles;
     float spawnTimer;
     UpgradeType upgradeOptions[3];
+    Camera2D camera;
+    float shakeIntensity;
+    float shakeDuration;
 } GameData;
 
 void GameInit(GameData *game);
 void GameUpdate(GameData *game, float dt);
 void GameDraw(GameData *game);
+void TriggerScreenShake(GameData *game, float intensity, float duration);
 
 #endif

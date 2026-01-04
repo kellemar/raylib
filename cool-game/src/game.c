@@ -1,12 +1,14 @@
 #include "game.h"
 #include "types.h"
 #include "utils.h"
+#include "ui.h"
 #include "raymath.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define XP_COLLECT_RADIUS 15.0f
+#define CAMERA_LERP_SPEED 5.0f
 
 static int GetXPForLevel(int level)
 {
@@ -28,7 +30,7 @@ static Vector2 GetSpawnPosition(Vector2 playerPos)
     return spawnPos;
 }
 
-static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, GameData *game)
+static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, XPPool *xp, ParticlePool *particles, GameData *game)
 {
     for (int i = 0; i < MAX_PROJECTILES; i++)
     {
@@ -44,6 +46,8 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
             {
                 e->health -= p->damage;
 
+                SpawnHitParticles(particles, p->pos, NEON_YELLOW, 5);
+
                 if (!p->pierce)
                 {
                     p->active = false;
@@ -53,6 +57,8 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
                 if (e->health <= 0.0f)
                 {
                     XPSpawn(xp, e->pos, e->xpValue);
+                    SpawnExplosion(particles, e->pos, NEON_ORANGE, 15);
+                    TriggerScreenShake(game, 3.0f, 0.15f);
                     e->active = false;
                     enemies->count--;
                     game->score += e->xpValue * 10;
@@ -64,7 +70,7 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
     }
 }
 
-static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player)
+static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player, ParticlePool *particles, GameData *game)
 {
     if (!player->alive) return;
     if (player->invincibilityTimer > 0.0f) return;
@@ -77,6 +83,8 @@ static void CheckEnemyPlayerCollisions(EnemyPool *enemies, Player *player)
         if (CheckCircleCollision(player->pos, player->radius, e->pos, e->radius))
         {
             PlayerTakeDamage(player, e->damage);
+            SpawnHitParticles(particles, player->pos, NEON_RED, 10);
+            TriggerScreenShake(game, 8.0f, 0.25f);
 
             float dx = player->pos.x - e->pos.x;
             float dy = player->pos.y - e->pos.y;
@@ -124,6 +132,46 @@ static void DrawUpgradeOption(int index, Upgrade upgrade, float y)
     DrawText(upgrade.description, (int)(boxX + 60), (int)(y + 42), 16, NEON_GREEN);
 }
 
+static void InitCamera(GameData *game)
+{
+    game->camera.target = game->player.pos;
+    game->camera.offset = (Vector2){ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
+    game->camera.rotation = 0.0f;
+    game->camera.zoom = 1.0f;
+    game->shakeIntensity = 0.0f;
+    game->shakeDuration = 0.0f;
+}
+
+static void UpdateGameCamera(GameData *game, float dt)
+{
+    game->camera.target = Vector2Lerp(game->camera.target, game->player.pos, CAMERA_LERP_SPEED * dt);
+
+    if (game->shakeDuration > 0.0f)
+    {
+        game->shakeDuration -= dt;
+        float shakeFactor = game->shakeDuration > 0.0f ? game->shakeDuration / 0.25f : 0.0f;
+        float offsetX = ((float)(rand() % 100) / 100.0f - 0.5f) * 2.0f * game->shakeIntensity * shakeFactor;
+        float offsetY = ((float)(rand() % 100) / 100.0f - 0.5f) * 2.0f * game->shakeIntensity * shakeFactor;
+        game->camera.offset = (Vector2){ SCREEN_WIDTH / 2.0f + offsetX, SCREEN_HEIGHT / 2.0f + offsetY };
+    }
+    else
+    {
+        game->camera.offset = (Vector2){ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f };
+    }
+}
+
+void TriggerScreenShake(GameData *game, float intensity, float duration)
+{
+    if (intensity > game->shakeIntensity)
+    {
+        game->shakeIntensity = intensity;
+    }
+    if (duration > game->shakeDuration)
+    {
+        game->shakeDuration = duration;
+    }
+}
+
 void GameInit(GameData *game)
 {
     game->state = STATE_MENU;
@@ -135,6 +183,8 @@ void GameInit(GameData *game)
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
     XPPoolInit(&game->xp);
+    ParticlePoolInit(&game->particles);
+    InitCamera(game);
 }
 
 void GameUpdate(GameData *game, float dt)
@@ -152,16 +202,20 @@ void GameUpdate(GameData *game, float dt)
                 ProjectilePoolInit(&game->projectiles);
                 EnemyPoolInit(&game->enemies);
                 XPPoolInit(&game->xp);
+                ParticlePoolInit(&game->particles);
+                InitCamera(game);
             }
             if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
 
         case STATE_PLAYING:
             game->gameTime += dt;
-            PlayerUpdate(&game->player, dt, &game->projectiles);
+            PlayerUpdate(&game->player, dt, &game->projectiles, game->camera);
             ProjectilePoolUpdate(&game->projectiles, dt);
             EnemyPoolUpdate(&game->enemies, game->player.pos, dt);
             XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, dt);
+            ParticlePoolUpdate(&game->particles, dt);
+            UpdateGameCamera(game, dt);
 
             game->spawnTimer += dt;
             float spawnInterval = GetSpawnInterval(game->gameTime);
@@ -172,8 +226,8 @@ void GameUpdate(GameData *game, float dt)
                 game->spawnTimer = 0.0f;
             }
 
-            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, game);
-            CheckEnemyPlayerCollisions(&game->enemies, &game->player);
+            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &game->xp, &game->particles, game);
+            CheckEnemyPlayerCollisions(&game->enemies, &game->player, &game->particles, game);
 
             int collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
             game->player.xp += collectedXP;
@@ -221,6 +275,15 @@ void GameUpdate(GameData *game, float dt)
     }
 }
 
+static void DrawGameWorld(GameData *game)
+{
+    ParticlePoolDraw(&game->particles);
+    XPPoolDraw(&game->xp);
+    EnemyPoolDraw(&game->enemies);
+    ProjectilePoolDraw(&game->projectiles);
+    PlayerDraw(&game->player);
+}
+
 void GameDraw(GameData *game)
 {
     switch (game->state)
@@ -234,25 +297,17 @@ void GameDraw(GameData *game)
 
         case STATE_PLAYING:
             ClearBackground(VOID_BLACK);
-            XPPoolDraw(&game->xp);
-            EnemyPoolDraw(&game->enemies);
-            ProjectilePoolDraw(&game->projectiles);
-            PlayerDraw(&game->player);
-
-            DrawText(TextFormat("TIME: %.1f", game->gameTime), 10, 10, 20, NEON_WHITE);
-            DrawText(TextFormat("SCORE: %d", game->score), 10, 40, 20, NEON_YELLOW);
-            DrawText(TextFormat("LEVEL: %d", game->player.level), 10, 70, 20, NEON_CYAN);
-            DrawText(TextFormat("HP: %.0f/%.0f", game->player.health, game->player.maxHealth), 10, 100, 20, NEON_GREEN);
-            DrawText(TextFormat("XP: %d/%d", game->player.xp, game->player.xpToNextLevel), 10, 130, 20, NEON_PINK);
-            DrawText(TextFormat("ENEMIES: %d", game->enemies.count), 10, 160, 20, NEON_RED);
+            BeginMode2D(game->camera);
+                DrawGameWorld(game);
+            EndMode2D();
+            DrawHUD(game);
             break;
 
         case STATE_PAUSED:
             ClearBackground(VOID_BLACK);
-            XPPoolDraw(&game->xp);
-            EnemyPoolDraw(&game->enemies);
-            ProjectilePoolDraw(&game->projectiles);
-            PlayerDraw(&game->player);
+            BeginMode2D(game->camera);
+                DrawGameWorld(game);
+            EndMode2D();
             DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){ 0, 0, 0, 150 });
             DrawText("PAUSED", SCREEN_WIDTH/2 - MeasureText("PAUSED", 60)/2, 250, 60, NEON_YELLOW);
             DrawText("Press ESC to Resume", SCREEN_WIDTH/2 - MeasureText("Press ESC to Resume", 20)/2, 350, 20, NEON_CYAN);
@@ -261,10 +316,9 @@ void GameDraw(GameData *game)
 
         case STATE_LEVELUP:
             ClearBackground(VOID_BLACK);
-            XPPoolDraw(&game->xp);
-            EnemyPoolDraw(&game->enemies);
-            ProjectilePoolDraw(&game->projectiles);
-            PlayerDraw(&game->player);
+            BeginMode2D(game->camera);
+                DrawGameWorld(game);
+            EndMode2D();
             DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){ 0, 0, 0, 180 });
 
             DrawText("LEVEL UP!", SCREEN_WIDTH/2 - MeasureText("LEVEL UP!", 50)/2, 120, 50, NEON_GREEN);

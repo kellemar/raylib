@@ -23,7 +23,7 @@ typedef struct Player {
 } Player;
 
 void PlayerInit(Player *player);
-void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles);
+void PlayerUpdate(Player *player, float dt, ProjectilePool *projectiles, Camera2D camera);
 void PlayerDraw(Player *player);
 void PlayerTakeDamage(Player *player, float damage);
 

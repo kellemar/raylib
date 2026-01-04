@@ -43,9 +43,7 @@ void ProjectilePoolUpdate(ProjectilePool *pool, float dt)
         p->pos.y += p->vel.y * dt;
         p->lifetime -= dt;
 
-        if (p->lifetime <= 0.0f ||
-            p->pos.x < -100.0f || p->pos.x > SCREEN_WIDTH + 100.0f ||
-            p->pos.y < -100.0f || p->pos.y > SCREEN_HEIGHT + 100.0f)
+        if (p->lifetime <= 0.0f)
         {
             p->active = false;
             pool->count--;
