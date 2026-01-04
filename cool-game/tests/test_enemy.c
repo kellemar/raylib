@@ -11,10 +11,21 @@
 #define ELITE_XP_MULT       5
 #define ELITE_SPEED_MULT    0.8f
 
+// Boss enemy stats (matching enemy.h)
+#define BOSS_SPAWN_INTERVAL 300.0f  // 5 minutes
+#define BOSS_BASE_HEALTH    2000.0f
+#define BOSS_BASE_RADIUS    60.0f
+#define BOSS_BASE_DAMAGE    30.0f
+#define BOSS_BASE_SPEED     50.0f
+#define BOSS_XP_VALUE       100
+#define BOSS_ATTACK_INTERVAL 3.0f
+#define BOSS_CHARGE_TIME    1.0f
+
 typedef enum EnemyType {
     ENEMY_CHASER,
     ENEMY_ORBITER,
     ENEMY_SPLITTER,
+    ENEMY_BOSS,
     ENEMY_TYPE_COUNT
 } EnemyType;
 
@@ -33,6 +44,12 @@ typedef struct Enemy {
     float orbitDistance;
     int splitCount;
     int isElite;  // Elite flag
+    // Boss fields
+    int isBoss;
+    int bossPhase;
+    float bossAttackTimer;
+    float bossChargeTimer;
+    int bossCharging;
 } Enemy;
 
 typedef struct EnemyPool {
@@ -61,6 +78,11 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->type = type;
             e->active = 1;
             e->isElite = 0;
+            e->isBoss = 0;
+            e->bossPhase = 0;
+            e->bossAttackTimer = 0.0f;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = 0;
 
             switch (type)
             {
@@ -100,6 +122,20 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->splitCount = 2;
                     break;
 
+                case ENEMY_BOSS:
+                    e->radius = BOSS_BASE_RADIUS;
+                    e->speed = BOSS_BASE_SPEED;
+                    e->health = BOSS_BASE_HEALTH;
+                    e->maxHealth = BOSS_BASE_HEALTH;
+                    e->damage = BOSS_BASE_DAMAGE;
+                    e->xpValue = BOSS_XP_VALUE;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 0.0f;
+                    e->splitCount = 0;
+                    e->isBoss = 1;
+                    e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
+                    break;
+
                 default:
                     e->radius = 12.0f;
                     e->speed = 100.0f;
@@ -134,6 +170,45 @@ static Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos)
         e->speed *= ELITE_SPEED_MULT;
     }
     return e;
+}
+
+static Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber)
+{
+    Enemy *e = EnemySpawn(pool, ENEMY_BOSS, pos);
+    if (e)
+    {
+        // Scale boss stats based on boss number
+        float scaleFactor = 1.0f + (bossNumber - 1) * 0.5f;
+        e->health *= scaleFactor;
+        e->maxHealth *= scaleFactor;
+        e->damage *= scaleFactor;
+        e->xpValue = BOSS_XP_VALUE * bossNumber;
+    }
+    return e;
+}
+
+static int EnemyPoolHasBoss(EnemyPool *pool)
+{
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+        if (pool->enemies[i].active && pool->enemies[i].isBoss)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static Enemy* EnemyPoolGetBoss(EnemyPool *pool)
+{
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+        if (pool->enemies[i].active && pool->enemies[i].isBoss)
+        {
+            return &pool->enemies[i];
+        }
+    }
+    return 0;
 }
 
 static const char* test_enemy_pool_init(void)
@@ -348,6 +423,113 @@ static const char* test_elite_constants(void)
     return 0;
 }
 
+// Boss enemy tests
+
+static const char* test_boss_spawn_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawn(&pool, ENEMY_BOSS, pos);
+
+    mu_assert_true(e->isBoss);
+    mu_assert_false(e->isElite);
+    mu_assert_float_eq(BOSS_BASE_RADIUS, e->radius);
+    mu_assert_float_eq(BOSS_BASE_SPEED, e->speed);
+    mu_assert_float_eq(BOSS_BASE_HEALTH, e->health);
+    mu_assert_float_eq(BOSS_BASE_HEALTH, e->maxHealth);
+    mu_assert_float_eq(BOSS_BASE_DAMAGE, e->damage);
+    mu_assert_int_eq(BOSS_XP_VALUE, e->xpValue);
+    return 0;
+}
+
+static const char* test_boss_constants(void)
+{
+    // Verify boss constants are sensible
+    mu_assert_float_eq(300.0f, BOSS_SPAWN_INTERVAL);  // 5 minutes
+    mu_assert_float_eq(2000.0f, BOSS_BASE_HEALTH);
+    mu_assert_float_eq(60.0f, BOSS_BASE_RADIUS);
+    mu_assert_float_eq(30.0f, BOSS_BASE_DAMAGE);
+    mu_assert_float_eq(50.0f, BOSS_BASE_SPEED);
+    mu_assert_int_eq(100, BOSS_XP_VALUE);
+    mu_assert_float_eq(3.0f, BOSS_ATTACK_INTERVAL);
+    mu_assert_float_eq(1.0f, BOSS_CHARGE_TIME);
+    return 0;
+}
+
+static const char* test_boss_pool_has_boss(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    // No boss initially
+    mu_assert_false(EnemyPoolHasBoss(&pool));
+
+    // Spawn regular enemy
+    Vector2 pos = { 0.0f, 0.0f };
+    EnemySpawn(&pool, ENEMY_CHASER, pos);
+    mu_assert_false(EnemyPoolHasBoss(&pool));
+
+    // Spawn boss
+    EnemySpawn(&pool, ENEMY_BOSS, pos);
+    mu_assert_true(EnemyPoolHasBoss(&pool));
+
+    return 0;
+}
+
+static const char* test_boss_pool_get_boss(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    // No boss initially
+    mu_assert(EnemyPoolGetBoss(&pool) == 0, "No boss should return null");
+
+    // Spawn regular enemies
+    Vector2 pos = { 0.0f, 0.0f };
+    EnemySpawn(&pool, ENEMY_CHASER, pos);
+    EnemySpawn(&pool, ENEMY_ORBITER, pos);
+
+    mu_assert(EnemyPoolGetBoss(&pool) == 0, "No boss should still return null");
+
+    // Spawn boss
+    Enemy *boss = EnemySpawn(&pool, ENEMY_BOSS, pos);
+    Enemy *found = EnemyPoolGetBoss(&pool);
+
+    mu_assert(found == boss, "Should return the boss");
+    mu_assert_true(found->isBoss);
+
+    return 0;
+}
+
+static const char* test_boss_scaling(void)
+{
+    EnemyPool pool1;
+    EnemyPoolInit(&pool1);
+    EnemyPool pool2;
+    EnemyPoolInit(&pool2);
+
+    Vector2 pos = { 0.0f, 0.0f };
+
+    // First boss (bossNumber = 1)
+    Enemy *boss1 = EnemySpawnBoss(&pool1, pos, 1);
+
+    // Second boss (bossNumber = 2) - should be 50% stronger
+    Enemy *boss2 = EnemySpawnBoss(&pool2, pos, 2);
+
+    // Boss 2 should have more health
+    mu_assert(boss2->health > boss1->health, "Boss 2 should have more health");
+    mu_assert(boss2->damage > boss1->damage, "Boss 2 should deal more damage");
+    mu_assert(boss2->xpValue > boss1->xpValue, "Boss 2 should give more XP");
+
+    // Verify scaling factor (50% increase per boss)
+    float expectedHealthBoss2 = BOSS_BASE_HEALTH * 1.5f;  // 1 + (2-1)*0.5
+    mu_assert_float_eq(expectedHealthBoss2, boss2->health);
+
+    return 0;
+}
+
 const char* run_enemy_tests(void)
 {
     mu_run_test(test_enemy_pool_init);
@@ -363,5 +545,11 @@ const char* run_enemy_tests(void)
     mu_run_test(test_elite_orbiter_stats);
     mu_run_test(test_elite_splitter_stats);
     mu_run_test(test_elite_constants);
+    // Boss enemy tests
+    mu_run_test(test_boss_spawn_stats);
+    mu_run_test(test_boss_constants);
+    mu_run_test(test_boss_pool_has_boss);
+    mu_run_test(test_boss_pool_get_boss);
+    mu_run_test(test_boss_scaling);
     return 0;
 }

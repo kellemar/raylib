@@ -2,8 +2,10 @@
 #include "game.h"
 #include "types.h"
 #include "weapon.h"
+#include "enemy.h"
 #include "raylib.h"
 #include <stdio.h>
+#include <math.h>
 
 void DrawHUD(GameData *game)
 {
@@ -52,6 +54,60 @@ void DrawHUD(GameData *game)
     Color weaponColor = WeaponGetColor(game->player.weapon.type);
     DrawText(TextFormat("WEAPON: %s", weaponName), padding, startY + lineHeight * 7 + 10, 14, weaponColor);
     DrawText("[Q/E] Switch", padding, startY + lineHeight * 8 + 8, 12, GRAY);
+
+    // Boss warning display
+    if (game->bossWarningActive)
+    {
+        // Flashing "WARNING - BOSS INCOMING" text
+        float flash = (sinf((float)GetTime() * 10.0f) + 1.0f) * 0.5f;
+        unsigned char alpha = (unsigned char)(150 + 105 * flash);
+        Color warningColor = (Color){ 255, 50, 50, alpha };
+
+        const char *warningText = "!! BOSS INCOMING !!";
+        int textWidth = MeasureText(warningText, 40);
+        int centerX = SCREEN_WIDTH / 2 - textWidth / 2;
+        int centerY = SCREEN_HEIGHT / 4;
+
+        // Draw background
+        DrawRectangle(centerX - 20, centerY - 10, textWidth + 40, 60, (Color){ 0, 0, 0, 180 });
+        DrawText(warningText, centerX, centerY, 40, warningColor);
+
+        // Countdown
+        const char *countText = TextFormat("%.1f", game->bossWarningTimer);
+        int countWidth = MeasureText(countText, 30);
+        DrawText(countText, SCREEN_WIDTH / 2 - countWidth / 2, centerY + 45, 30, NEON_YELLOW);
+    }
+
+    // Boss health bar (top center of screen)
+    Enemy *boss = EnemyPoolGetBoss(&game->enemies);
+    if (boss)
+    {
+        int barWidth = 400;
+        int barHeight = 20;
+        int barX = SCREEN_WIDTH / 2 - barWidth / 2;
+        int barY = 30;
+        float healthPercent = boss->health / boss->maxHealth;
+
+        // Background
+        DrawRectangle(barX - 5, barY - 5, barWidth + 10, barHeight + 10, (Color){ 0, 0, 0, 200 });
+
+        // Health bar
+        DrawRectangle(barX, barY, barWidth, barHeight, (Color){ 80, 20, 80, 255 });
+        DrawRectangle(barX, barY, (int)(barWidth * healthPercent), barHeight, (Color){ 200, 50, 200, 255 });
+
+        // Border
+        DrawRectangleLines(barX, barY, barWidth, barHeight, (Color){ 255, 100, 255, 255 });
+
+        // Boss label
+        const char *bossLabel = TextFormat("BOSS #%d", game->bossCount);
+        int labelWidth = MeasureText(bossLabel, 24);
+        DrawText(bossLabel, SCREEN_WIDTH / 2 - labelWidth / 2, barY - 25, 24, (Color){ 255, 100, 255, 255 });
+
+        // Health text
+        const char *healthText = TextFormat("%.0f / %.0f", boss->health, boss->maxHealth);
+        int healthWidth = MeasureText(healthText, 16);
+        DrawText(healthText, SCREEN_WIDTH / 2 - healthWidth / 2, barY + barHeight + 5, 16, NEON_WHITE);
+    }
 }
 
 void DrawTutorial(GameData *game)

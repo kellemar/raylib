@@ -9,6 +9,7 @@ typedef enum EnemyType {
     ENEMY_CHASER,
     ENEMY_ORBITER,
     ENEMY_SPLITTER,
+    ENEMY_BOSS,         // Boss enemy (spawns every 5 minutes)
     ENEMY_TYPE_COUNT
 } EnemyType;
 
@@ -33,6 +34,12 @@ typedef struct Enemy {
     float baseSpeed;        // Original speed before slow
     // Elite status
     bool isElite;           // Elite enemies are larger and stronger
+    // Boss specific
+    bool isBoss;            // Boss enemy flag
+    int bossPhase;          // Current boss attack phase (0-2)
+    float bossAttackTimer;  // Time until next attack
+    float bossChargeTimer;  // Charge-up before attack (anticipation)
+    bool bossCharging;      // Is boss currently charging an attack
 } Enemy;
 
 // Elite enemy multipliers
@@ -42,6 +49,16 @@ typedef struct Enemy {
 #define ELITE_DAMAGE_MULT   1.5f    // 50% more damage
 #define ELITE_XP_MULT       5       // 5x XP reward
 #define ELITE_SPEED_MULT    0.8f    // Slightly slower (but tankier)
+
+// Boss enemy stats
+#define BOSS_SPAWN_INTERVAL 300.0f  // 5 minutes (300 seconds)
+#define BOSS_BASE_HEALTH    2000.0f // High health pool
+#define BOSS_BASE_RADIUS    60.0f   // Large visual size
+#define BOSS_BASE_DAMAGE    30.0f   // High contact damage
+#define BOSS_BASE_SPEED     50.0f   // Slow but menacing
+#define BOSS_XP_VALUE       100     // Massive XP reward
+#define BOSS_ATTACK_INTERVAL 3.0f   // Seconds between attacks
+#define BOSS_CHARGE_TIME    1.0f    // Anticipation before attack
 
 typedef struct EnemyPool {
     Enemy enemies[MAX_ENEMIES];
@@ -56,5 +73,8 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
 void EnemyApplySlow(Enemy *enemy, float amount, float duration);
 Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance);
 Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
+Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber);
+bool EnemyPoolHasBoss(EnemyPool *pool);
+Enemy* EnemyPoolGetBoss(EnemyPool *pool);
 
 #endif

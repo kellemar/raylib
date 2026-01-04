@@ -42,6 +42,11 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
                     e->isElite = false;
+                    e->isBoss = false;
+                    e->bossPhase = 0;
+                    e->bossAttackTimer = 0.0f;
+                    e->bossChargeTimer = 0.0f;
+                    e->bossCharging = false;
                     break;
 
                 case ENEMY_ORBITER:
@@ -59,6 +64,11 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
                     e->isElite = false;
+                    e->isBoss = false;
+                    e->bossPhase = 0;
+                    e->bossAttackTimer = 0.0f;
+                    e->bossChargeTimer = 0.0f;
+                    e->bossCharging = false;
                     break;
 
                 case ENEMY_SPLITTER:
@@ -76,6 +86,33 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
                     e->isElite = false;
+                    e->isBoss = false;
+                    e->bossPhase = 0;
+                    e->bossAttackTimer = 0.0f;
+                    e->bossChargeTimer = 0.0f;
+                    e->bossCharging = false;
+                    break;
+
+                case ENEMY_BOSS:
+                    e->radius = BOSS_BASE_RADIUS;
+                    e->speed = BOSS_BASE_SPEED;
+                    e->baseSpeed = BOSS_BASE_SPEED;
+                    e->health = BOSS_BASE_HEALTH;
+                    e->maxHealth = BOSS_BASE_HEALTH;
+                    e->damage = BOSS_BASE_DAMAGE;
+                    e->xpValue = BOSS_XP_VALUE;
+                    e->orbitAngle = 0.0f;
+                    e->orbitDistance = 0.0f;
+                    e->splitCount = 0;
+                    e->hitFlashTimer = 0.0f;
+                    e->slowTimer = 0.0f;
+                    e->slowAmount = 0.0f;
+                    e->isElite = false;
+                    e->isBoss = true;
+                    e->bossPhase = 0;
+                    e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
+                    e->bossChargeTimer = 0.0f;
+                    e->bossCharging = false;
                     break;
 
                 default:
@@ -93,6 +130,11 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
                     e->isElite = false;
+                    e->isBoss = false;
+                    e->bossPhase = 0;
+                    e->bossAttackTimer = 0.0f;
+                    e->bossChargeTimer = 0.0f;
+                    e->bossCharging = false;
                     break;
             }
 
@@ -128,6 +170,11 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
             e->slowTimer = 0.0f;
             e->slowAmount = 0.0f;
             e->isElite = false;  // Splitter children are never elite
+            e->isBoss = false;
+            e->bossPhase = 0;
+            e->bossAttackTimer = 0.0f;
+            e->bossChargeTimer = 0.0f;
+            e->bossCharging = false;
 
             pool->count++;
             return e;
@@ -152,6 +199,45 @@ Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos)
         e->baseSpeed *= ELITE_SPEED_MULT;
     }
     return e;
+}
+
+Enemy* EnemySpawnBoss(EnemyPool *pool, Vector2 pos, int bossNumber)
+{
+    Enemy *e = EnemySpawn(pool, ENEMY_BOSS, pos);
+    if (e)
+    {
+        // Scale boss stats based on boss number (gets harder each time)
+        float scaleFactor = 1.0f + (bossNumber - 1) * 0.5f;  // 50% stronger each boss
+        e->health *= scaleFactor;
+        e->maxHealth *= scaleFactor;
+        e->damage *= scaleFactor;
+        e->xpValue = BOSS_XP_VALUE * bossNumber;  // More XP for later bosses
+    }
+    return e;
+}
+
+bool EnemyPoolHasBoss(EnemyPool *pool)
+{
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+        if (pool->enemies[i].active && pool->enemies[i].isBoss)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+Enemy* EnemyPoolGetBoss(EnemyPool *pool)
+{
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+        if (pool->enemies[i].active && pool->enemies[i].isBoss)
+        {
+            return &pool->enemies[i];
+        }
+    }
+    return NULL;
 }
 
 void EnemyApplySlow(Enemy *enemy, float amount, float duration)
@@ -277,6 +363,60 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
                 break;
             }
 
+            case ENEMY_BOSS:
+            {
+                // Boss AI: Slowly chase player, periodically charge and dash
+                Vector2 toPlayer = Vector2Subtract(playerPos, e->pos);
+                float distance = Vector2Length(toPlayer);
+
+                // Update boss attack timer
+                if (!e->bossCharging)
+                {
+                    e->bossAttackTimer -= dt;
+                    if (e->bossAttackTimer <= 0.0f)
+                    {
+                        // Start charging an attack
+                        e->bossCharging = true;
+                        e->bossChargeTimer = BOSS_CHARGE_TIME;
+                        e->vel = (Vector2){ 0.0f, 0.0f };  // Stop while charging
+                    }
+                    else
+                    {
+                        // Normal movement: slowly chase player
+                        if (distance > 0.0f)
+                        {
+                            Vector2 dir = Vector2Scale(toPlayer, 1.0f / distance);
+                            e->vel = Vector2Scale(dir, e->speed);
+                        }
+                    }
+                }
+                else
+                {
+                    // Charging up attack
+                    e->bossChargeTimer -= dt;
+                    if (e->bossChargeTimer <= 0.0f)
+                    {
+                        // Execute attack: dash toward player
+                        if (distance > 0.0f)
+                        {
+                            Vector2 dir = Vector2Scale(toPlayer, 1.0f / distance);
+                            e->vel = Vector2Scale(dir, e->speed * 8.0f);  // Fast dash
+                        }
+                        e->bossCharging = false;
+                        e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
+                        // Cycle through attack phases
+                        e->bossPhase = (e->bossPhase + 1) % 3;
+                    }
+                    else
+                    {
+                        // Hold still while charging (with slight vibration)
+                        float shake = sinf(e->bossChargeTimer * 50.0f) * 2.0f;
+                        e->vel = (Vector2){ shake, shake };
+                    }
+                }
+                break;
+            }
+
             default:
             {
                 Vector2 toPlayer = Vector2Subtract(playerPos, e->pos);
@@ -305,8 +445,30 @@ void EnemyPoolDraw(EnemyPool *pool)
         bool isFlashing = e->hitFlashTimer > 0.0f;
         bool isSlowed = e->slowTimer > 0.0f;
 
+        // Draw boss glow effect (behind enemy) - purple pulsing aura
+        if (e->isBoss && !isFlashing)
+        {
+            float pulse = sinf((float)GetTime() * 3.0f) * 0.4f + 0.6f;
+            float glowRadius = e->radius + 20.0f * pulse;
+
+            // Outer dark purple glow
+            DrawCircleV(e->pos, glowRadius + 15.0f, (Color){ 80, 0, 80, 40 });
+            DrawCircleV(e->pos, glowRadius + 8.0f, (Color){ 128, 0, 128, 60 });
+            DrawCircleV(e->pos, glowRadius, (Color){ 180, 50, 180, (unsigned char)(80 * pulse) });
+
+            // Warning indicator when charging
+            if (e->bossCharging)
+            {
+                // Flashing red warning
+                float flashRate = (BOSS_CHARGE_TIME - e->bossChargeTimer) / BOSS_CHARGE_TIME;
+                float flashIntensity = (sinf(flashRate * 30.0f) + 1.0f) * 0.5f;
+                Color warningColor = (Color){ 255, 50, 50, (unsigned char)(200 * flashIntensity) };
+                DrawCircleLinesV(e->pos, e->radius + 10.0f + flashRate * 20.0f, warningColor);
+                DrawCircleLinesV(e->pos, e->radius + 15.0f + flashRate * 25.0f, warningColor);
+            }
+        }
         // Draw elite glow effect (behind enemy)
-        if (e->isElite && !isFlashing)
+        else if (e->isElite && !isFlashing)
         {
             // Pulsing gold glow
             float pulse = sinf((float)GetTime() * 4.0f) * 0.3f + 0.7f;
@@ -342,6 +504,11 @@ void EnemyPoolDraw(EnemyPool *pool)
                 case ENEMY_SPLITTER:
                     outerColor = NEON_YELLOW;
                     innerColor = NEON_GREEN;
+                    break;
+
+                case ENEMY_BOSS:
+                    outerColor = (Color){ 128, 0, 128, 255 };   // Deep purple
+                    innerColor = (Color){ 200, 50, 200, 255 };  // Bright magenta
                     break;
 
                 default:
@@ -383,6 +550,39 @@ void EnemyPoolDraw(EnemyPool *pool)
             {
                 DrawCircleLinesV(e->pos, e->radius + 2.0f, (Color){ 255, 215, 0, 255 });  // Gold border
                 DrawCircleLinesV(e->pos, e->radius + 4.0f, (Color){ 255, 200, 50, 180 });  // Outer gold border
+            }
+
+            // Boss specific decorations
+            if (e->isBoss && !isSlowed)
+            {
+                // Draw skull-like pattern or menacing eyes
+                float eyeOffset = e->radius * 0.3f;
+                float eyeRadius = e->radius * 0.15f;
+                Vector2 leftEye = { e->pos.x - eyeOffset, e->pos.y - eyeOffset * 0.5f };
+                Vector2 rightEye = { e->pos.x + eyeOffset, e->pos.y - eyeOffset * 0.5f };
+                DrawCircleV(leftEye, eyeRadius, (Color){ 255, 0, 0, 255 });
+                DrawCircleV(rightEye, eyeRadius, (Color){ 255, 0, 0, 255 });
+
+                // Crown-like spikes on top
+                for (int spike = 0; spike < 5; spike++)
+                {
+                    float angle = PI + (spike - 2) * 0.3f;
+                    float spikeLen = e->radius * 0.4f;
+                    Vector2 spikeEnd = {
+                        e->pos.x + cosf(angle) * (e->radius + spikeLen),
+                        e->pos.y + sinf(angle) * (e->radius + spikeLen)
+                    };
+                    Vector2 spikeBase = {
+                        e->pos.x + cosf(angle) * e->radius,
+                        e->pos.y + sinf(angle) * e->radius
+                    };
+                    DrawLineEx(spikeBase, spikeEnd, 3.0f, (Color){ 200, 50, 200, 255 });
+                }
+
+                // Multiple purple rings
+                DrawCircleLinesV(e->pos, e->radius + 3.0f, (Color){ 180, 50, 180, 255 });
+                DrawCircleLinesV(e->pos, e->radius + 6.0f, (Color){ 128, 0, 128, 200 });
+                DrawCircleLinesV(e->pos, e->radius + 9.0f, (Color){ 80, 0, 80, 150 });
             }
         }
 

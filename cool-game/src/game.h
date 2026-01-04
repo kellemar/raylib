@@ -73,6 +73,11 @@ typedef struct GameData {
     // Settings
     GameSettings settings;     // Persisted game settings
     int settingsSelection;     // Current settings menu item (0-3)
+    // Boss system
+    float bossSpawnTimer;      // Time until next boss spawn
+    int bossCount;             // Number of bosses defeated this run
+    float bossWarningTimer;    // Warning display timer before boss spawn
+    bool bossWarningActive;    // Show "BOSS INCOMING" warning
 } GameData;
 
 void GameInit(GameData *game);

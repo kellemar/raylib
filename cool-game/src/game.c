@@ -731,6 +731,10 @@ void GameInit(GameData *game)
     game->transitionTimer = 0.0f;
     game->fadeAlpha = 0.0f;
     game->settingsSelection = 0;
+    game->bossSpawnTimer = BOSS_SPAWN_INTERVAL;
+    game->bossCount = 0;
+    game->bossWarningTimer = 0.0f;
+    game->bossWarningActive = false;
 
     // Load and apply settings
     LoadSettings(&game->settings);
@@ -922,6 +926,38 @@ void GameUpdate(GameData *game, float dt)
                     EnemySpawn(&game->enemies, enemyType, spawnPos);
                 }
                 game->spawnTimer = 0.0f;
+            }
+
+            // Boss spawning logic (every 5 minutes)
+            if (!EnemyPoolHasBoss(&game->enemies))
+            {
+                // Decrease boss spawn timer
+                game->bossSpawnTimer -= dt;
+
+                // Start warning 5 seconds before boss spawns
+                if (game->bossSpawnTimer <= 5.0f && !game->bossWarningActive)
+                {
+                    game->bossWarningActive = true;
+                    game->bossWarningTimer = 5.0f;
+                }
+
+                // Update warning timer
+                if (game->bossWarningActive)
+                {
+                    game->bossWarningTimer -= dt;
+                }
+
+                // Spawn boss when timer reaches zero
+                if (game->bossSpawnTimer <= 0.0f)
+                {
+                    game->bossCount++;
+                    Vector2 spawnPos = GetSpawnPosition(game->player.pos);
+                    EnemySpawnBoss(&game->enemies, spawnPos, game->bossCount);
+                    game->bossSpawnTimer = BOSS_SPAWN_INTERVAL;  // Reset for next boss
+                    game->bossWarningActive = false;
+                    // Screen shake when boss spawns
+                    TriggerScreenShake(game, 15.0f, 0.8f);
+                }
             }
 
             // Apply slow aura around player if upgraded
