@@ -22,7 +22,10 @@ static int LoadHighScore(void)
     FILE *file = fopen(HIGHSCORE_FILE, "rb");
     if (file != NULL)
     {
-        fread(&score, sizeof(int), 1, file);
+        if (fread(&score, sizeof(int), 1, file) != 1)
+        {
+            score = 0;  // Handle read failure
+        }
         fclose(file);
     }
     return score;
