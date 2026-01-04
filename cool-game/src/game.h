@@ -12,6 +12,7 @@
 
 typedef enum GameState {
     STATE_MENU,
+    STATE_STARTING,    // "Get Ready" transition screen
     STATE_PLAYING,
     STATE_PAUSED,
     STATE_LEVELUP,
@@ -52,6 +53,9 @@ typedef struct GameData {
     int hitstopFrames;         // Frames to freeze game (hitstop effect)
     float timeScale;           // Time multiplier for slow-mo (1.0 = normal)
     float tutorialTimer;       // Time elapsed since game start (for tutorial)
+    // Starting transition
+    float transitionTimer;     // Timer for "Get Ready" screen
+    float fadeAlpha;           // Fade overlay alpha (0-1)
 } GameData;
 
 void GameInit(GameData *game);

@@ -404,6 +404,8 @@ void GameInit(GameData *game)
     game->hitstopFrames = 0;
     game->timeScale = 1.0f;
     game->tutorialTimer = 0.0f;
+    game->transitionTimer = 0.0f;
+    game->fadeAlpha = 0.0f;
     PlayerInit(&game->player);
     ProjectilePoolInit(&game->projectiles);
     EnemyPoolInit(&game->enemies);
@@ -439,6 +441,48 @@ void GameUpdate(GameData *game, float dt)
 
             if (IsKeyPressed(KEY_ENTER))
             {
+                // Start "Get Ready" transition
+                game->state = STATE_STARTING;
+                game->transitionTimer = 0.0f;
+                game->fadeAlpha = 0.0f;
+                TransitionToGameMusic();  // Start crossfade to game music
+            }
+            if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
+            break;
+
+        case STATE_STARTING:
+        {
+            // Transition timing:
+            // 0.0 - 0.5s: Fade to black
+            // 0.5 - 2.0s: Show "Get Ready" on black
+            // 2.0 - 2.5s: Fade from black to game
+            // 2.5s+: Start playing
+            float fadeInEnd = 0.5f;
+            float holdEnd = 2.0f;
+            float fadeOutEnd = 2.5f;
+
+            game->transitionTimer += dt;
+
+            if (game->transitionTimer < fadeInEnd)
+            {
+                // Fade to black
+                game->fadeAlpha = game->transitionTimer / fadeInEnd;
+            }
+            else if (game->transitionTimer < holdEnd)
+            {
+                // Hold on black with "Get Ready"
+                game->fadeAlpha = 1.0f;
+            }
+            else if (game->transitionTimer < fadeOutEnd)
+            {
+                // Fade from black to game
+                float progress = (game->transitionTimer - holdEnd) / (fadeOutEnd - holdEnd);
+                game->fadeAlpha = 1.0f - progress;
+            }
+            else
+            {
+                // Transition complete - start playing
+                game->fadeAlpha = 0.0f;
                 game->state = STATE_PLAYING;
                 game->gameTime = 0.0f;
                 game->score = 0;
@@ -455,10 +499,9 @@ void GameUpdate(GameData *game, float dt)
                 XPPoolInit(&game->xp);
                 ParticlePoolInit(&game->particles);
                 InitCamera(game);
-                TransitionToGameMusic();  // Smooth crossfade from intro to game music
             }
-            if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
             break;
+        }
 
         case STATE_PLAYING:
             // Hitstop: freeze game for a few frames on big kills
@@ -618,6 +661,49 @@ static void DrawSceneToTexture(GameData *game)
                 DrawText("Press ESC to Quit", SCREEN_WIDTH/2 - MeasureText("Press ESC to Quit", 20)/2, 400, 20, GRAY);
                 DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 500, 16, (Color){ 100, 100, 100, 255 });
                 break;
+
+            case STATE_STARTING:
+            {
+                // Draw appropriate background based on transition phase
+                float fadeInEnd = 0.5f;
+                float holdEnd = 2.0f;
+
+                if (game->transitionTimer < fadeInEnd)
+                {
+                    // Still fading from menu - show starfield
+                    DrawMenuStars();
+                }
+                else if (game->transitionTimer >= holdEnd)
+                {
+                    // Fading into game - show game world
+                    BeginMode2D(game->camera);
+                        DrawGameWorld(game);
+                    EndMode2D();
+                }
+
+                // Draw fade overlay
+                unsigned char alpha = (unsigned char)(game->fadeAlpha * 255.0f);
+                DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){ 0, 0, 0, alpha });
+
+                // Draw "Get Ready" text when fully faded to black
+                if (game->fadeAlpha > 0.9f)
+                {
+                    const char *readyText = "GET READY...";
+                    int textWidth = MeasureText(readyText, 50);
+
+                    // Pulsing effect
+                    float pulse = 0.8f + 0.2f * sinf(game->transitionTimer * 4.0f);
+                    Color textColor = (Color){
+                        (unsigned char)(NEON_CYAN.r * pulse),
+                        (unsigned char)(NEON_CYAN.g * pulse),
+                        (unsigned char)(NEON_CYAN.b * pulse),
+                        255
+                    };
+
+                    DrawText(readyText, SCREEN_WIDTH/2 - textWidth/2, SCREEN_HEIGHT/2 - 25, 50, textColor);
+                }
+                break;
+            }
 
             case STATE_PLAYING:
                 BeginMode2D(game->camera);
