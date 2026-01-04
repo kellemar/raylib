@@ -375,6 +375,33 @@ float UnlocksGetMagnetBonus(UnlockData *unlocks);
 - [x] Phase 16: Boss Enemy System (complete)
 - [x] Phase 17: Permanent Unlocks (complete)
 - [x] Phase 18: Leaderboard System (complete)
+- [x] Phase 19: Character Select (complete)
+
+## CHARACTER SELECT SYSTEM
+
+3 playable characters with distinct stats and colors.
+
+### Character Stats
+| Character | HP | Speed | Magnet | Armor | Damage | XP |
+|-----------|-----|-------|--------|-------|--------|-----|
+| VANGUARD | 100 | 300 | 80 | 0 | 1.0x | 1.0x |
+| TITAN | 150 | 240 | 60 | 5 | 1.2x | 0.9x |
+| PHANTOM | 70 | 380 | 120 | 0 | 0.9x | 1.25x |
+
+### Unlock Conditions
+- VANGUARD: Always unlocked
+- TITAN: Play 5 games
+- PHANTOM: Survive 5 minutes
+
+### Key Functions
+```c
+CharacterDef GetCharacterDef(CharacterType type);
+const char* CharacterGetName(CharacterType type);
+const char* CharacterGetDescription(CharacterType type);
+void PlayerInitWithCharacter(Player *player, CharacterType type);
+
+#define CHARACTER_COUNT 3
+```
 
 ## LEADERBOARD SYSTEM
 

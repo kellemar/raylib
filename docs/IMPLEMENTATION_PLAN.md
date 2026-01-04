@@ -1658,7 +1658,8 @@ make         # MUST PASS - zero warnings
 | 16 | Boss Enemy System | 1 | 1 ✓ |
 | 17 | Permanent Unlocks | 1 | 1 ✓ |
 | 18 | Leaderboard System | 1 | 1 ✓ |
-| **Total** | | **98** | **98** |
+| 19 | Character Select | 1 | 1 ✓ |
+| **Total** | | **99** | **99** |
 
 ### Estimated Time
 
@@ -2053,4 +2054,37 @@ Added top 10 high score leaderboard:
 
 ---
 
-*Last updated: 2026-01-05 — Leaderboard System added (98/98 tasks, 100%)*
+### 2026-01-05 — Character Select System
+
+Added 3 playable characters with distinct stats:
+
+| Character | HP | Speed | Magnet | Armor | Damage | XP |
+|-----------|-----|-------|--------|-------|--------|-----|
+| VANGUARD | 100 | 300 | 80 | 0 | 1.0x | 1.0x |
+| TITAN | 150 | 240 | 60 | 5 | 1.2x | 0.9x |
+| PHANTOM | 70 | 380 | 120 | 0 | 0.9x | 1.25x |
+
+**Features:**
+- Character select screen with visual cards
+- Stats display and unlock requirements
+- Unique character colors applied to player
+- Integration with permanent unlocks system
+
+**Unlock conditions:**
+- VANGUARD: Always unlocked
+- TITAN: Play 5 games
+- PHANTOM: Survive 5 minutes
+
+**Key code changes:**
+- `character.h`: New file - CharacterType enum, CharacterDef struct
+- `character.c`: New file - Character definitions and stat retrieval
+- `player.h`: Added characterType, colors, PlayerInitWithCharacter
+- `player.c`: Character stats applied on init, colors used in draw
+- `game.h`: Added STATE_CHARACTER_SELECT, selectedCharacter
+- `game.c`: Character select UI and navigation
+
+**Tests updated:** 147 tests passing (added 8 character tests)
+
+---
+
+*Last updated: 2026-01-05 — Character Select added (99/99 tasks, 100%)*

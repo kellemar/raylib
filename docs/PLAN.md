@@ -72,7 +72,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 
 ### Phase 4: Polish (Week 5)
 - [x] Main menu with neon animations
-- [ ] Character select (3 characters with different stats)
+- [x] Character select (3 characters with different stats)
 - [x] Settings (volume, screen shake toggle, CRT filter toggle)
 - [x] Pause menu
 - [x] Tutorial overlay (first 30 seconds)
@@ -631,6 +631,18 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
   - **Special Upgrades** (6): Double Tap, Vampirism, Explosive Shots, Ricochet, Heat Seeker (Homing), Time Warp (Slow Aura)
 - **Added rarity system**: Common (white), Uncommon (green), Rare (yellow) with color-coded UI
 - **Implemented new mechanics**: Armor (damage reduction), HP regen, lifesteal, critical hits, dash damage, enemy slow aura
+
+---
+
+### 2026-01-05 — Character Select System
+- **Added 3 playable characters** with distinct playstyles:
+  - **VANGUARD**: Balanced - 100 HP, 300 speed, 80 magnet, 1.0x damage/XP
+  - **TITAN**: Tank - 150 HP, 240 speed, 5 armor, 1.2x damage, 0.9x XP
+  - **PHANTOM**: Speedster - 70 HP, 380 speed, 120 magnet, 0.9x damage, 1.25x XP
+- **Character select screen** with visual cards and stats
+- **Character colors** applied to player visuals
+- **Unlock integration**: Titan unlocks at 5 games, Phantom at 5 min survival
+- **Tests updated**: 147 tests passing (8 new character tests)
 
 ---
 
