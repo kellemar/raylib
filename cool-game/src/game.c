@@ -907,7 +907,20 @@ void GameUpdate(GameData *game, float dt)
             {
                 Vector2 spawnPos = GetSpawnPosition(game->player.pos);
                 EnemyType enemyType = (EnemyType)GetEnemyTypeForTime(game->gameTime);
-                EnemySpawn(&game->enemies, enemyType, spawnPos);
+
+                // Elite spawn chance increases over time (10% base + 1% per minute, max 25%)
+                float eliteChance = ELITE_SPAWN_CHANCE + (game->gameTime / 60.0f) * 0.01f;
+                if (eliteChance > 0.25f) eliteChance = 0.25f;
+
+                float roll = (float)(rand() % 1000) / 1000.0f;
+                if (roll < eliteChance)
+                {
+                    EnemySpawnElite(&game->enemies, enemyType, spawnPos);
+                }
+                else
+                {
+                    EnemySpawn(&game->enemies, enemyType, spawnPos);
+                }
                 game->spawnTimer = 0.0f;
             }
 

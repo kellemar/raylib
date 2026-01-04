@@ -31,7 +31,17 @@ typedef struct Enemy {
     float slowTimer;        // Remaining slow duration
     float slowAmount;       // Speed reduction (0.0 - 1.0)
     float baseSpeed;        // Original speed before slow
+    // Elite status
+    bool isElite;           // Elite enemies are larger and stronger
 } Enemy;
+
+// Elite enemy multipliers
+#define ELITE_SPAWN_CHANCE  0.1f    // 10% chance to spawn as elite
+#define ELITE_SIZE_MULT     1.5f    // 50% larger
+#define ELITE_HEALTH_MULT   3.0f    // 3x health
+#define ELITE_DAMAGE_MULT   1.5f    // 50% more damage
+#define ELITE_XP_MULT       5       // 5x XP reward
+#define ELITE_SPEED_MULT    0.8f    // Slightly slower (but tankier)
 
 typedef struct EnemyPool {
     Enemy enemies[MAX_ENEMIES];
@@ -45,5 +55,6 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos);
 Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, float radius, float health);
 void EnemyApplySlow(Enemy *enemy, float amount, float duration);
 Enemy* EnemyFindNearest(EnemyPool *pool, Vector2 pos, float maxDistance);
+Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos);
 
 #endif

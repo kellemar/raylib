@@ -41,6 +41,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->hitFlashTimer = 0.0f;
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
+                    e->isElite = false;
                     break;
 
                 case ENEMY_ORBITER:
@@ -57,6 +58,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->hitFlashTimer = 0.0f;
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
+                    e->isElite = false;
                     break;
 
                 case ENEMY_SPLITTER:
@@ -73,6 +75,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->hitFlashTimer = 0.0f;
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
+                    e->isElite = false;
                     break;
 
                 default:
@@ -89,6 +92,7 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
                     e->hitFlashTimer = 0.0f;
                     e->slowTimer = 0.0f;
                     e->slowAmount = 0.0f;
+                    e->isElite = false;
                     break;
             }
 
@@ -123,12 +127,31 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
             e->hitFlashTimer = 0.0f;
             e->slowTimer = 0.0f;
             e->slowAmount = 0.0f;
+            e->isElite = false;  // Splitter children are never elite
 
             pool->count++;
             return e;
         }
     }
     return NULL;
+}
+
+Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos)
+{
+    Enemy *e = EnemySpawn(pool, type, pos);
+    if (e)
+    {
+        // Apply elite multipliers
+        e->isElite = true;
+        e->radius *= ELITE_SIZE_MULT;
+        e->health *= ELITE_HEALTH_MULT;
+        e->maxHealth *= ELITE_HEALTH_MULT;
+        e->damage *= ELITE_DAMAGE_MULT;
+        e->xpValue *= ELITE_XP_MULT;
+        e->speed *= ELITE_SPEED_MULT;
+        e->baseSpeed *= ELITE_SPEED_MULT;
+    }
+    return e;
 }
 
 void EnemyApplySlow(Enemy *enemy, float amount, float duration)
@@ -282,6 +305,17 @@ void EnemyPoolDraw(EnemyPool *pool)
         bool isFlashing = e->hitFlashTimer > 0.0f;
         bool isSlowed = e->slowTimer > 0.0f;
 
+        // Draw elite glow effect (behind enemy)
+        if (e->isElite && !isFlashing)
+        {
+            // Pulsing gold glow
+            float pulse = sinf((float)GetTime() * 4.0f) * 0.3f + 0.7f;
+            float glowRadius = e->radius + 8.0f * pulse;
+            Color glowColor = (Color){ 255, 215, 0, (unsigned char)(100 * pulse) };  // Gold glow
+            DrawCircleV(e->pos, glowRadius + 4.0f, (Color){ 255, 215, 0, 50 });
+            DrawCircleV(e->pos, glowRadius, glowColor);
+        }
+
         if (isFlashing)
         {
             // Draw white flash
@@ -342,6 +376,13 @@ void EnemyPoolDraw(EnemyPool *pool)
             {
                 // Draw ice ring when slowed
                 DrawCircleLinesV(e->pos, e->radius + 2.0f, (Color){ 150, 200, 255, 150 });
+            }
+
+            // Draw elite crown/border
+            if (e->isElite)
+            {
+                DrawCircleLinesV(e->pos, e->radius + 2.0f, (Color){ 255, 215, 0, 255 });  // Gold border
+                DrawCircleLinesV(e->pos, e->radius + 4.0f, (Color){ 255, 200, 50, 180 });  // Outer gold border
             }
         }
 

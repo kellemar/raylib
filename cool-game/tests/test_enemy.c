@@ -3,6 +3,14 @@
 
 #define MAX_ENEMIES 500
 
+// Elite enemy multipliers (matching enemy.h)
+#define ELITE_SPAWN_CHANCE  0.1f
+#define ELITE_SIZE_MULT     1.5f
+#define ELITE_HEALTH_MULT   3.0f
+#define ELITE_DAMAGE_MULT   1.5f
+#define ELITE_XP_MULT       5
+#define ELITE_SPEED_MULT    0.8f
+
 typedef enum EnemyType {
     ENEMY_CHASER,
     ENEMY_ORBITER,
@@ -24,6 +32,7 @@ typedef struct Enemy {
     float orbitAngle;
     float orbitDistance;
     int splitCount;
+    int isElite;  // Elite flag
 } Enemy;
 
 typedef struct EnemyPool {
@@ -51,6 +60,7 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->vel = (Vector2){ 0.0f, 0.0f };
             e->type = type;
             e->active = 1;
+            e->isElite = 0;
 
             switch (type)
             {
@@ -110,6 +120,22 @@ static Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
     return 0;
 }
 
+static Enemy* EnemySpawnElite(EnemyPool *pool, EnemyType type, Vector2 pos)
+{
+    Enemy *e = EnemySpawn(pool, type, pos);
+    if (e)
+    {
+        e->isElite = 1;
+        e->radius *= ELITE_SIZE_MULT;
+        e->health *= ELITE_HEALTH_MULT;
+        e->maxHealth *= ELITE_HEALTH_MULT;
+        e->damage *= ELITE_DAMAGE_MULT;
+        e->xpValue *= ELITE_XP_MULT;
+        e->speed *= ELITE_SPEED_MULT;
+    }
+    return e;
+}
+
 static const char* test_enemy_pool_init(void)
 {
     EnemyPool pool;
@@ -152,6 +178,7 @@ static const char* test_enemy_spawn_chaser_stats(void)
     mu_assert_float_eq(30.0f, e->maxHealth);
     mu_assert_float_eq(10.0f, e->damage);
     mu_assert_int_eq(1, e->xpValue);
+    mu_assert_false(e->isElite);
     return 0;
 }
 
@@ -227,6 +254,7 @@ static const char* test_enemy_spawn_orbiter_stats(void)
     mu_assert_int_eq(2, e->xpValue);
     mu_assert_float_eq(200.0f, e->orbitDistance);
     mu_assert_int_eq(0, e->splitCount);
+    mu_assert_false(e->isElite);
     return 0;
 }
 
@@ -245,6 +273,78 @@ static const char* test_enemy_spawn_splitter_stats(void)
     mu_assert_float_eq(20.0f, e->damage);
     mu_assert_int_eq(3, e->xpValue);
     mu_assert_int_eq(2, e->splitCount);
+    mu_assert_false(e->isElite);
+    return 0;
+}
+
+// Elite enemy tests
+
+static const char* test_elite_chaser_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawnElite(&pool, ENEMY_CHASER, pos);
+
+    mu_assert_true(e->isElite);
+    // Base chaser: radius=12, speed=100, health=30, damage=10, xp=1
+    mu_assert_float_eq(12.0f * ELITE_SIZE_MULT, e->radius);
+    mu_assert_float_eq(100.0f * ELITE_SPEED_MULT, e->speed);
+    mu_assert_float_eq(30.0f * ELITE_HEALTH_MULT, e->health);
+    mu_assert_float_eq(30.0f * ELITE_HEALTH_MULT, e->maxHealth);
+    mu_assert_float_eq(10.0f * ELITE_DAMAGE_MULT, e->damage);
+    mu_assert_int_eq(1 * ELITE_XP_MULT, e->xpValue);
+    return 0;
+}
+
+static const char* test_elite_orbiter_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawnElite(&pool, ENEMY_ORBITER, pos);
+
+    mu_assert_true(e->isElite);
+    // Base orbiter: radius=15, speed=80, health=50, damage=15, xp=2
+    mu_assert_float_eq(15.0f * ELITE_SIZE_MULT, e->radius);
+    mu_assert_float_eq(80.0f * ELITE_SPEED_MULT, e->speed);
+    mu_assert_float_eq(50.0f * ELITE_HEALTH_MULT, e->health);
+    mu_assert_float_eq(50.0f * ELITE_HEALTH_MULT, e->maxHealth);
+    mu_assert_float_eq(15.0f * ELITE_DAMAGE_MULT, e->damage);
+    mu_assert_int_eq(2 * ELITE_XP_MULT, e->xpValue);
+    return 0;
+}
+
+static const char* test_elite_splitter_stats(void)
+{
+    EnemyPool pool;
+    EnemyPoolInit(&pool);
+
+    Vector2 pos = { 0.0f, 0.0f };
+    Enemy *e = EnemySpawnElite(&pool, ENEMY_SPLITTER, pos);
+
+    mu_assert_true(e->isElite);
+    // Base splitter: radius=20, speed=60, health=80, damage=20, xp=3
+    mu_assert_float_eq(20.0f * ELITE_SIZE_MULT, e->radius);
+    mu_assert_float_eq(60.0f * ELITE_SPEED_MULT, e->speed);
+    mu_assert_float_eq(80.0f * ELITE_HEALTH_MULT, e->health);
+    mu_assert_float_eq(80.0f * ELITE_HEALTH_MULT, e->maxHealth);
+    mu_assert_float_eq(20.0f * ELITE_DAMAGE_MULT, e->damage);
+    mu_assert_int_eq(3 * ELITE_XP_MULT, e->xpValue);
+    return 0;
+}
+
+static const char* test_elite_constants(void)
+{
+    // Verify the elite multiplier constants are sensible
+    mu_assert_float_eq(0.1f, ELITE_SPAWN_CHANCE);
+    mu_assert_float_eq(1.5f, ELITE_SIZE_MULT);
+    mu_assert_float_eq(3.0f, ELITE_HEALTH_MULT);
+    mu_assert_float_eq(1.5f, ELITE_DAMAGE_MULT);
+    mu_assert_int_eq(5, ELITE_XP_MULT);
+    mu_assert_float_eq(0.8f, ELITE_SPEED_MULT);
     return 0;
 }
 
@@ -258,5 +358,10 @@ const char* run_enemy_tests(void)
     mu_run_test(test_enemy_spawn_multiple);
     mu_run_test(test_enemy_pool_full);
     mu_run_test(test_enemy_reuse_slot);
+    // Elite enemy tests
+    mu_run_test(test_elite_chaser_stats);
+    mu_run_test(test_elite_orbiter_stats);
+    mu_run_test(test_elite_splitter_stats);
+    mu_run_test(test_elite_constants);
     return 0;
 }
