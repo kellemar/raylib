@@ -197,6 +197,26 @@ When modifying camera or adding camera-dependent features:
 - **Uncommon**: Green border
 - **Rare**: Yellow/Gold border
 
+## WEAPON EVOLUTION SYSTEM
+
+Weapons evolve when reaching max level (5) + acquiring catalyst upgrade.
+
+| Base Weapon | Catalyst Upgrade | Evolved Weapon | Key Enhancement |
+|-------------|------------------|----------------|-----------------|
+| Pulse Cannon | Pierce | MEGA CANNON | 50 damage, huge piercing beam |
+| Spread Shot | Multi Shot | CIRCLE BURST | 16-projectile 360° nova |
+| Homing Missile | Double Shot | SWARM | 6 homing missiles |
+| Lightning | Crit Chance | TESLA COIL | 3 chain bolts, 5 chains each |
+| Orbit Shield | Damage | BLADE DANCER | 2x orbit speed, 8 blades |
+| Flamethrower | Range | INFERNO | Double flames, wider cone |
+| Freeze Ray | Slow Aura | BLIZZARD | 4 ice shards, 80% slow |
+| Black Hole | Explosive | SINGULARITY | 2x pull, 100 explosion radius |
+
+### Evolution Requirements
+- **Weapon Level 5**: Each weapon upgrade increases weapon level
+- **Catalyst Upgrade**: Player must have acquired the specific catalyst
+- **Auto-Check**: Evolution triggers automatically after upgrade selection
+
 ## IMPLEMENTATION STATUS
 - [x] Phase 0: Project Setup (complete)
 - [x] Phase 1: Player System (complete)
@@ -210,6 +230,7 @@ When modifying camera or adding camera-dependent features:
 - [x] Phase 9: Menus & Polish (complete)
 - [x] Phase 10: Final Polish (complete)
 - [x] Phase 13: 22 Upgrade System (complete)
+- [x] Phase 14: Weapon Evolution System (complete)
 
 ## TESTING WITH PEEKABOO
 

@@ -1921,4 +1921,29 @@ Expanded the upgrade system from 6 to 22 types with rarity tiers:
 
 ---
 
-*Last updated: 2026-01-05 — 22 Upgrade System added (92/92 tasks, 100%)*
+### 2026-01-05 — Weapon Evolution System
+
+Added 8 evolved weapons that unlock at max level (5) + catalyst upgrade:
+
+| Base Weapon | Catalyst | Evolved Weapon |
+|-------------|----------|----------------|
+| Pulse Cannon | Pierce | Mega Cannon |
+| Spread Shot | Multi Shot | Circle Burst |
+| Homing Missile | Double Shot | Swarm |
+| Lightning | Crit Chance | Tesla Coil |
+| Orbit Shield | Damage | Blade Dancer |
+| Flamethrower | Range | Inferno |
+| Freeze Ray | Slow Aura | Blizzard |
+| Black Hole | Explosive | Singularity |
+
+**Key features:**
+- Weapon level system (max 5, increases with weapon upgrades)
+- Upgrade tracking via bitfield for catalyst detection
+- Evolved weapons have significantly enhanced stats
+- Auto-evolution check after each upgrade applied
+
+**Tests updated:** 113 tests passing (added 16 new evolution tests)
+
+---
+
+*Last updated: 2026-01-05 — Weapon Evolution System added (93/93 tasks, 100%)*

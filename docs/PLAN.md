@@ -64,7 +64,7 @@ You are a geometric shape trapped in an infinite neon void. Waves of hostile geo
 ### Phase 3: Depth (Week 4)
 - [x] 8 weapon types (see Weapons section)
 - [x] 20+ upgrades (damage, speed, multishot, pierce, etc.)
-- [ ] Weapon evolution system (combine 2 maxed weapons → ultimate)
+- [x] Weapon evolution system (combine 2 maxed weapons → ultimate)
 - [ ] Elite enemies (larger, special attacks)
 - [ ] Boss every 5 minutes
 - [ ] Permanent unlocks (new starting weapons, characters)
