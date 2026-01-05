@@ -498,7 +498,7 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 
 ## STRETCH GOALS
 
-- [ ] **Co-op**: Split screen local multiplayer
+- [~] **Co-op**: Split screen local multiplayer *(DESIGNED — see CO-OP SPLIT SCREEN section)*
 - [ ] **Daily Challenge**: Seeded run with leaderboard
 - [ ] **Endless Mode**: No boss, pure survival
 - [ ] **Arena Hazards**: Laser walls, pits, turrets
@@ -527,6 +527,145 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 | Right Stick | Aim |
 | A | Select upgrade |
 | Start | Pause |
+
+---
+
+## CO-OP SPLIT SCREEN
+
+> Local 2-player co-op with vertical split screen. Players share the same arena, XP pool, and upgrade choices.
+
+### Design Decisions
+
+| Question | Decision |
+|----------|----------|
+| Friendly fire | OFF |
+| Weapon loadouts | Separate (each picks starting weapon) |
+| Revive HP | Unlimited, decreasing (50% → 40% → 30% → 25% floor) |
+| Distance limit | None — natural consequences + partner arrow indicator |
+
+### Screen Layout
+
+```
+┌─────────────────┬─────────────────┐
+│                 │                 │
+│    PLAYER 1     │    PLAYER 2     │
+│   (640x720)     │   (640x720)     │
+│                 │                 │
+│   ┌───┐         │         ┌───┐   │
+│   │P1 │         │         │P2 │   │
+│   └───┘         │         └───┘   │
+│                 │                 │
+│  [HP]  [WEAPON] │ [WEAPON]  [HP]  │
+└─────────────────┴─────────────────┘
+      LEFT HALF        RIGHT HALF
+```
+
+**Why vertical split?**
+- Twin-stick shooters need horizontal space for enemy approach visibility
+- Vertical gives each player full width awareness
+- UI mirrors naturally (P1 left-aligned, P2 right-aligned)
+
+### Input Mapping
+
+#### Player 1 (Keyboard + Mouse)
+| Input | Action |
+|-------|--------|
+| WASD | Move |
+| Mouse | Aim |
+| Space | Dash |
+| Q/E | Weapon switch |
+| 1/2/3 | Select upgrade (when P1's turn) |
+
+#### Player 2 (Keyboard OR Gamepad)
+
+**Keyboard (Arrow Keys)**
+| Input | Action |
+|-------|--------|
+| Arrow Keys | Move |
+| IJKL | Aim direction (8-way) |
+| Right Shift | Dash |
+| U/O | Weapon switch |
+| 7/8/9 | Select upgrade (when P2's turn) |
+
+**Gamepad (Preferred)**
+| Input | Action |
+|-------|--------|
+| Left Stick | Move |
+| Right Stick | Aim |
+| A/X | Dash |
+| LB/RB | Weapon switch |
+| D-Pad | Select upgrade |
+
+### Camera System
+
+Each player has independent camera with smooth lerp follow. Cameras render to separate 640x720 textures, then composited with neon split line.
+
+```c
+typedef struct {
+    Camera2D cam1;          // P1 viewport camera
+    Camera2D cam2;          // P2 viewport camera
+    RenderTexture2D view1;  // P1 render target (640x720)
+    RenderTexture2D view2;  // P2 render target (640x720)
+} CoopCamera;
+```
+
+### Shared Systems
+
+- **XP Pool**: Combined — magnet pulls to nearest player
+- **Level**: Shared — both benefit from level-ups
+- **Upgrades**: Alternating selection (P1, P2, P1, P2...)
+- **Upgrades apply to BOTH players** (keeps things simple)
+
+### Death & Revive System
+
+| Event | Behavior |
+|-------|----------|
+| Player dies | Becomes "ghost" at death position |
+| Revive mechanic | Living player stands near ghost for 3 seconds |
+| Revive HP | 50% → 40% → 30% → 25% (decreases each death) |
+| Invincibility | 2 seconds after respawn |
+| Total party kill | Both dead simultaneously → Game Over |
+
+```
+┌─────────────────┬─────────────────┐
+│                 │                 │
+│    [GHOST]      │                 │
+│   "REVIVE ME"   │     [P2]        │
+│   ████████░░    │    HURRY!       │
+│    (2.1s)       │                 │
+│                 │                 │
+└─────────────────┴─────────────────┘
+```
+
+### Enemy Scaling (Co-op)
+
+| Metric | Multiplier |
+|--------|------------|
+| Spawn rate | 1.75x (not 2x — too punishing) |
+| Enemy health | 1.3x |
+| Boss health | 1.5x |
+| Boss targeting | Switches to nearest player |
+
+### Partner Indicator
+
+When partner is off-screen, show arrow at screen edge with distance:
+
+```
+┌─────────────────┐
+│                 │
+│      [P1]       │
+│                 │
+│              ──►│  ← "P2 is 847 units this way"
+│            847m │
+└─────────────────┘
+```
+
+### Technical Notes
+
+- **Memory**: +~1.8MB for second render texture
+- **Performance**: ~2x draw calls (each viewport renders world)
+- **Mitigation**: Frustum cull per viewport
+- **Target**: 60fps with 2×250 visible enemies
 
 ---
 
@@ -695,6 +834,19 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - 2-frame bright flash effect (expanding white rings)
 - Provides satisfying visual feedback for kills
 - Radius scales with enemy size
+
+---
+
+### 2026-01-05 — Co-op Split Screen Design
+- **Designed co-op mode** for local 2-player split screen multiplayer
+- **Screen layout**: Vertical split (640x720 per player) for horizontal awareness
+- **Input mapping**: P1 keyboard+mouse, P2 arrow keys or gamepad
+- **Shared systems**: XP pool, level, upgrades apply to both players
+- **Upgrade selection**: Alternates between players (P1 → P2 → P1...)
+- **Death/revive system**: Ghost state, 3-second revive timer, decreasing HP (50% → 25% floor)
+- **Enemy scaling**: 1.75x spawn rate, 1.3x health, 1.5x boss health
+- **Partner indicator**: Arrow at screen edge showing off-screen partner direction/distance
+- **Design decisions**: Friendly fire OFF, separate weapon loadouts, unlimited revives, no distance limit
 
 ---
 

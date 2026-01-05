@@ -13,10 +13,10 @@ void main()
 {
     vec2 uv = fragTexCoord;
 
-    // Barrel distortion
+    // Barrel distortion (reduced)
     vec2 center = uv - 0.5;
     float dist = dot(center, center);
-    uv = uv + center * dist * 0.1;
+    uv = uv + center * dist * 0.05;
 
     // Check if we're outside the texture after distortion
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
@@ -25,21 +25,21 @@ void main()
         return;
     }
 
-    // Scanlines
-    float scanline = sin(uv.y * 720.0 * 3.14159) * 0.03;
+    // Scanlines (reduced intensity for better HUD readability)
+    float scanline = sin(uv.y * 720.0 * 3.14159) * 0.015;
 
-    // RGB offset (chromatic aberration)
-    float offset = 0.002;
+    // RGB offset (chromatic aberration - reduced)
+    float offset = 0.001;
     float r = texture(texture0, uv + vec2(offset, 0.0)).r;
     float g = texture(texture0, uv).g;
     float b = texture(texture0, uv - vec2(offset, 0.0)).b;
 
-    // Vignette
-    float vignette = 1.0 - dist * 1.2;
+    // Vignette (reduced)
+    float vignette = 1.0 - dist * 0.6;
     vignette = clamp(vignette, 0.0, 1.0);
 
     // Flicker (subtle)
-    float flicker = 1.0 - sin(time * 10.0) * 0.01;
+    float flicker = 1.0 - sin(time * 10.0) * 0.005;
 
     vec3 color = vec3(r, g, b) * vignette * flicker;
     color -= scanline;

@@ -2341,11 +2341,12 @@ static void DrawSceneToTexture(GameData *game)
                             Player *p = CoopGetPlayer(&game->coop, i);
                             if (p)
                             {
-                                // Health bar (top of viewport)
-                                int barX = 10;
-                                int barY = 10;
+                                // P1 HUD on left of viewport, P2 HUD on right (to avoid shared HUD overlap)
                                 int barWidth = 150;
                                 int barHeight = 16;
+                                int barY = 10;
+                                int barX = (i == 0) ? 10 : (vpWidth - barWidth - 40);
+
                                 float healthRatio = p->health / p->maxHealth;
                                 DrawRectangle(barX, barY, barWidth, barHeight, (Color){ 50, 30, 30, 200 });
                                 DrawRectangle(barX, barY, (int)(barWidth * healthRatio), barHeight,
@@ -2354,7 +2355,8 @@ static void DrawSceneToTexture(GameData *game)
 
                                 // Player label (P1=cyan, P2=green to match player colors)
                                 const char *playerLabel = (i == 0) ? "P1" : "P2";
-                                DrawText(playerLabel, barX + barWidth + 10, barY, 16, (i == 0) ? NEON_CYAN : NEON_GREEN);
+                                int labelX = (i == 0) ? (barX + barWidth + 10) : (barX - 30);
+                                DrawText(playerLabel, labelX, barY, 16, (i == 0) ? NEON_CYAN : NEON_GREEN);
 
                                 // Dash indicator
                                 const char *dashText = (p->dashCooldown <= 0.0f) ? "DASH: READY" : "DASH: ...";
@@ -2402,9 +2404,17 @@ static void DrawSceneToTexture(GameData *game)
                     const char *levelText = TextFormat("LV %d", game->coop.sharedLevel);
                     DrawText(levelText, SCREEN_WIDTH / 2 - MeasureText(levelText, 20) / 2, SCREEN_HEIGHT - 65, 20, NEON_YELLOW);
 
-                    // Score with multiplier
+                    // Shared HUD panel background (centered at top, below split line)
+                    int hudPanelWidth = 200;
+                    int hudPanelHeight = 70;
+                    int hudPanelX = SCREEN_WIDTH / 2 - hudPanelWidth / 2;
+                    int hudPanelY = 8;
+                    DrawRectangle(hudPanelX, hudPanelY, hudPanelWidth, hudPanelHeight, (Color){ 0, 0, 0, 180 });
+                    DrawRectangleLinesEx((Rectangle){ (float)hudPanelX, (float)hudPanelY, (float)hudPanelWidth, (float)hudPanelHeight }, 1.0f, (Color){ 100, 50, 150, 200 });
+
+                    // Score with multiplier (larger font, inside panel)
                     const char *scoreText = TextFormat("SCORE: %d", game->score);
-                    DrawText(scoreText, SCREEN_WIDTH / 2 - MeasureText(scoreText, 16) / 2, 10, 16, NEON_WHITE);
+                    DrawText(scoreText, SCREEN_WIDTH / 2 - MeasureText(scoreText, 20) / 2, hudPanelY + 8, 20, NEON_YELLOW);
 
                     // Score multiplier
                     Color multiplierColor = NEON_GREEN;
@@ -2412,17 +2422,18 @@ static void DrawSceneToTexture(GameData *game)
                     if (game->scoreMultiplier >= MULTIPLIER_TIER_ORANGE) multiplierColor = NEON_ORANGE;
                     if (game->scoreMultiplier >= MULTIPLIER_TIER_PINK) multiplierColor = NEON_PINK;
                     const char *multText = TextFormat("x%.1f", game->scoreMultiplier);
-                    DrawText(multText, SCREEN_WIDTH / 2 + 60, 10, 14, multiplierColor);
+                    int scoreWidth = MeasureText(scoreText, 20);
+                    DrawText(multText, SCREEN_WIDTH / 2 + scoreWidth / 2 + 8, hudPanelY + 10, 16, multiplierColor);
 
-                    // Game time
+                    // Game time (centered, below score)
                     int minutes = (int)game->gameTime / 60;
                     int seconds = (int)game->gameTime % 60;
                     const char *timeText = TextFormat("%d:%02d", minutes, seconds);
-                    DrawText(timeText, SCREEN_WIDTH / 2 - MeasureText(timeText, 16) / 2, 30, 16, NEON_CYAN);
+                    DrawText(timeText, SCREEN_WIDTH / 2 - MeasureText(timeText, 18) / 2, hudPanelY + 32, 18, NEON_CYAN);
 
-                    // Kill count
+                    // Kill count (below time)
                     const char *killText = TextFormat("KILLS: %d", game->killCount);
-                    DrawText(killText, SCREEN_WIDTH / 2 - MeasureText(killText, 14) / 2, 50, 14, NEON_ORANGE);
+                    DrawText(killText, SCREEN_WIDTH / 2 - MeasureText(killText, 16) / 2, hudPanelY + 52, 16, NEON_ORANGE);
 
                     // Boss warning (centered)
                     if (game->bossWarningActive)
@@ -2444,14 +2455,14 @@ static void DrawSceneToTexture(GameData *game)
                         DrawText(countText, SCREEN_WIDTH / 2 - countWidth / 2, centerY + 32, 24, NEON_YELLOW);
                     }
 
-                    // Boss health bar (centered below score)
+                    // Boss health bar (centered below shared HUD panel)
                     Enemy *boss = EnemyPoolGetBoss(&game->enemies);
                     if (boss)
                     {
                         int bossBarWidth = 300;
                         int bossBarHeight = 16;
                         int bossBarX = SCREEN_WIDTH / 2 - bossBarWidth / 2;
-                        int bossBarY = 70;
+                        int bossBarY = hudPanelY + hudPanelHeight + 8;
                         float bossHealthPercent = boss->health / boss->maxHealth;
 
                         DrawRectangle(bossBarX - 3, bossBarY - 3, bossBarWidth + 6, bossBarHeight + 6, (Color){ 0, 0, 0, 200 });

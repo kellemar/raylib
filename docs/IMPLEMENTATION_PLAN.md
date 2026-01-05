@@ -1633,6 +1633,322 @@ make         # MUST PASS - zero warnings
 
 ---
 
+## PHASE 20: CO-OP SPLIT SCREEN
+
+### 20.1 Foundation
+
+#### P20.1.1 — Add CoopState and second player struct
+- **Description**: Core data structures for 2-player support
+- **Dependencies**: Character Select System (Phase 19)
+- **Actions**:
+  1. Create `cool-game/src/coop.h` with:
+     - `CoopState` struct: players[2], playerCount, sharedXP, sharedLevel, upgradeSelector
+     - `CoopCamera` struct: cam1, cam2, view1, view2
+  2. Add `GameMode` enum: `GAME_MODE_SOLO`, `GAME_MODE_COOP`
+  3. Add `gameMode` and `coopState` to GameData
+  4. Add P2 input handling fields (separate from P1)
+- **Verification**:
+  - [ ] `make` compiles successfully
+  - [ ] Structs correctly defined with all fields
+- **Status**: `[ ]`
+
+#### P20.1.2 — Implement split-screen rendering
+- **Description**: Two render textures for split viewports
+- **Dependencies**: P20.1.1
+- **Actions**:
+  1. Create two RenderTexture2D (640x720 each)
+  2. Implement `DrawSplitScreen()`:
+     - Render P1 view to view1
+     - Render P2 view to view2
+     - Composite both textures side by side
+     - Draw neon split line with glow
+  3. Apply bloom/CRT shaders per viewport
+- **Verification**:
+  - [ ] Both viewports render correctly
+  - [ ] Split line visible with glow effect
+  - [ ] Shaders apply to each viewport
+- **Status**: `[ ]`
+
+#### P20.1.3 — Basic P2 input (gamepad first)
+- **Description**: Second player gamepad controls
+- **Dependencies**: P20.1.2
+- **Actions**:
+  1. Implement `Player2UpdateGamepad()`:
+     - Check `IsGamepadAvailable(1)` for second gamepad
+     - Left stick: movement
+     - Right stick: aim
+     - A button: dash
+     - LB/RB: weapon switch
+  2. Store P2 input state separately from P1
+- **Verification**:
+  - [ ] P2 moves with second gamepad
+  - [ ] P2 aims independently
+  - [ ] P2 can dash and switch weapons
+- **Status**: `[ ]`
+
+#### P20.1.4 — Both players move and shoot
+- **Description**: Independent player actions
+- **Dependencies**: P20.1.3
+- **Actions**:
+  1. Update game loop to call PlayerUpdate for both players
+  2. Both players fire weapons independently
+  3. Projectiles track which player fired them (for potential future use)
+  4. Both players collide with enemies and take damage
+- **Verification**:
+  - [ ] Both players move independently
+  - [ ] Both players shoot toward their aim direction
+  - [ ] Both players can be damaged by enemies
+- **Status**: `[ ]`
+
+---
+
+### 20.2 Cameras & Viewports
+
+#### P20.2.1 — Independent camera per player
+- **Description**: Each player has their own following camera
+- **Dependencies**: P20.1.4
+- **Actions**:
+  1. Initialize cam1 and cam2 with different targets
+  2. Each camera lerps toward its player position
+  3. Screen shake applies to both cameras (shared effect)
+- **Verification**:
+  - [ ] P1 camera follows P1
+  - [ ] P2 camera follows P2
+  - [ ] Cameras move independently
+- **Status**: `[ ]`
+
+#### P20.2.2 — Proper viewport scissoring
+- **Description**: Clip rendering to each viewport
+- **Dependencies**: P20.2.1
+- **Actions**:
+  1. Use `BeginScissorMode()` for each viewport
+  2. P1 viewport: 0, 0, 640, 720
+  3. P2 viewport: 640, 0, 640, 720
+  4. Ensure entities only render in their viewport
+- **Verification**:
+  - [ ] No rendering bleeds across viewports
+  - [ ] Both viewports show correct world portions
+- **Status**: `[ ]`
+
+#### P20.2.3 — Partner indicator arrow
+- **Description**: Show partner direction when off-screen
+- **Dependencies**: P20.2.2
+- **Actions**:
+  1. Calculate if partner is outside viewport bounds
+  2. If off-screen, draw arrow at edge pointing toward partner
+  3. Show distance in meters (world units / 100)
+  4. Arrow color matches partner's player color
+- **Verification**:
+  - [ ] Arrow appears when partner is off-screen
+  - [ ] Arrow points in correct direction
+  - [ ] Distance updates in real-time
+- **Status**: `[ ]`
+
+---
+
+### 20.3 Shared Systems
+
+#### P20.3.1 — Shared XP pool and magnet behavior
+- **Description**: Combined XP collection
+- **Dependencies**: P20.2.3
+- **Actions**:
+  1. XP crystals attracted to NEAREST player
+  2. Collection adds to shared `coopState.sharedXP`
+  3. Both players benefit from shared level
+  4. Magnet radius uses max of both players' magnet stats
+- **Verification**:
+  - [ ] XP moves toward nearest player
+  - [ ] XP adds to shared pool
+  - [ ] Both players show same level
+- **Status**: `[ ]`
+
+#### P20.3.2 — Alternating upgrade selection
+- **Description**: Players take turns choosing upgrades
+- **Dependencies**: P20.3.1
+- **Actions**:
+  1. Track `upgradeSelector` (0 or 1)
+  2. On level up, highlight active selector's viewport
+  3. Dim non-selecting player's viewport
+  4. Only active selector can choose (1/2/3 or D-pad)
+  5. Alternate upgradeSelector after each selection
+- **Verification**:
+  - [ ] Only one player can select at a time
+  - [ ] Selection alternates correctly
+  - [ ] Visual feedback shows whose turn it is
+- **Status**: `[ ]`
+
+#### P20.3.3 — Upgrades apply to both players
+- **Description**: Shared upgrade benefits
+- **Dependencies**: P20.3.2
+- **Actions**:
+  1. When upgrade applied, apply to BOTH player structs
+  2. Weapon upgrades apply to both weapons
+  3. Player stat upgrades apply to both players
+  4. Special upgrades (vampirism, etc.) apply to both
+- **Verification**:
+  - [ ] Both players get damage boost from damage upgrade
+  - [ ] Both players get speed boost from speed upgrade
+  - [ ] All upgrade types work for both players
+- **Status**: `[ ]`
+
+---
+
+### 20.4 Death & Revive
+
+#### P20.4.1 — Ghost state rendering
+- **Description**: Dead players appear as ghosts
+- **Dependencies**: P20.3.3
+- **Actions**:
+  1. Add `ReviveState` to Player: needsRevive, reviveProgress, deathPos
+  2. When player dies, set needsRevive = true, store deathPos
+  3. Render ghost at deathPos: semi-transparent, pulsing
+  4. Display "REVIVE ME" text above ghost
+- **Verification**:
+  - [ ] Dead player shows as ghost
+  - [ ] Ghost appears at death location
+  - [ ] Ghost is visually distinct (transparent, pulsing)
+- **Status**: `[ ]`
+
+#### P20.4.2 — Revive proximity detection
+- **Description**: Living player can revive partner
+- **Dependencies**: P20.4.1
+- **Actions**:
+  1. Define `REVIVE_RANGE` (80 units)
+  2. Check distance between living player and ghost
+  3. If within range, increment reviveProgress
+  4. If living player takes damage, reset reviveProgress to 0
+- **Verification**:
+  - [ ] Revive progress increases when near ghost
+  - [ ] Progress resets on damage
+  - [ ] Must stay in range to continue reviving
+- **Status**: `[ ]`
+
+#### P20.4.3 — Revive progress bar
+- **Description**: Visual feedback for revive progress
+- **Dependencies**: P20.4.2
+- **Actions**:
+  1. Define `REVIVE_TIME` (3.0 seconds)
+  2. Draw progress bar above ghost
+  3. Fill based on reviveProgress / REVIVE_TIME
+  4. Add revive sound effect when progress > 0
+- **Verification**:
+  - [ ] Progress bar visible above ghost
+  - [ ] Bar fills as revive progresses
+  - [ ] Audio feedback during revive
+- **Status**: `[ ]`
+
+#### P20.4.4 — Respawn with invincibility and HP decay
+- **Description**: Complete revive and respawn player
+- **Dependencies**: P20.4.3
+- **Actions**:
+  1. Track `reviveCount` per player
+  2. When reviveProgress >= REVIVE_TIME:
+     - Respawn at ghost position
+     - HP = max(25%, 50% - reviveCount * 10%)
+     - Set invincibilityTimer = 2.0 seconds
+     - Increment reviveCount
+     - Reset needsRevive, reviveProgress
+  3. Spawn respawn particles
+- **Verification**:
+  - [ ] Player respawns after 3 seconds of reviving
+  - [ ] HP decreases with each revive (50% → 40% → 30% → 25%)
+  - [ ] 25% is the minimum respawn HP
+  - [ ] Invincibility prevents immediate re-death
+- **Status**: `[ ]`
+
+#### P20.4.5 — Total party kill detection
+- **Description**: Game over when both players dead
+- **Dependencies**: P20.4.4
+- **Actions**:
+  1. Check if both players have needsRevive == true
+  2. Add 0.5 second grace period for near-simultaneous deaths
+  3. If both dead after grace period → STATE_GAMEOVER
+  4. Display "TOTAL PARTY KILL" on game over screen
+- **Verification**:
+  - [ ] Game continues if one player alive
+  - [ ] Game over when both dead
+  - [ ] Grace period prevents unfair instant game over
+- **Status**: `[ ]`
+
+---
+
+### 20.5 Polish
+
+#### P20.5.1 — Enemy scaling for co-op
+- **Description**: Harder difficulty in co-op mode
+- **Dependencies**: P20.4.5
+- **Actions**:
+  1. Implement `GetCoopSpawnMultiplier()` → 1.75x
+  2. Implement `GetCoopHealthMultiplier()` → 1.3x
+  3. Apply multipliers in spawn and enemy init
+  4. Boss health multiplier: 1.5x in co-op
+- **Verification**:
+  - [ ] More enemies spawn in co-op
+  - [ ] Enemies have more health in co-op
+  - [ ] Bosses are tankier in co-op
+- **Status**: `[ ]`
+
+#### P20.5.2 — Boss AI targeting adjustments
+- **Description**: Boss targets nearest player
+- **Dependencies**: P20.5.1
+- **Actions**:
+  1. Boss calculates distance to both players
+  2. Target nearest player for charges
+  3. Switch target if other player becomes closer
+  4. Add sweep attack that moves between both players
+- **Verification**:
+  - [ ] Boss chases nearest player
+  - [ ] Boss switches targets appropriately
+  - [ ] Both players feel threatened by boss
+- **Status**: `[ ]`
+
+#### P20.5.3 — P2 keyboard controls
+- **Description**: Second player can use keyboard
+- **Dependencies**: P20.5.2
+- **Actions**:
+  1. Implement `Player2UpdateKeyboard()`:
+     - Arrow keys: movement
+     - IJKL: 8-directional aim
+     - Right Shift: dash
+     - U/O: weapon switch
+     - 7/8/9: upgrade selection
+  2. Allow keyboard if no gamepad detected
+- **Verification**:
+  - [ ] P2 can play with arrow keys
+  - [ ] IJKL aims in 8 directions
+  - [ ] All P2 controls work via keyboard
+- **Status**: `[ ]`
+
+#### P20.5.4 — Co-op specific tutorials
+- **Description**: Tutorial hints for co-op mode
+- **Dependencies**: P20.5.3
+- **Actions**:
+  1. Add co-op tutorial text: "P2: Arrow Keys / IJKL / R-Shift"
+  2. Show revive tutorial on first death: "Stand near partner to revive"
+  3. Show upgrade turn indicator: "Player 1's turn to choose"
+- **Verification**:
+  - [ ] Co-op controls shown in tutorial
+  - [ ] Revive mechanic explained on first death
+  - [ ] Upgrade selection turn is clear
+- **Status**: `[ ]`
+
+#### P20.5.5 — Menu: "1 PLAYER" / "2 PLAYERS" selection
+- **Description**: Mode selection from main menu
+- **Dependencies**: P20.5.4
+- **Actions**:
+  1. Add menu option after "Press ENTER to Start"
+  2. Show "1 PLAYER" and "2 PLAYERS" options
+  3. Use arrow keys to select mode
+  4. ENTER confirms selection
+  5. 2 PLAYERS → character select for both, then game
+- **Verification**:
+  - [ ] Can select 1 or 2 player mode from menu
+  - [ ] 2 player mode starts co-op correctly
+  - [ ] Both players can select characters
+- **Status**: `[ ]`
+
+---
+
 ## SUMMARY
 
 ### Task Counts by Phase
@@ -1659,7 +1975,8 @@ make         # MUST PASS - zero warnings
 | 17 | Permanent Unlocks | 1 | 1 ✓ |
 | 18 | Leaderboard System | 1 | 1 ✓ |
 | 19 | Character Select | 1 | 1 ✓ |
-| **Total** | | **99** | **99** |
+| 20 | Co-op Split Screen | 18 | 0 |
+| **Total** | | **117** | **99** |
 
 ### Estimated Time
 
@@ -2087,4 +2404,31 @@ Added 3 playable characters with distinct stats:
 
 ---
 
-*Last updated: 2026-01-05 — Character Select added (99/99 tasks, 100%)*
+### 2026-01-05 — Co-op Split Screen Design
+
+Added Phase 20 with 18 detailed implementation tasks for local 2-player split screen co-op:
+
+| Section | Tasks | Description |
+|---------|-------|-------------|
+| 20.1 Foundation | 4 | CoopState, split rendering, P2 input, dual player updates |
+| 20.2 Cameras | 3 | Independent cameras, viewport scissoring, partner indicator |
+| 20.3 Shared Systems | 3 | Shared XP pool, alternating upgrades, upgrade application |
+| 20.4 Death & Revive | 5 | Ghost state, proximity revive, progress bar, HP decay, TPK detection |
+| 20.5 Polish | 3 | Enemy scaling, boss AI, P2 keyboard, tutorials, menu selection |
+
+**Design decisions:**
+- Friendly fire: OFF
+- Weapon loadouts: Separate (each player picks starting weapon)
+- Revive HP: Decreasing (50% → 40% → 30% → 25% floor)
+- Distance limit: None (natural consequences + partner arrow indicator)
+
+**Enemy scaling:**
+- Spawn rate: 1.75x
+- Enemy health: 1.3x
+- Boss health: 1.5x
+
+**Estimated implementation time:** 8-12 days
+
+---
+
+*Last updated: 2026-01-05 — Co-op Split Screen designed (99/117 tasks complete, 18 pending)*
