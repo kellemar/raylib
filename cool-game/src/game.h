@@ -12,14 +12,17 @@
 #include "leaderboard.h"
 #include "character.h"
 #include "achievement.h"
+#include "coop.h"
 #include <stdbool.h>
 
 typedef enum GameState {
     STATE_MENU,
+    STATE_MODE_SELECT,     // 1 Player / 2 Players selection
     STATE_SETTINGS,        // Settings menu
     STATE_LEADERBOARD,     // High scores display
     STATE_ACHIEVEMENTS,    // Achievements display
-    STATE_CHARACTER_SELECT,// Character selection screen
+    STATE_CHARACTER_SELECT,// Character selection screen (P1)
+    STATE_CHARACTER_SELECT_P2, // Character selection screen (P2 in co-op)
     STATE_STARTING,        // "Get Ready" transition screen
     STATE_PLAYING,
     STATE_PAUSED,
@@ -96,13 +99,18 @@ typedef struct GameData {
     Leaderboard leaderboard;   // Top 10 high scores
     int leaderboardPosition;   // Position this run placed (-1 if didn't qualify)
     // Character selection
-    CharacterType selectedCharacter;  // Currently selected character
+    CharacterType selectedCharacter;  // Currently selected character (P1)
+    CharacterType selectedCharacterP2;// P2 character (co-op only)
     int characterSelection;           // Cursor position in character select
     // Achievement system
     AchievementData achievements;          // Persistent achievement data
     AchievementType pendingAchievement;    // Achievement to display (-1 if none)
     float achievementDisplayTimer;         // Time to show achievement popup
     int achievementSelection;              // Cursor position in achievements screen
+    // Co-op mode
+    GameMode gameMode;                     // Solo or Co-op
+    CoopState coop;                        // Co-op state (players, cameras, etc.)
+    int modeSelection;                     // 0 = 1 Player, 1 = 2 Players in mode select
 } GameData;
 
 void GameInit(GameData *game);

@@ -12,6 +12,7 @@ extern const char* run_unlocks_tests(void);
 extern const char* run_leaderboard_tests(void);
 extern const char* run_character_tests(void);
 extern const char* run_achievement_tests(void);
+extern const char* run_coop_tests(void);
 
 int main(void)
 {
@@ -28,6 +29,7 @@ int main(void)
     mu_run_suite("Leaderboard", run_leaderboard_tests);
     mu_run_suite("Character", run_character_tests);
     mu_run_suite("Achievement", run_achievement_tests);
+    mu_run_suite("Coop", run_coop_tests);
 
     mu_print_summary();
 

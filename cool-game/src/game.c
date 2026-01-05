@@ -817,6 +817,12 @@ void GameInit(GameData *game)
     game->achievementDisplayTimer = 0.0f;
     game->achievementSelection = 0;
 
+    // Initialize co-op fields
+    game->gameMode = GAME_MODE_SOLO;
+    game->modeSelection = 0;
+    game->selectedCharacterP2 = CHARACTER_VANGUARD;
+    CoopStateInit(&game->coop, GAME_MODE_SOLO);
+
     // Load and apply settings
     LoadSettings(&game->settings);
     ApplySettings(game);
@@ -856,9 +862,9 @@ void GameUpdate(GameData *game, float dt)
 
             if (IsKeyPressed(KEY_ENTER))
             {
-                // Go to character select
-                game->characterSelection = game->selectedCharacter;
-                game->state = STATE_CHARACTER_SELECT;
+                // Go to mode select (1 Player / 2 Players)
+                game->modeSelection = 0;  // Default to 1 Player
+                game->state = STATE_MODE_SELECT;
             }
             if (IsKeyPressed(KEY_TAB))
             {
@@ -875,6 +881,46 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_ACHIEVEMENTS;
             }
             if (IsKeyPressed(KEY_Q)) CloseWindow();
+            break;
+
+        case STATE_MODE_SELECT:
+            // Initialize and update starfield
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            // Navigate with up/down or W/S
+            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
+            {
+                game->modeSelection = 0;  // 1 Player
+            }
+            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
+            {
+                game->modeSelection = 1;  // 2 Players
+            }
+
+            if (IsKeyPressed(KEY_ENTER))
+            {
+                // Set game mode based on selection
+                game->gameMode = (game->modeSelection == 0) ? GAME_MODE_SOLO : GAME_MODE_COOP;
+
+                // Initialize co-op state
+                CoopStateInit(&game->coop, game->gameMode);
+
+                // Go to character select for P1
+                game->characterSelection = game->selectedCharacter;
+                game->state = STATE_CHARACTER_SELECT;
+            }
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                game->state = STATE_MENU;
+            }
             break;
 
         case STATE_LEADERBOARD:
@@ -956,6 +1002,71 @@ void GameUpdate(GameData *game, float dt)
                 if (UnlocksHasCharacter(&game->unlocks, selected))
                 {
                     game->selectedCharacter = selected;
+
+                    if (game->gameMode == GAME_MODE_COOP)
+                    {
+                        // Go to P2 character select
+                        game->characterSelection = CHARACTER_VANGUARD;  // Reset selection for P2
+                        game->state = STATE_CHARACTER_SELECT_P2;
+                    }
+                    else
+                    {
+                        // Start "Get Ready" transition
+                        game->state = STATE_STARTING;
+                        game->transitionTimer = 0.0f;
+                        game->fadeAlpha = 0.0f;
+                    }
+                }
+            }
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                game->state = STATE_MODE_SELECT;
+            }
+            break;
+
+        case STATE_CHARACTER_SELECT_P2:
+            // Initialize and update starfield
+            if (!menuStarsInit) InitMenuStars();
+            UpdateMenuStars(dt);
+
+            // Keep intro music playing
+            IntroMusicUpdate();
+            if (!IsIntroMusicPlaying())
+            {
+                IntroMusicStart();
+            }
+
+            // Navigate with left/right or A/D
+            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
+            {
+                game->characterSelection--;
+                if (game->characterSelection < 0) game->characterSelection = CHARACTER_COUNT - 1;
+            }
+            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
+            {
+                game->characterSelection++;
+                if (game->characterSelection >= CHARACTER_COUNT) game->characterSelection = 0;
+            }
+
+            // P2 can also use arrow keys
+            if (IsKeyPressed(KEY_J))
+            {
+                game->characterSelection--;
+                if (game->characterSelection < 0) game->characterSelection = CHARACTER_COUNT - 1;
+            }
+            if (IsKeyPressed(KEY_L))
+            {
+                game->characterSelection++;
+                if (game->characterSelection >= CHARACTER_COUNT) game->characterSelection = 0;
+            }
+
+            // Check if character is unlocked
+            if (IsKeyPressed(KEY_ENTER))
+            {
+                CharacterType selected = (CharacterType)game->characterSelection;
+                if (UnlocksHasCharacter(&game->unlocks, selected))
+                {
+                    game->selectedCharacterP2 = selected;
                     // Start "Get Ready" transition
                     game->state = STATE_STARTING;
                     game->transitionTimer = 0.0f;
@@ -964,7 +1075,9 @@ void GameUpdate(GameData *game, float dt)
             }
             if (IsKeyPressed(KEY_ESCAPE))
             {
-                game->state = STATE_MENU;
+                // Go back to P1 character select
+                game->characterSelection = game->selectedCharacter;
+                game->state = STATE_CHARACTER_SELECT;
             }
             break;
 
@@ -1055,6 +1168,28 @@ void GameUpdate(GameData *game, float dt)
                 XPPoolInit(&game->xp);
                 ParticlePoolInit(&game->particles);
                 InitCamera(game);
+
+                // Initialize co-op players if in co-op mode
+                if (game->gameMode == GAME_MODE_COOP)
+                {
+                    CoopInitPlayers(&game->coop, game->selectedCharacter, game->selectedCharacterP2);
+                    CoopInitCameras(&game->coop);
+
+                    // Apply meta bonuses to co-op players
+                    for (int i = 0; i < game->coop.playerCount; i++)
+                    {
+                        Player *p = CoopGetPlayer(&game->coop, i);
+                        if (p)
+                        {
+                            p->speed *= UnlocksGetSpeedBonus(&game->unlocks);
+                            p->maxHealth += UnlocksGetHealthBonus(&game->unlocks);
+                            p->health = p->maxHealth;
+                            p->weapon.damage *= UnlocksGetDamageBonus(&game->unlocks);
+                            p->xpMultiplier *= UnlocksGetXPBonus(&game->unlocks);
+                            p->magnetRadius *= UnlocksGetMagnetBonus(&game->unlocks);
+                        }
+                    }
+                }
             }
             break;
         }
@@ -1080,7 +1215,27 @@ void GameUpdate(GameData *game, float dt)
             game->timeScale = 1.0f;  // Reset to normal (level-up can override)
 
             // Chromatic aberration: intensity increases as health decreases below 50%
-            float healthPercent = game->player.health / game->player.maxHealth;
+            float healthPercent;
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                // Use lowest health player for chromatic effect
+                float minHealth = 1.0f;
+                for (int i = 0; i < game->coop.playerCount; i++)
+                {
+                    Player *p = CoopGetPlayer(&game->coop, i);
+                    if (p && CoopIsPlayerAlive(&game->coop, i))
+                    {
+                        float hp = p->health / p->maxHealth;
+                        if (hp < minHealth) minHealth = hp;
+                    }
+                }
+                healthPercent = minHealth;
+            }
+            else
+            {
+                healthPercent = game->player.health / game->player.maxHealth;
+            }
+
             if (game->settings.chromaticEnabled && healthPercent < 0.5f && healthPercent > 0.0f)
             {
                 // Scale from 0 at 50% health to 1.0 at 0% health
@@ -1124,19 +1279,62 @@ void GameUpdate(GameData *game, float dt)
             }
 
             EnemySpatialGridBuild(&enemyGrid, &game->enemies);
-            PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
+
+            // Get target position for enemies (nearest alive player in co-op)
+            Vector2 primaryPlayerPos;
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                // Update all co-op players
+                CoopUpdateInput(&game->coop, scaledDt, &game->projectiles);
+                CoopUpdateCameras(&game->coop, scaledDt);
+                CoopUpdateRevive(&game->coop, scaledDt);
+
+                // Use first alive player as primary target for enemy pathfinding
+                primaryPlayerPos = CoopGetNearestPlayerPos(&game->coop, (Vector2){ SCREEN_WIDTH/2.0f, SCREEN_HEIGHT/2.0f });
+            }
+            else
+            {
+                PlayerUpdate(&game->player, scaledDt, &game->projectiles, game->camera);
+                primaryPlayerPos = game->player.pos;
+                UpdateGameCamera(game, scaledDt);
+            }
+
             // Pass enemy pool so each homing projectile can find its own target
             ProjectilePoolUpdate(&game->projectiles, scaledDt, &game->enemies, &enemyGrid);
-            EnemyPoolUpdate(&game->enemies, game->player.pos, scaledDt);
-            XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
             ParticlePoolUpdate(&game->particles, scaledDt);
-            UpdateGameCamera(game, scaledDt);
+
+            // Update enemies - they target primaryPlayerPos (nearest alive player in co-op)
+            EnemyPoolUpdate(&game->enemies, primaryPlayerPos, scaledDt);
+
+            // XP magnet behavior - in co-op, each player attracts XP
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                for (int i = 0; i < game->coop.playerCount; i++)
+                {
+                    Player *p = CoopGetPlayer(&game->coop, i);
+                    if (p && CoopIsPlayerAlive(&game->coop, i))
+                    {
+                        XPPoolUpdate(&game->xp, p->pos, p->magnetRadius, scaledDt);
+                    }
+                }
+            }
+            else
+            {
+                XPPoolUpdate(&game->xp, game->player.pos, game->player.magnetRadius, scaledDt);
+            }
 
             game->spawnTimer += dt;
             float spawnInterval = GetSpawnInterval(game->gameTime);
+
+            // In co-op, spawn more enemies
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                spawnInterval /= CoopGetSpawnMultiplier(&game->coop);
+            }
+
             if (game->spawnTimer >= spawnInterval)
             {
-                Vector2 spawnPos = GetSpawnPosition(game->player.pos);
+                Vector2 spawnPos = GetSpawnPosition(primaryPlayerPos);
                 EnemyType enemyType = (EnemyType)GetEnemyTypeForTime(game->gameTime);
 
                 // Elite spawn chance increases over time (10% base + 1% per minute, max 25%)
@@ -1178,8 +1376,24 @@ void GameUpdate(GameData *game, float dt)
                 if (game->bossSpawnTimer <= 0.0f)
                 {
                     game->bossCount++;
-                    Vector2 spawnPos = GetSpawnPosition(game->player.pos);
-                    EnemySpawnBoss(&game->enemies, spawnPos, game->bossCount);
+                    Vector2 spawnPos = GetSpawnPosition(primaryPlayerPos);
+
+                    // Apply co-op boss health scaling
+                    if (game->gameMode == GAME_MODE_COOP)
+                    {
+                        EnemySpawnBoss(&game->enemies, spawnPos, game->bossCount);
+                        // Scale boss health for co-op
+                        Enemy *boss = EnemyPoolGetBoss(&game->enemies);
+                        if (boss)
+                        {
+                            boss->health *= CoopGetBossHealthMultiplier(&game->coop);
+                            boss->maxHealth = boss->health;
+                        }
+                    }
+                    else
+                    {
+                        EnemySpawnBoss(&game->enemies, spawnPos, game->bossCount);
+                    }
                     game->bossSpawnTimer = BOSS_SPAWN_INTERVAL;  // Reset for next boss
                     game->bossWarningActive = false;
                     // Screen shake when boss spawns
@@ -1189,8 +1403,27 @@ void GameUpdate(GameData *game, float dt)
 
             EnemySpatialGridBuild(&enemyGrid, &game->enemies);
 
-            // Apply slow aura around player if upgraded
-            if (game->player.slowAuraRadius > 0.0f)
+            // Apply slow aura around players if upgraded
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                for (int i = 0; i < game->coop.playerCount; i++)
+                {
+                    Player *p = CoopGetPlayer(&game->coop, i);
+                    if (p && CoopIsPlayerAlive(&game->coop, i) && p->slowAuraRadius > 0.0f)
+                    {
+                        SlowAuraContext ctx = { p };
+                        EnemySpatialGridForEachInRadius(
+                            &enemyGrid,
+                            &game->enemies,
+                            p->pos,
+                            p->slowAuraRadius,
+                            SlowAuraVisit,
+                            &ctx
+                        );
+                    }
+                }
+            }
+            else if (game->player.slowAuraRadius > 0.0f)
             {
                 SlowAuraContext ctx = { &game->player };
                 EnemySpatialGridForEachInRadius(
@@ -1205,19 +1438,79 @@ void GameUpdate(GameData *game, float dt)
 
             // Apply black hole pull effect before collision checks
             ApplyBlackHolePull(&game->projectiles, &game->enemies, &enemyGrid, scaledDt);
-            CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, &game->player);
-            CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, &game->player, &game->particles, game, &game->xp);
 
-            int collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
+            // Check collisions for all players
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                for (int i = 0; i < game->coop.playerCount; i++)
+                {
+                    Player *p = CoopGetPlayer(&game->coop, i);
+                    if (p && CoopIsPlayerAlive(&game->coop, i))
+                    {
+                        CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, p);
+                        CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, p, &game->particles, game, &game->xp);
+                    }
+                }
+            }
+            else
+            {
+                CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, &game->player);
+                CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, &game->player, &game->particles, game, &game->xp);
+            }
+
+            // XP collection for all players
+            int collectedXP = 0;
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                for (int i = 0; i < game->coop.playerCount; i++)
+                {
+                    Player *p = CoopGetPlayer(&game->coop, i);
+                    if (p && CoopIsPlayerAlive(&game->coop, i))
+                    {
+                        int xp = XPCollect(&game->xp, p->pos, XP_COLLECT_RADIUS);
+                        if (xp > 0)
+                        {
+                            CoopAddXP(&game->coop, xp);
+                            PlayGameSound(SOUND_PICKUP);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                collectedXP = XPCollect(&game->xp, game->player.pos, XP_COLLECT_RADIUS);
+            }
+
             if (collectedXP > 0)
             {
-                // Apply XP multiplier from upgrades
+                // Apply XP multiplier from upgrades (solo mode)
                 int boostedXP = (int)(collectedXP * game->player.xpMultiplier);
                 game->player.xp += boostedXP;
                 PlayGameSound(SOUND_PICKUP);
             }
 
-            if (CheckLevelUp(&game->player))
+            // Level up check
+            bool leveledUp = false;
+            int currentLevel = 0;
+
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                if (CoopCheckLevelUp(&game->coop))
+                {
+                    leveledUp = true;
+                    currentLevel = game->coop.sharedLevel;
+                }
+            }
+            else
+            {
+                if (CheckLevelUp(&game->player))
+                {
+                    leveledUp = true;
+                    currentLevel = game->player.level;
+                }
+            }
+
+            if (leveledUp)
             {
                 PlayGameSound(SOUND_LEVELUP);
                 MusicPause();
@@ -1225,13 +1518,13 @@ void GameUpdate(GameData *game, float dt)
                 game->timeScale = 0.3f;  // Slow-mo during level up
 
                 // Achievement: Level 5
-                if (game->player.level >= 5)
+                if (currentLevel >= 5)
                 {
                     TryEarnAchievement(game, ACH_LEVEL_5);
                 }
 
                 // Achievement: Level 10
-                if (game->player.level >= 10)
+                if (currentLevel >= 10)
                 {
                     TryEarnAchievement(game, ACH_LEVEL_10);
                 }
@@ -1239,7 +1532,29 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_LEVELUP;
             }
 
-            if (!game->player.alive)
+            // Game over check
+            bool gameOver = false;
+            int finalLevel = 0;
+
+            if (game->gameMode == GAME_MODE_COOP)
+            {
+                // Check for total party kill in co-op
+                if (CoopCheckTotalPartyKill(&game->coop, dt))
+                {
+                    gameOver = true;
+                    finalLevel = game->coop.sharedLevel;
+                }
+            }
+            else
+            {
+                if (!game->player.alive)
+                {
+                    gameOver = true;
+                    finalLevel = game->player.level;
+                }
+            }
+
+            if (gameOver)
             {
                 MusicStop();
 
@@ -1247,7 +1562,7 @@ void GameUpdate(GameData *game, float dt)
                 game->leaderboardPosition = LeaderboardAddEntry(
                     &game->leaderboard,
                     game->score,
-                    game->player.level,
+                    finalLevel,
                     game->killCount,
                     game->gameTime
                 );
@@ -1256,7 +1571,7 @@ void GameUpdate(GameData *game, float dt)
 
                 // Save run stats to unlocks
                 UnlocksAddRunStats(&game->unlocks, game->killCount, game->bossKillsThisRun,
-                                   game->score, game->player.level, game->gameTime);
+                                   game->score, finalLevel, game->gameTime);
                 UnlocksCheckNewUnlocks(&game->unlocks);
                 UnlocksSave(&game->unlocks);
 
@@ -1267,9 +1582,9 @@ void GameUpdate(GameData *game, float dt)
                 {
                     game->achievements.longestSurvival = game->gameTime;
                 }
-                if (game->player.level > game->achievements.highestLevel)
+                if (finalLevel > game->achievements.highestLevel)
                 {
-                    game->achievements.highestLevel = game->player.level;
+                    game->achievements.highestLevel = finalLevel;
                 }
 
                 // Achievement: Slayer (1000 total kills)
@@ -1303,14 +1618,48 @@ void GameUpdate(GameData *game, float dt)
                 game->state = STATE_GAMEOVER;
             }
 
-            // Weapon switching with Q/E keys
-            if (IsKeyPressed(KEY_Q))
+            // Weapon switching
+            if (game->gameMode == GAME_MODE_COOP)
             {
-                PlayerCycleWeapon(&game->player, -1);  // Previous weapon
+                // P1: Q/E keys
+                Player *p1 = CoopGetPlayer(&game->coop, 0);
+                if (p1)
+                {
+                    if (IsKeyPressed(KEY_Q))
+                    {
+                        PlayerCycleWeapon(p1, -1);
+                    }
+                    if (IsKeyPressed(KEY_E))
+                    {
+                        PlayerCycleWeapon(p1, 1);
+                    }
+                }
+
+                // P2: comma/period keys
+                Player *p2 = CoopGetPlayer(&game->coop, 1);
+                if (p2)
+                {
+                    if (IsKeyPressed(KEY_COMMA))
+                    {
+                        PlayerCycleWeapon(p2, -1);
+                    }
+                    if (IsKeyPressed(KEY_PERIOD))
+                    {
+                        PlayerCycleWeapon(p2, 1);
+                    }
+                }
             }
-            if (IsKeyPressed(KEY_E))
+            else
             {
-                PlayerCycleWeapon(&game->player, 1);   // Next weapon
+                // Solo: Q/E keys
+                if (IsKeyPressed(KEY_Q))
+                {
+                    PlayerCycleWeapon(&game->player, -1);
+                }
+                if (IsKeyPressed(KEY_E))
+                {
+                    PlayerCycleWeapon(&game->player, 1);
+                }
             }
 
             if (IsKeyPressed(KEY_ESCAPE))
@@ -1393,6 +1742,147 @@ void GameUpdate(GameData *game, float dt)
     }
 }
 
+// Draw the game world for a specific camera and player (for split-screen)
+static void DrawGameWorldForCamera(GameData *game, Camera2D camera, int viewportWidth, int viewportHeight)
+{
+    float halfWidth = viewportWidth / (2.0f * camera.zoom);
+    float halfHeight = viewportHeight / (2.0f * camera.zoom);
+    Rectangle view = {
+        camera.target.x - halfWidth - WORLD_VIEW_MARGIN,
+        camera.target.y - halfHeight - WORLD_VIEW_MARGIN,
+        halfWidth * 2.0f + WORLD_VIEW_MARGIN * 2.0f,
+        halfHeight * 2.0f + WORLD_VIEW_MARGIN * 2.0f
+    };
+
+    DrawBackgroundGrid(camera);
+    ParticlePoolDraw(&game->particles, view);
+
+    // Draw impact frame flash
+    if (game->impactFrames > 0)
+    {
+        float intensity = (float)game->impactFrames / 2.0f;
+        float outerRadius = game->impactRadius * (2.0f - intensity);
+        float innerRadius = game->impactRadius * 0.5f * (2.0f - intensity);
+        unsigned char alpha = (unsigned char)(255 * intensity);
+        DrawCircleV(game->impactPos, outerRadius, (Color){ 255, 255, 255, (unsigned char)(alpha * 0.3f) });
+        DrawCircleV(game->impactPos, innerRadius, (Color){ 255, 255, 200, (unsigned char)(alpha * 0.6f) });
+        DrawCircleLinesV(game->impactPos, outerRadius * 0.8f, (Color){ 255, 200, 100, alpha });
+    }
+
+    XPPoolDraw(&game->xp, view);
+    EnemyPoolDraw(&game->enemies, view);
+    ProjectilePoolDraw(&game->projectiles, view);
+
+    // Draw both players in co-op
+    if (game->gameMode == GAME_MODE_COOP)
+    {
+        for (int i = 0; i < game->coop.playerCount; i++)
+        {
+            Player *p = CoopGetPlayer(&game->coop, i);
+            if (p)
+            {
+                // Draw ghost if dead
+                if (game->coop.players[i].revive.needsRevive)
+                {
+                    Vector2 ghostPos = game->coop.players[i].revive.deathPos;
+                    float pulse = 0.5f + 0.3f * sinf((float)GetTime() * 5.0f);
+
+                    // Ghost circle (semi-transparent, pulsing)
+                    DrawCircleV(ghostPos, p->radius * 1.2f, (Color){ 100, 100, 150, (unsigned char)(100 * pulse) });
+                    DrawCircleLinesV(ghostPos, p->radius * 1.5f, (Color){ 150, 150, 200, (unsigned char)(150 * pulse) });
+
+                    // "REVIVE ME" text
+                    const char *reviveText = "REVIVE ME";
+                    int textWidth = MeasureText(reviveText, 14);
+                    DrawText(reviveText, (int)(ghostPos.x - textWidth/2), (int)(ghostPos.y - p->radius - 30), 14, NEON_PINK);
+
+                    // Revive progress bar
+                    if (game->coop.players[i].revive.reviveProgress > 0.0f)
+                    {
+                        float progress = game->coop.players[i].revive.reviveProgress / REVIVE_TIME;
+                        int barWidth = 50;
+                        int barHeight = 6;
+                        int barX = (int)(ghostPos.x - barWidth/2);
+                        int barY = (int)(ghostPos.y - p->radius - 45);
+                        DrawRectangle(barX, barY, barWidth, barHeight, (Color){ 50, 50, 50, 200 });
+                        DrawRectangle(barX, barY, (int)(barWidth * progress), barHeight, NEON_GREEN);
+                        DrawRectangleLinesEx((Rectangle){ (float)barX, (float)barY, (float)barWidth, (float)barHeight }, 1.0f, NEON_WHITE);
+                    }
+                }
+                else
+                {
+                    PlayerDraw(p);
+                }
+            }
+        }
+    }
+    else
+    {
+        PlayerDraw(&game->player);
+    }
+}
+
+// Draw partner arrow indicator when partner is off-screen
+static void DrawPartnerArrow(GameData *game, int viewerIndex, int partnerIndex, int viewportWidth, int viewportHeight)
+{
+    if (!game->coop.players[partnerIndex].player.alive && !game->coop.players[partnerIndex].revive.needsRevive) return;
+
+    Camera2D cam = game->coop.cameras[viewerIndex].cam;
+    Vector2 partnerPos;
+
+    if (game->coop.players[partnerIndex].revive.needsRevive)
+    {
+        partnerPos = game->coop.players[partnerIndex].revive.deathPos;
+    }
+    else
+    {
+        partnerPos = game->coop.players[partnerIndex].player.pos;
+    }
+
+    // Transform partner position to screen space
+    Vector2 screenPos = GetWorldToScreen2D(partnerPos, cam);
+
+    // Check if off-screen (with margin)
+    float margin = 50.0f;
+    bool offScreen = screenPos.x < margin || screenPos.x > viewportWidth - margin ||
+                     screenPos.y < margin || screenPos.y > viewportHeight - margin;
+
+    if (!offScreen) return;
+
+    // Calculate arrow position at screen edge
+    Vector2 center = { viewportWidth / 2.0f, viewportHeight / 2.0f };
+    Vector2 dir = Vector2Normalize(Vector2Subtract(screenPos, center));
+
+    // Clamp to screen edges
+    float arrowDist = fminf(viewportWidth / 2.0f - 40.0f, viewportHeight / 2.0f - 40.0f);
+    Vector2 arrowPos = Vector2Add(center, Vector2Scale(dir, arrowDist));
+
+    // Clamp to actual bounds
+    arrowPos.x = fmaxf(30.0f, fminf(viewportWidth - 30.0f, arrowPos.x));
+    arrowPos.y = fmaxf(30.0f, fminf(viewportHeight - 30.0f, arrowPos.y));
+
+    // Draw arrow
+    Color arrowColor = (partnerIndex == 0) ? NEON_CYAN : NEON_PINK;
+    if (game->coop.players[partnerIndex].revive.needsRevive)
+    {
+        arrowColor = NEON_RED;  // Red for dead partner
+    }
+
+    // Draw arrow triangle pointing toward partner
+    float angle = atan2f(dir.y, dir.x);
+    float arrowSize = 15.0f;
+    Vector2 tip = Vector2Add(arrowPos, Vector2Scale(dir, arrowSize));
+    Vector2 left = Vector2Add(arrowPos, (Vector2){ cosf(angle + 2.5f) * arrowSize * 0.7f, sinf(angle + 2.5f) * arrowSize * 0.7f });
+    Vector2 right = Vector2Add(arrowPos, (Vector2){ cosf(angle - 2.5f) * arrowSize * 0.7f, sinf(angle - 2.5f) * arrowSize * 0.7f });
+    DrawTriangle(tip, left, right, arrowColor);
+
+    // Draw distance
+    float dist = Vector2Distance(game->coop.players[viewerIndex].player.pos, partnerPos);
+    int meters = (int)(dist / 100.0f);
+    const char *distText = TextFormat("%dm", meters);
+    DrawText(distText, (int)(arrowPos.x - MeasureText(distText, 12)/2), (int)(arrowPos.y + 15), 12, arrowColor);
+}
+
 static void DrawGameWorld(GameData *game)
 {
     float halfWidth = SCREEN_WIDTH / (2.0f * game->camera.zoom);
@@ -1450,6 +1940,45 @@ static void DrawSceneToTexture(GameData *game)
                 const char *achText = TextFormat("Achievements: %d/%d", earnedCount, ACHIEVEMENT_COUNT);
                 DrawText(achText, SCREEN_WIDTH/2 - MeasureText(achText, 16)/2, 505, 16, (Color){ 150, 150, 150, 255 });
                 DrawText("F1: Toggle Bloom | F2: Toggle CRT", SCREEN_WIDTH/2 - MeasureText("F1: Toggle Bloom | F2: Toggle CRT", 16)/2, 540, 16, (Color){ 100, 100, 100, 255 });
+                break;
+            }
+
+            case STATE_MODE_SELECT:
+            {
+                DrawMenuStars();
+                DrawText("SELECT MODE", SCREEN_WIDTH/2 - MeasureText("SELECT MODE", 50)/2, 150, 50, NEON_CYAN);
+
+                // Draw mode options
+                int boxWidth = 400;
+                int boxHeight = 80;
+                int startY = 280;
+                int spacing = 100;
+
+                const char *modes[] = { "1 PLAYER", "2 PLAYERS" };
+                const char *descs[] = { "Solo survival", "Local co-op split screen" };
+
+                for (int i = 0; i < 2; i++)
+                {
+                    int boxX = SCREEN_WIDTH / 2 - boxWidth / 2;
+                    int boxY = startY + i * spacing;
+                    bool selected = (i == game->modeSelection);
+
+                    Color bgColor = selected ? (Color){ 60, 30, 80, 230 } : (Color){ 40, 20, 60, 200 };
+                    Color borderColor = selected ? NEON_CYAN : NEON_PINK;
+
+                    DrawRectangle(boxX, boxY, boxWidth, boxHeight, bgColor);
+                    DrawRectangleLinesEx((Rectangle){ (float)boxX, (float)boxY, (float)boxWidth, (float)boxHeight },
+                                         selected ? 3.0f : 2.0f, borderColor);
+
+                    Color textColor = selected ? NEON_WHITE : GRAY;
+                    DrawText(modes[i], SCREEN_WIDTH/2 - MeasureText(modes[i], 28)/2, boxY + 15, 28, textColor);
+                    DrawText(descs[i], SCREEN_WIDTH/2 - MeasureText(descs[i], 16)/2, boxY + 50, 16,
+                             selected ? NEON_GREEN : (Color){ 100, 100, 100, 255 });
+                }
+
+                DrawText("W/S or Up/Down to select - ENTER to confirm - ESC to go back",
+                         SCREEN_WIDTH/2 - MeasureText("W/S or Up/Down to select - ENTER to confirm - ESC to go back", 16)/2,
+                         SCREEN_HEIGHT - 60, 16, GRAY);
                 break;
             }
 
@@ -1648,7 +2177,97 @@ static void DrawSceneToTexture(GameData *game)
                 }
 
                 // Controls hint
-                DrawText("A/D or Left/Right to select - ENTER to confirm - ESC to go back", SCREEN_WIDTH/2 - MeasureText("A/D or Left/Right to select - ENTER to confirm - ESC to go back", 16)/2, SCREEN_HEIGHT - 40, 16, GRAY);
+                const char *p1Hint = (game->gameMode == GAME_MODE_COOP) ?
+                    "P1: A/D or Left/Right - ENTER to confirm - ESC to go back" :
+                    "A/D or Left/Right to select - ENTER to confirm - ESC to go back";
+                DrawText(p1Hint, SCREEN_WIDTH/2 - MeasureText(p1Hint, 16)/2, SCREEN_HEIGHT - 40, 16, GRAY);
+                break;
+            }
+
+            case STATE_CHARACTER_SELECT_P2:
+            {
+                DrawMenuStars();
+                DrawText("PLAYER 2 - SELECT CHARACTER", SCREEN_WIDTH/2 - MeasureText("PLAYER 2 - SELECT CHARACTER", 40)/2, 40, 40, NEON_PINK);
+
+                // Show P1's selection
+                CharacterDef p1Def = GetCharacterDef(game->selectedCharacter);
+                const char *p1Text = TextFormat("P1: %s", p1Def.name);
+                DrawText(p1Text, SCREEN_WIDTH/2 - MeasureText(p1Text, 20)/2, 90, 20, NEON_CYAN);
+
+                // Draw character cards (same layout as P1 select)
+                int cardWidth = 280;
+                int cardHeight = 380;
+                int cardSpacing = 30;
+                int totalWidth = CHARACTER_COUNT * cardWidth + (CHARACTER_COUNT - 1) * cardSpacing;
+                int startX = (SCREEN_WIDTH - totalWidth) / 2;
+                int cardY = 140;
+
+                for (int i = 0; i < CHARACTER_COUNT; i++)
+                {
+                    int cardX = startX + i * (cardWidth + cardSpacing);
+                    CharacterDef def = GetCharacterDef((CharacterType)i);
+                    bool isSelected = (i == game->characterSelection);
+                    bool isUnlocked = UnlocksHasCharacter(&game->unlocks, i);
+
+                    // Card background
+                    Color bgColor = isUnlocked ? (Color){ 30, 30, 50, 220 } : (Color){ 20, 20, 20, 220 };
+                    DrawRectangle(cardX, cardY, cardWidth, cardHeight, bgColor);
+
+                    // Selection highlight (pink for P2)
+                    if (isSelected)
+                    {
+                        DrawRectangleLinesEx((Rectangle){ (float)cardX - 3, (float)cardY - 3, (float)cardWidth + 6, (float)cardHeight + 6 }, 3.0f, NEON_PINK);
+                    }
+
+                    // Character preview circle
+                    int previewY = cardY + 80;
+                    int previewRadius = 50;
+                    if (isUnlocked)
+                    {
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius + 5, (Color){ def.primaryColor.r/3, def.primaryColor.g/3, def.primaryColor.b/3, 255 });
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius, def.primaryColor);
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius * 0.6f, (Color){ 200, 200, 200, 200 });
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius * 0.3f, WHITE);
+                    }
+                    else
+                    {
+                        DrawCircle(cardX + cardWidth/2, previewY, previewRadius, (Color){ 50, 50, 50, 255 });
+                        DrawText("?", cardX + cardWidth/2 - 15, previewY - 20, 50, (Color){ 80, 80, 80, 255 });
+                    }
+
+                    // Character name
+                    Color nameColor = isUnlocked ? def.primaryColor : (Color){ 100, 100, 100, 255 };
+                    DrawText(def.name, cardX + cardWidth/2 - MeasureText(def.name, 28)/2, cardY + 150, 28, nameColor);
+
+                    // Stats (only if unlocked)
+                    if (isUnlocked)
+                    {
+                        int statsY = cardY + 190;
+                        int statsX = cardX + 20;
+                        Color statColor = WHITE;
+
+                        DrawText(TextFormat("HP: %.0f", def.maxHealth), statsX, statsY, 18, statColor);
+                        DrawText(TextFormat("Speed: %.0f", def.speed), statsX, statsY + 25, 18, statColor);
+                        DrawText(TextFormat("Magnet: %.0f", def.magnetRadius), statsX, statsY + 50, 18, statColor);
+                        DrawText(TextFormat("Damage: x%.1f", def.damageMultiplier), statsX, statsY + 75, 18, statColor);
+                        DrawText(TextFormat("XP: x%.2f", def.xpMultiplier), statsX, statsY + 100, 18, statColor);
+
+                        // Description
+                        DrawText(def.description, cardX + 10, cardY + cardHeight - 50, 14, (Color){ 150, 150, 150, 255 });
+                    }
+                    else
+                    {
+                        // Show unlock requirement
+                        const char *lockMsg = "";
+                        if (i == 1) lockMsg = "Play 5 games";
+                        else if (i == 2) lockMsg = "Survive 5 minutes";
+                        DrawText("LOCKED", cardX + cardWidth/2 - MeasureText("LOCKED", 24)/2, cardY + 200, 24, (Color){ 150, 50, 50, 255 });
+                        DrawText(lockMsg, cardX + cardWidth/2 - MeasureText(lockMsg, 16)/2, cardY + 235, 16, (Color){ 100, 100, 100, 255 });
+                    }
+                }
+
+                // Controls hint for P2
+                DrawText("P2: J/L or Arrows - ENTER to confirm - ESC to go back", SCREEN_WIDTH/2 - MeasureText("P2: J/L or Arrows - ENTER to confirm - ESC to go back", 16)/2, SCREEN_HEIGHT - 40, 16, GRAY);
                 break;
             }
 
@@ -1696,13 +2315,165 @@ static void DrawSceneToTexture(GameData *game)
             }
 
             case STATE_PLAYING:
-                BeginMode2D(game->camera);
-                    DrawGameWorld(game);
-                EndMode2D();
-                DrawHUD(game);
-                DrawTutorial(game);
+                if (game->gameMode == GAME_MODE_COOP)
+                {
+                    // Split-screen rendering for co-op
+                    int vpWidth = VIEWPORT_WIDTH;
+                    int vpHeight = VIEWPORT_HEIGHT;
 
-                // Achievement notification popup
+                    // First pass: render each player's view to their viewport texture
+                    // Must end main render target first since we can't nest BeginTextureMode
+                    EndTextureMode();
+
+                    for (int i = 0; i < game->coop.playerCount; i++)
+                    {
+                        BeginTextureMode(game->coop.cameras[i].viewport);
+                            ClearBackground(VOID_BLACK);
+                            BeginMode2D(game->coop.cameras[i].cam);
+                                DrawGameWorldForCamera(game, game->coop.cameras[i].cam, vpWidth, vpHeight);
+                            EndMode2D();
+
+                            // Draw partner arrow indicator
+                            int partnerIndex = (i == 0) ? 1 : 0;
+                            DrawPartnerArrow(game, i, partnerIndex, vpWidth, vpHeight);
+
+                            // Draw player-specific HUD elements (health bar, etc.)
+                            Player *p = CoopGetPlayer(&game->coop, i);
+                            if (p)
+                            {
+                                // Health bar (top of viewport)
+                                int barX = 10;
+                                int barY = 10;
+                                int barWidth = 150;
+                                int barHeight = 16;
+                                float healthRatio = p->health / p->maxHealth;
+                                DrawRectangle(barX, barY, barWidth, barHeight, (Color){ 50, 30, 30, 200 });
+                                DrawRectangle(barX, barY, (int)(barWidth * healthRatio), barHeight,
+                                    healthRatio > 0.5f ? NEON_GREEN : (healthRatio > 0.25f ? NEON_YELLOW : NEON_RED));
+                                DrawRectangleLinesEx((Rectangle){ (float)barX, (float)barY, (float)barWidth, (float)barHeight }, 1.0f, NEON_WHITE);
+
+                                // Player label (P1=cyan, P2=green to match player colors)
+                                const char *playerLabel = (i == 0) ? "P1" : "P2";
+                                DrawText(playerLabel, barX + barWidth + 10, barY, 16, (i == 0) ? NEON_CYAN : NEON_GREEN);
+
+                                // Dash indicator
+                                const char *dashText = (p->dashCooldown <= 0.0f) ? "DASH: READY" : "DASH: ...";
+                                DrawText(dashText, barX, barY + 22, 12, (p->dashCooldown <= 0.0f) ? NEON_GREEN : GRAY);
+
+                                // Weapon info
+                                const char *weaponName = WeaponGetName(p->weapon.type);
+                                Color weaponColor = WeaponGetColor(p->weapon.type);
+                                DrawText(weaponName, barX, barY + 38, 12, weaponColor);
+
+                                // Weapon switch hint
+                                const char *switchHint = (i == 0) ? "[Q/E]" : "[,/.]";
+                                DrawText(switchHint, barX + 100, barY + 38, 10, GRAY);
+                            }
+                        EndTextureMode();
+                    }
+
+                    // Second pass: composite viewports onto main render target
+                    BeginTextureMode(game->renderTarget);
+                    ClearBackground(VOID_BLACK);
+
+                    for (int i = 0; i < game->coop.playerCount; i++)
+                    {
+                        Rectangle srcRec = game->coop.cameras[i].sourceRect;
+                        Rectangle dstRec = game->coop.cameras[i].destRect;
+                        DrawTexturePro(game->coop.cameras[i].viewport.texture, srcRec, dstRec, (Vector2){ 0, 0 }, 0.0f, WHITE);
+                    }
+
+                    // Draw split line with glow
+                    int splitX = SCREEN_WIDTH / 2;
+                    DrawRectangle(splitX - 2, 0, 4, SCREEN_HEIGHT, (Color){ 50, 30, 80, 200 });
+                    DrawLine(splitX, 0, splitX, SCREEN_HEIGHT, NEON_PINK);
+
+                    // Shared HUD elements (centered at top)
+                    // XP bar (shared level)
+                    int xpBarWidth = 300;
+                    int xpBarX = SCREEN_WIDTH / 2 - xpBarWidth / 2;
+                    int xpBarY = SCREEN_HEIGHT - 40;
+                    float xpRatio = (float)game->coop.sharedXP / (float)game->coop.sharedXPToNextLevel;
+                    DrawRectangle(xpBarX, xpBarY, xpBarWidth, 12, (Color){ 30, 30, 50, 200 });
+                    DrawRectangle(xpBarX, xpBarY, (int)(xpBarWidth * xpRatio), 12, NEON_CYAN);
+                    DrawRectangleLinesEx((Rectangle){ (float)xpBarX, (float)xpBarY, (float)xpBarWidth, 12.0f }, 1.0f, NEON_WHITE);
+
+                    // Shared level display
+                    const char *levelText = TextFormat("LV %d", game->coop.sharedLevel);
+                    DrawText(levelText, SCREEN_WIDTH / 2 - MeasureText(levelText, 20) / 2, SCREEN_HEIGHT - 65, 20, NEON_YELLOW);
+
+                    // Score with multiplier
+                    const char *scoreText = TextFormat("SCORE: %d", game->score);
+                    DrawText(scoreText, SCREEN_WIDTH / 2 - MeasureText(scoreText, 16) / 2, 10, 16, NEON_WHITE);
+
+                    // Score multiplier
+                    Color multiplierColor = NEON_GREEN;
+                    if (game->scoreMultiplier >= MULTIPLIER_TIER_YELLOW) multiplierColor = NEON_YELLOW;
+                    if (game->scoreMultiplier >= MULTIPLIER_TIER_ORANGE) multiplierColor = NEON_ORANGE;
+                    if (game->scoreMultiplier >= MULTIPLIER_TIER_PINK) multiplierColor = NEON_PINK;
+                    const char *multText = TextFormat("x%.1f", game->scoreMultiplier);
+                    DrawText(multText, SCREEN_WIDTH / 2 + 60, 10, 14, multiplierColor);
+
+                    // Game time
+                    int minutes = (int)game->gameTime / 60;
+                    int seconds = (int)game->gameTime % 60;
+                    const char *timeText = TextFormat("%d:%02d", minutes, seconds);
+                    DrawText(timeText, SCREEN_WIDTH / 2 - MeasureText(timeText, 16) / 2, 30, 16, NEON_CYAN);
+
+                    // Kill count
+                    const char *killText = TextFormat("KILLS: %d", game->killCount);
+                    DrawText(killText, SCREEN_WIDTH / 2 - MeasureText(killText, 14) / 2, 50, 14, NEON_ORANGE);
+
+                    // Boss warning (centered)
+                    if (game->bossWarningActive)
+                    {
+                        float flash = (sinf((float)GetTime() * 10.0f) + 1.0f) * 0.5f;
+                        unsigned char alpha = (unsigned char)(150 + 105 * flash);
+                        Color warningColor = (Color){ 255, 50, 50, alpha };
+
+                        const char *warningText = "!! BOSS INCOMING !!";
+                        int textWidth = MeasureText(warningText, 30);
+                        int centerX = SCREEN_WIDTH / 2 - textWidth / 2;
+                        int centerY = SCREEN_HEIGHT / 3;
+
+                        DrawRectangle(centerX - 15, centerY - 8, textWidth + 30, 50, (Color){ 0, 0, 0, 180 });
+                        DrawText(warningText, centerX, centerY, 30, warningColor);
+
+                        const char *countText = TextFormat("%.1f", game->bossWarningTimer);
+                        int countWidth = MeasureText(countText, 24);
+                        DrawText(countText, SCREEN_WIDTH / 2 - countWidth / 2, centerY + 32, 24, NEON_YELLOW);
+                    }
+
+                    // Boss health bar (centered below score)
+                    Enemy *boss = EnemyPoolGetBoss(&game->enemies);
+                    if (boss)
+                    {
+                        int bossBarWidth = 300;
+                        int bossBarHeight = 16;
+                        int bossBarX = SCREEN_WIDTH / 2 - bossBarWidth / 2;
+                        int bossBarY = 70;
+                        float bossHealthPercent = boss->health / boss->maxHealth;
+
+                        DrawRectangle(bossBarX - 3, bossBarY - 3, bossBarWidth + 6, bossBarHeight + 6, (Color){ 0, 0, 0, 200 });
+                        DrawRectangle(bossBarX, bossBarY, bossBarWidth, bossBarHeight, (Color){ 80, 20, 80, 255 });
+                        DrawRectangle(bossBarX, bossBarY, (int)(bossBarWidth * bossHealthPercent), bossBarHeight, (Color){ 200, 50, 200, 255 });
+                        DrawRectangleLines(bossBarX, bossBarY, bossBarWidth, bossBarHeight, (Color){ 255, 100, 255, 255 });
+
+                        const char *bossLabel = TextFormat("BOSS #%d", game->bossCount);
+                        DrawText(bossLabel, SCREEN_WIDTH / 2 - MeasureText(bossLabel, 14) / 2, bossBarY + bossBarHeight + 3, 14, (Color){ 255, 100, 255, 255 });
+                    }
+                }
+                else
+                {
+                    // Solo mode - existing rendering
+                    BeginMode2D(game->camera);
+                        DrawGameWorld(game);
+                    EndMode2D();
+                    DrawHUD(game);
+                    DrawTutorial(game);
+                }
+
+                // Achievement notification popup (both modes)
                 if (game->achievementDisplayTimer > 0.0f && game->pendingAchievement >= 0)
                 {
                     AchievementDef def = GetAchievementDef(game->pendingAchievement);
