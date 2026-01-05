@@ -208,6 +208,7 @@ typedef struct ProjectileCollisionContext {
     EnemyPool *enemies;
     XPPool *xp;
     ParticlePool *particles;
+    DecalPool *decals;
     GameData *game;
     Player *player;
     Projectile *projectile;
@@ -281,13 +282,60 @@ static bool ProjectileEnemyCollisionVisit(Enemy *enemy, int index, void *user)
             EnemySpawnSplitterChild(ctx->enemies, childPos1, childSplitCount, childRadius, childHealth);
             EnemySpawnSplitterChild(ctx->enemies, childPos2, childSplitCount, childRadius, childHealth);
 
-            SpawnExplosion(ctx->particles, deathPos, p->color, 10);
+            SpawnDeathExplosion(ctx->particles, deathPos, DEATH_EXPLOSION_SPLITTER, deathRadius);
         }
         else
         {
             XPSpawn(ctx->xp, deathPos, enemy->xpValue);
-            SpawnExplosion(ctx->particles, deathPos, p->color, 15);
+
+            // Choose explosion type based on enemy properties
+            DeathExplosionType explosionType;
+            if (enemy->isBoss)
+            {
+                explosionType = DEATH_EXPLOSION_BOSS;
+            }
+            else if (enemy->isElite)
+            {
+                explosionType = DEATH_EXPLOSION_ELITE;
+            }
+            else
+            {
+                switch (deathType)
+                {
+                    case ENEMY_CHASER:   explosionType = DEATH_EXPLOSION_CHASER;   break;
+                    case ENEMY_ORBITER:  explosionType = DEATH_EXPLOSION_ORBITER;  break;
+                    case ENEMY_SPLITTER: explosionType = DEATH_EXPLOSION_SPLITTER; break;
+                    default:             explosionType = DEATH_EXPLOSION_CHASER;   break;
+                }
+            }
+
+            SpawnDeathExplosion(ctx->particles, deathPos, explosionType, deathRadius);
             TriggerImpactFrame(ctx->game, deathPos, deathRadius * 2.0f);
+
+            // Spawn floor decal based on weapon type
+            switch (p->weaponType)
+            {
+                case WEAPON_FLAMETHROWER:
+                case WEAPON_INFERNO:
+                    DecalSpawnBurn(ctx->decals, deathPos, deathRadius * 1.5f);
+                    break;
+                case WEAPON_FREEZE_RAY:
+                case WEAPON_BLIZZARD:
+                    DecalSpawnIce(ctx->decals, deathPos, deathRadius * 1.8f);
+                    break;
+                case WEAPON_LIGHTNING:
+                case WEAPON_TESLA_COIL:
+                    DecalSpawnLightning(ctx->decals, deathPos, deathRadius * 1.3f);
+                    break;
+                case WEAPON_BLACK_HOLE:
+                case WEAPON_SINGULARITY:
+                    DecalSpawnPlasma(ctx->decals, deathPos, deathRadius * 2.0f);
+                    break;
+                default:
+                    // Generic scorch for other weapons
+                    DecalSpawnScorch(ctx->decals, deathPos, deathRadius * 1.2f);
+                    break;
+            }
         }
 
         PlayGameSound(SOUND_EXPLOSION);
@@ -319,7 +367,7 @@ static bool ProjectileEnemyCollisionVisit(Enemy *enemy, int index, void *user)
     return false;
 }
 
-static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, EnemySpatialGrid *grid, XPPool *xp, ParticlePool *particles, GameData *game, Player *player)
+static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPool *enemies, EnemySpatialGrid *grid, XPPool *xp, ParticlePool *particles, DecalPool *decals, GameData *game, Player *player)
 {
     for (int i = 0; i < projectiles->count; )
     {
@@ -331,7 +379,7 @@ static void CheckProjectileEnemyCollisions(ProjectilePool *projectiles, EnemyPoo
             continue;
         }
 
-        ProjectileCollisionContext ctx = { projectiles, enemies, xp, particles, game, player, p, index };
+        ProjectileCollisionContext ctx = { projectiles, enemies, xp, particles, decals, game, player, p, index };
         float searchRadius = p->radius + BOSS_BASE_RADIUS;
         EnemySpatialGridForEachInRadius(grid, enemies, p->pos, searchRadius, ProjectileEnemyCollisionVisit, &ctx);
 
@@ -371,7 +419,29 @@ static bool EnemyPlayerCollisionVisit(Enemy *enemy, int index, void *user)
         if (enemy->health <= 0.0f)
         {
             XPSpawn(ctx->xp, enemy->pos, enemy->xpValue);
-            SpawnExplosion(ctx->particles, enemy->pos, NEON_PINK, 15);
+
+            // Choose explosion type based on enemy properties
+            DeathExplosionType explosionType;
+            if (enemy->isBoss)
+            {
+                explosionType = DEATH_EXPLOSION_BOSS;
+            }
+            else if (enemy->isElite)
+            {
+                explosionType = DEATH_EXPLOSION_ELITE;
+            }
+            else
+            {
+                switch (enemy->type)
+                {
+                    case ENEMY_CHASER:   explosionType = DEATH_EXPLOSION_CHASER;   break;
+                    case ENEMY_ORBITER:  explosionType = DEATH_EXPLOSION_ORBITER;  break;
+                    case ENEMY_SPLITTER: explosionType = DEATH_EXPLOSION_SPLITTER; break;
+                    default:             explosionType = DEATH_EXPLOSION_CHASER;   break;
+                }
+            }
+
+            SpawnDeathExplosion(ctx->particles, enemy->pos, explosionType, enemy->radius);
             PlayGameSound(SOUND_EXPLOSION);
             TriggerScreenShake(ctx->game, 3.0f, 0.15f);
             EnemyDeactivate(ctx->enemies, index);
@@ -832,6 +902,7 @@ void GameInit(GameData *game)
     EnemyPoolInit(&game->enemies);
     XPPoolInit(&game->xp);
     ParticlePoolInit(&game->particles);
+    DecalPoolInit(&game->decals);
     InitCamera(game);
 
     // Start intro music on menu
@@ -1167,6 +1238,7 @@ void GameUpdate(GameData *game, float dt)
                 EnemyPoolInit(&game->enemies);
                 XPPoolInit(&game->xp);
                 ParticlePoolInit(&game->particles);
+                DecalPoolInit(&game->decals);
                 InitCamera(game);
 
                 // Initialize co-op players if in co-op mode
@@ -1302,6 +1374,7 @@ void GameUpdate(GameData *game, float dt)
             // Pass enemy pool so each homing projectile can find its own target
             ProjectilePoolUpdate(&game->projectiles, scaledDt, &game->enemies, &enemyGrid);
             ParticlePoolUpdate(&game->particles, scaledDt);
+            DecalPoolUpdate(&game->decals, scaledDt);
 
             // Update enemies - they target primaryPlayerPos (nearest alive player in co-op)
             EnemyPoolUpdate(&game->enemies, primaryPlayerPos, scaledDt);
@@ -1447,14 +1520,14 @@ void GameUpdate(GameData *game, float dt)
                     Player *p = CoopGetPlayer(&game->coop, i);
                     if (p && CoopIsPlayerAlive(&game->coop, i))
                     {
-                        CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, p);
+                        CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, &game->decals, game, p);
                         CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, p, &game->particles, game, &game->xp);
                     }
                 }
             }
             else
             {
-                CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, game, &game->player);
+                CheckProjectileEnemyCollisions(&game->projectiles, &game->enemies, &enemyGrid, &game->xp, &game->particles, &game->decals, game, &game->player);
                 CheckEnemyPlayerCollisions(&game->enemies, &enemyGrid, &game->player, &game->particles, game, &game->xp);
             }
 
@@ -1769,6 +1842,9 @@ static void DrawGameWorldForCamera(GameData *game, Camera2D camera, int viewport
         DrawCircleLinesV(game->impactPos, outerRadius * 0.8f, (Color){ 255, 200, 100, alpha });
     }
 
+    // Draw floor decals (behind all entities)
+    DecalPoolDraw(&game->decals, view);
+
     XPPoolDraw(&game->xp, view);
     EnemyPoolDraw(&game->enemies, view);
     ProjectilePoolDraw(&game->projectiles, view);
@@ -1911,6 +1987,9 @@ static void DrawGameWorld(GameData *game)
         DrawCircleV(game->impactPos, innerRadius, (Color){ 255, 255, 200, (unsigned char)(alpha * 0.6f) });
         DrawCircleLinesV(game->impactPos, outerRadius * 0.8f, (Color){ 255, 200, 100, alpha });
     }
+
+    // Draw floor decals (behind all entities)
+    DecalPoolDraw(&game->decals, view);
 
     XPPoolDraw(&game->xp, view);
     EnemyPoolDraw(&game->enemies, view);

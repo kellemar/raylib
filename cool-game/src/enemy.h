@@ -41,7 +41,13 @@ typedef struct Enemy {
     float bossChargeTimer;  // Charge-up before attack (anticipation)
     bool bossCharging;      // Is boss currently charging an attack
     int activeIndex;        // Index in active list for O(1) removal
+    // Spawn animation
+    float spawnTimer;       // Time remaining in spawn animation (0 = fully spawned)
+    float spawnDuration;    // Total spawn animation duration
 } Enemy;
+
+// Spawn animation constants
+#define SPAWN_EFFECT_DURATION 0.4f  // Spawn-in animation time
 
 // Elite enemy multipliers
 #define ELITE_SPAWN_CHANCE  0.1f    // 10% chance to spawn as elite

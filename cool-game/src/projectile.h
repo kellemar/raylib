@@ -5,6 +5,10 @@
 #include "types.h"
 #include <stdbool.h>
 
+// Trail system for projectiles
+#define TRAIL_MAX_POINTS 8
+#define TRAIL_UPDATE_INTERVAL 0.016f  // ~60fps trail updates
+
 // Forward declaration to avoid circular includes
 struct EnemyPool;
 struct EnemySpatialGrid;
@@ -48,6 +52,11 @@ typedef struct Projectile {
     float slowDuration;             // How long the slow lasts
     Color color;                    // Projectile color for rendering
     int activeIndex;                // Index in active list for O(1) removal
+    // Trail system
+    Vector2 trailPoints[TRAIL_MAX_POINTS];  // Historical positions for trail
+    int trailHead;                          // Circular buffer head index
+    int trailCount;                         // Number of valid trail points
+    float trailTimer;                       // Timer for trail point capture
 } Projectile;
 
 typedef struct ProjectilePool {

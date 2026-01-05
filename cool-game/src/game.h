@@ -13,6 +13,7 @@
 #include "character.h"
 #include "achievement.h"
 #include "coop.h"
+#include "decal.h"
 #include <stdbool.h>
 
 typedef enum GameState {
@@ -49,6 +50,7 @@ typedef struct GameData {
     EnemyPool enemies;
     XPPool xp;
     ParticlePool particles;
+    DecalPool decals;
     float spawnTimer;
     UpgradeType upgradeOptions[3];
     Camera2D camera;

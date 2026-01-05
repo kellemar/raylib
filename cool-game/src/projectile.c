@@ -51,6 +51,14 @@ Projectile* ProjectileSpawn(ProjectilePool *pool, Vector2 pos, Vector2 vel, floa
     p->slowAmount = 0.0f;
     p->slowDuration = 0.0f;
     p->color = NEON_YELLOW;
+    // Initialize trail
+    p->trailHead = 0;
+    p->trailCount = 0;
+    p->trailTimer = 0.0f;
+    for (int t = 0; t < TRAIL_MAX_POINTS; t++)
+    {
+        p->trailPoints[t] = pos;
+    }
     return p;
 }
 
@@ -85,6 +93,14 @@ Projectile* ProjectileSpawnEx(ProjectilePool *pool, ProjectileSpawnParams *param
     p->slowAmount = params->slowAmount;
     p->slowDuration = params->slowDuration;
     p->color = params->color;
+    // Initialize trail
+    p->trailHead = 0;
+    p->trailCount = 0;
+    p->trailTimer = 0.0f;
+    for (int t = 0; t < TRAIL_MAX_POINTS; t++)
+    {
+        p->trailPoints[t] = params->pos;
+    }
     return p;
 }
 
@@ -184,6 +200,20 @@ void ProjectilePoolUpdate(ProjectilePool *pool, float dt, struct EnemyPool *enem
             }
         }
 
+        // Update trail (capture position at intervals)
+        p->trailTimer += dt;
+        if (p->trailTimer >= TRAIL_UPDATE_INTERVAL)
+        {
+            p->trailTimer = 0.0f;
+            // Add current position to trail (circular buffer)
+            p->trailPoints[p->trailHead] = p->pos;
+            p->trailHead = (p->trailHead + 1) % TRAIL_MAX_POINTS;
+            if (p->trailCount < TRAIL_MAX_POINTS)
+            {
+                p->trailCount++;
+            }
+        }
+
         p->lifetime -= dt;
 
         if (p->lifetime <= 0.0f)
@@ -214,6 +244,34 @@ void ProjectilePoolDraw(ProjectilePool *pool, Rectangle view)
             continue;
         }
 
+        // Draw glowing trail (behind projectile)
+        if (p->trailCount > 1)
+        {
+            Vector2 prevPoint = p->pos;
+            for (int t = 0; t < p->trailCount; t++)
+            {
+                // Read from circular buffer (newest to oldest)
+                int idx = (p->trailHead - 1 - t + TRAIL_MAX_POINTS) % TRAIL_MAX_POINTS;
+                Vector2 trailPoint = p->trailPoints[idx];
+
+                // Fade based on age (older = more faded)
+                float age = (float)(t + 1) / (float)TRAIL_MAX_POINTS;
+                float alpha = (1.0f - age) * 0.6f;
+                float thickness = p->radius * 2.0f * (1.0f - age * 0.7f);
+
+                // Trail color with fade
+                Color trailColor = p->color;
+                trailColor.a = (unsigned char)(255 * alpha);
+
+                // Draw line segment from previous to current trail point
+                if (t > 0)
+                {
+                    DrawLineEx(prevPoint, trailPoint, thickness, trailColor);
+                }
+                prevPoint = trailPoint;
+            }
+        }
+
         // Draw with projectile's color
         DrawCircleV(p->pos, p->radius, p->color);
 
@@ -223,6 +281,9 @@ void ProjectilePoolDraw(ProjectilePool *pool, Rectangle view)
         innerColor.g = (unsigned char)fminf(255, innerColor.g + 100);
         innerColor.b = (unsigned char)fminf(255, innerColor.b + 100);
         DrawCircleV(p->pos, p->radius * 0.5f, innerColor);
+
+        // Outer glow halo
+        DrawCircleV(p->pos, p->radius * 1.5f, Fade(p->color, 0.3f));
 
         // Special effects based on behavior
         if (p->behavior == PROJ_BEHAVIOR_PULL)

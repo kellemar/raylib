@@ -54,6 +54,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->bossAttackTimer = 0.0f;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            e->spawnTimer = SPAWN_EFFECT_DURATION;
+            e->spawnDuration = SPAWN_EFFECT_DURATION;
             break;
 
         case ENEMY_ORBITER:
@@ -76,6 +78,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->bossAttackTimer = 0.0f;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            e->spawnTimer = SPAWN_EFFECT_DURATION;
+            e->spawnDuration = SPAWN_EFFECT_DURATION;
             break;
 
         case ENEMY_SPLITTER:
@@ -98,6 +102,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->bossAttackTimer = 0.0f;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            e->spawnTimer = SPAWN_EFFECT_DURATION;
+            e->spawnDuration = SPAWN_EFFECT_DURATION;
             break;
 
         case ENEMY_BOSS:
@@ -120,6 +126,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->bossAttackTimer = BOSS_ATTACK_INTERVAL;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            e->spawnTimer = SPAWN_EFFECT_DURATION * 2.0f;  // Boss has longer spawn
+            e->spawnDuration = SPAWN_EFFECT_DURATION * 2.0f;
             break;
 
         default:
@@ -142,6 +150,8 @@ Enemy* EnemySpawn(EnemyPool *pool, EnemyType type, Vector2 pos)
             e->bossAttackTimer = 0.0f;
             e->bossChargeTimer = 0.0f;
             e->bossCharging = false;
+            e->spawnTimer = SPAWN_EFFECT_DURATION;
+            e->spawnDuration = SPAWN_EFFECT_DURATION;
             break;
     }
 
@@ -183,6 +193,8 @@ Enemy* EnemySpawnSplitterChild(EnemyPool *pool, Vector2 pos, int splitCount, flo
     e->bossAttackTimer = 0.0f;
     e->bossChargeTimer = 0.0f;
     e->bossCharging = false;
+    e->spawnTimer = SPAWN_EFFECT_DURATION * 0.3f;  // Quick spawn for split children
+    e->spawnDuration = SPAWN_EFFECT_DURATION * 0.3f;
 
     return e;
 }
@@ -426,6 +438,13 @@ void EnemyPoolUpdate(EnemyPool *pool, Vector2 playerPos, float dt)
         Enemy *e = &pool->enemies[pool->activeIndices[i]];
         if (!e->active) continue;
 
+        // Update spawn animation timer
+        if (e->spawnTimer > 0.0f)
+        {
+            e->spawnTimer -= dt;
+            continue;  // Don't move or act while spawning
+        }
+
         // Update hit flash timer
         if (e->hitFlashTimer > 0.0f)
         {
@@ -585,6 +604,57 @@ void EnemyPoolDraw(EnemyPool *pool, Rectangle view)
         // Check if hit flash is active
         bool isFlashing = e->hitFlashTimer > 0.0f;
         bool isSlowed = e->slowTimer > 0.0f;
+        bool isSpawning = e->spawnTimer > 0.0f;
+
+        // Draw spawn effect (glitch/ripple animation)
+        if (isSpawning)
+        {
+            float spawnProgress = 1.0f - (e->spawnTimer / e->spawnDuration);
+            float time = (float)GetTime();
+
+            // Glitch-style distortion rings
+            for (int ring = 0; ring < 3; ring++)
+            {
+                float ringProgress = fmodf(spawnProgress + ring * 0.2f, 1.0f);
+                float ringRadius = e->radius * (1.5f + ring * 0.8f) * ringProgress;
+                float ringAlpha = (1.0f - ringProgress) * 0.6f;
+
+                // Glitchy offset
+                float glitchX = sinf(time * 20.0f + ring) * 3.0f * (1.0f - spawnProgress);
+                float glitchY = cosf(time * 25.0f + ring * 2.0f) * 3.0f * (1.0f - spawnProgress);
+                Vector2 glitchPos = { e->pos.x + glitchX, e->pos.y + glitchY };
+
+                Color ringColor = e->isBoss ? (Color){ 180, 50, 180, (unsigned char)(255 * ringAlpha) }
+                                            : (Color){ 255, 255, 255, (unsigned char)(255 * ringAlpha) };
+                DrawCircleLinesV(glitchPos, ringRadius, ringColor);
+            }
+
+            // Central flickering silhouette
+            float flicker = (sinf(time * 40.0f) > 0.0f) ? 1.0f : 0.5f;
+            float silhouetteRadius = e->radius * spawnProgress * flicker;
+            Color silhouetteColor = { 255, 255, 255, (unsigned char)(100 * spawnProgress) };
+            DrawCircleV(e->pos, silhouetteRadius, silhouetteColor);
+
+            // Scanline glitch effect (horizontal lines)
+            if (spawnProgress < 0.8f)
+            {
+                int numLines = 5;
+                for (int line = 0; line < numLines; line++)
+                {
+                    float lineY = e->pos.y - e->radius + (e->radius * 2.0f * line / numLines);
+                    float lineOffset = sinf(time * 30.0f + line * 3.0f) * 8.0f * (1.0f - spawnProgress);
+                    float lineLen = e->radius * 0.8f;
+                    DrawLineEx(
+                        (Vector2){ e->pos.x - lineLen + lineOffset, lineY },
+                        (Vector2){ e->pos.x + lineLen + lineOffset, lineY },
+                        2.0f,
+                        (Color){ 255, 255, 255, (unsigned char)(80 * (1.0f - spawnProgress)) }
+                    );
+                }
+            }
+
+            continue;  // Don't draw the normal enemy yet
+        }
 
         // Draw boss glow effect (behind enemy) - purple pulsing aura
         if (e->isBoss && !isFlashing)

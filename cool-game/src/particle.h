@@ -30,4 +30,15 @@ void ParticlePoolDraw(ParticlePool *pool, Rectangle view);
 void SpawnExplosion(ParticlePool *pool, Vector2 pos, Color color, int count);
 void SpawnHitParticles(ParticlePool *pool, Vector2 pos, Color color, int count);
 
+// Death explosion types by enemy
+typedef enum DeathExplosionType {
+    DEATH_EXPLOSION_CHASER,     // Fast burst (red/orange)
+    DEATH_EXPLOSION_ORBITER,    // Spiral ring (cyan/pink)
+    DEATH_EXPLOSION_SPLITTER,   // Shatter fragments (yellow/green)
+    DEATH_EXPLOSION_BOSS,       // Massive multi-stage (purple/magenta)
+    DEATH_EXPLOSION_ELITE       // Golden burst with sparks
+} DeathExplosionType;
+
+void SpawnDeathExplosion(ParticlePool *pool, Vector2 pos, DeathExplosionType type, float radius);
+
 #endif
