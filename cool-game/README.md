@@ -50,11 +50,11 @@ For contributor guidance, see `cool-game/AGENTS.md` and the deeper system notes 
 
 ## Controls
 
-### Keyboard
+### Player 1 (Keyboard + Mouse)
 
 | Key | Action |
 |-----|--------|
-| **WASD** / **Arrow Keys** | Move |
+| **WASD** | Move |
 | **Mouse** | Aim |
 | **SPACE** | Dash (invincible, 1.5s cooldown) |
 | **Q** / **E** | Cycle weapons (during gameplay) |
@@ -65,7 +65,27 @@ For contributor guidance, see `cool-game/AGENTS.md` and the deeper system notes 
 | **A** | Achievements (menu) |
 | **TAB** | Settings (menu) |
 
-### Gamepad
+### Player 2 (Co-op Mode)
+
+**Keyboard:**
+| Key | Action |
+|-----|--------|
+| **Arrow Keys** | Move |
+| **IJKL** | Aim (8-directional) |
+| **Right Shift** | Dash |
+| **U** / **O** | Cycle weapons |
+| **7** / **8** / **9** | Select upgrade (when P2's turn) |
+
+**Gamepad (Gamepad 1):**
+| Input | Action |
+|-------|--------|
+| Left Stick | Move |
+| Right Stick | Aim |
+| A / X Button | Dash |
+| LB / RB | Cycle weapons |
+| D-Pad | Select upgrade |
+
+### Gamepad (Solo Mode / Player 1)
 
 | Input | Action |
 |-------|--------|
@@ -265,7 +285,39 @@ Achievements pop up during gameplay when earned!
 
 ---
 
-### 10. Visual Effects & Game Feel
+### 10. Local Co-op Mode
+
+**Access**: Select "2 PLAYERS" from main menu
+
+Play with a friend on the same screen! Features vertical split-screen with independent viewports.
+
+**How it works:**
+- **Split-screen**: Vertical split (640x720 per player) for horizontal awareness
+- **Shared XP**: XP crystals move toward nearest player, shared level progression
+- **Alternating upgrades**: Players take turns choosing upgrades
+- **Separate weapons**: Each player has their own weapon loadout
+
+**Death & Revive System:**
+| Event | Behavior |
+|-------|----------|
+| Player dies | Becomes "ghost" at death position |
+| Revive | Living player stands near ghost for 3 seconds |
+| Respawn HP | 50% → 40% → 30% → 25% (decreases each death) |
+| Invincibility | 2 seconds after respawn |
+| Total party kill | Both dead = Game Over |
+
+**Enemy Scaling (Co-op):**
+| Stat | Multiplier |
+|------|------------|
+| Spawn rate | 1.75x |
+| Enemy health | 1.3x |
+| Boss health | 1.5x |
+
+**Partner Indicator**: When your partner is off-screen, an arrow at the viewport edge shows their direction and distance.
+
+---
+
+### 11. Visual Effects & Game Feel
 
 **Juice features:**
 - Screen shake on hits and explosions
@@ -297,6 +349,13 @@ Achievements pop up during gameplay when earned!
 6. **Build toward evolution** - Max weapon level + catalyst = power spike
 7. **Check achievements** - They guide you toward content
 
+### Co-op Tips
+
+8. **Stay close but not too close** - You can split up, but reviving is easier when nearby
+9. **Revive fast** - Stand near your partner's ghost for 3 seconds to bring them back
+10. **Take turns wisely** - Upgrade selection alternates, coordinate your builds
+11. **Watch the partner arrow** - Shows direction and distance to off-screen partner
+
 ---
 
 ## File Structure
@@ -317,9 +376,10 @@ cool-game/
 │   ├── unlocks.c/h     # Permanent progression
 │   ├── leaderboard.c/h # High scores
 │   ├── achievement.c/h # Achievement system
+│   ├── coop.c/h        # Local co-op split-screen
 │   ├── audio.c/h       # Sound management
 │   └── ui.c/h          # HUD rendering
-├── tests/              # Unit tests (154 tests)
+├── tests/              # Unit tests
 ├── resources/
 │   ├── shaders/        # Bloom, CRT, chromatic
 │   ├── sounds/         # SFX
