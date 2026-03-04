@@ -498,7 +498,7 @@ void SpawnExplosion(Vector2 pos, Color color, int count) {
 
 ## STRETCH GOALS
 
-- [~] **Co-op**: Split screen local multiplayer *(DESIGNED — see CO-OP SPLIT SCREEN section)*
+- [x] **Co-op**: Split screen local multiplayer *(IMPLEMENTED — see CO-OP SPLIT SCREEN section)*
 - [ ] **Daily Challenge**: Seeded run with leaderboard
 - [ ] **Endless Mode**: No boss, pure survival
 - [ ] **Arena Hazards**: Laser walls, pits, turrets
@@ -847,6 +847,24 @@ The key insight: **geometric shapes + glow shaders = instant style**. You don't 
 - **Enemy scaling**: 1.75x spawn rate, 1.3x health, 1.5x boss health
 - **Partner indicator**: Arrow at screen edge showing off-screen partner direction/distance
 - **Design decisions**: Friendly fire OFF, separate weapon loadouts, unlimited revives, no distance limit
+
+---
+
+### 2026-01-06 — Co-op Split Screen Implementation (Phase 20 Complete)
+- **Implemented full co-op mode** with all 18 tasks from Phase 20 complete
+- **Core systems** (`coop.c/h`): CoopState, CoopPlayer, CoopCamera, ReviveState structs
+- **Split-screen rendering**: Vertical split with independent Camera2D per player, neon divider line
+- **P1 controls**: WASD + Mouse (unchanged from solo), SPACE dash
+- **P2 controls**: Arrow keys + IJKL (8-directional aim), Right Shift dash, OR Gamepad 1
+- **Shared XP pool**: XP crystals move toward nearest player, shared level progression
+- **Alternating upgrades**: Players take turns selecting upgrades, visual indicator shows whose turn
+- **Death/revive system**: Ghost state at death position, 3-second revive by proximity, HP decay per revive (50%→40%→30%→25% floor)
+- **Total party kill**: Game over when both players dead after 0.5s grace period
+- **Enemy scaling**: 1.75x spawn rate, 1.3x enemy health, 1.5x boss health in co-op
+- **Boss AI**: Targets nearest player, switches targets dynamically
+- **Partner indicator**: Arrow at viewport edge showing off-screen partner direction + distance
+- **Menu integration**: "1 PLAYER" / "2 PLAYERS" selection from main menu
+- **Co-op tutorials**: Control hints for P2, revive mechanic explanation on first death
 
 ---
 

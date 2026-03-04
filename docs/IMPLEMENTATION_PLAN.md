@@ -1648,9 +1648,9 @@ make         # MUST PASS - zero warnings
   3. Add `gameMode` and `coopState` to GameData
   4. Add P2 input handling fields (separate from P1)
 - **Verification**:
-  - [ ] `make` compiles successfully
-  - [ ] Structs correctly defined with all fields
-- **Status**: `[ ]`
+  - [x] `make` compiles successfully
+  - [x] Structs correctly defined with all fields
+- **Status**: `[x]`
 
 #### P20.1.2 — Implement split-screen rendering
 - **Description**: Two render textures for split viewports
@@ -1664,10 +1664,10 @@ make         # MUST PASS - zero warnings
      - Draw neon split line with glow
   3. Apply bloom/CRT shaders per viewport
 - **Verification**:
-  - [ ] Both viewports render correctly
-  - [ ] Split line visible with glow effect
-  - [ ] Shaders apply to each viewport
-- **Status**: `[ ]`
+  - [x] Both viewports render correctly
+  - [x] Split line visible with glow effect
+  - [x] Shaders apply to each viewport
+- **Status**: `[x]`
 
 #### P20.1.3 — Basic P2 input (gamepad first)
 - **Description**: Second player gamepad controls
@@ -1681,10 +1681,10 @@ make         # MUST PASS - zero warnings
      - LB/RB: weapon switch
   2. Store P2 input state separately from P1
 - **Verification**:
-  - [ ] P2 moves with second gamepad
-  - [ ] P2 aims independently
-  - [ ] P2 can dash and switch weapons
-- **Status**: `[ ]`
+  - [x] P2 moves with second gamepad
+  - [x] P2 aims independently
+  - [x] P2 can dash and switch weapons
+- **Status**: `[x]`
 
 #### P20.1.4 — Both players move and shoot
 - **Description**: Independent player actions
@@ -1695,10 +1695,10 @@ make         # MUST PASS - zero warnings
   3. Projectiles track which player fired them (for potential future use)
   4. Both players collide with enemies and take damage
 - **Verification**:
-  - [ ] Both players move independently
-  - [ ] Both players shoot toward their aim direction
-  - [ ] Both players can be damaged by enemies
-- **Status**: `[ ]`
+  - [x] Both players move independently
+  - [x] Both players shoot toward their aim direction
+  - [x] Both players can be damaged by enemies
+- **Status**: `[x]`
 
 ---
 
@@ -1712,10 +1712,10 @@ make         # MUST PASS - zero warnings
   2. Each camera lerps toward its player position
   3. Screen shake applies to both cameras (shared effect)
 - **Verification**:
-  - [ ] P1 camera follows P1
-  - [ ] P2 camera follows P2
-  - [ ] Cameras move independently
-- **Status**: `[ ]`
+  - [x] P1 camera follows P1
+  - [x] P2 camera follows P2
+  - [x] Cameras move independently
+- **Status**: `[x]`
 
 #### P20.2.2 — Proper viewport scissoring
 - **Description**: Clip rendering to each viewport
@@ -1726,9 +1726,9 @@ make         # MUST PASS - zero warnings
   3. P2 viewport: 640, 0, 640, 720
   4. Ensure entities only render in their viewport
 - **Verification**:
-  - [ ] No rendering bleeds across viewports
-  - [ ] Both viewports show correct world portions
-- **Status**: `[ ]`
+  - [x] No rendering bleeds across viewports
+  - [x] Both viewports show correct world portions
+- **Status**: `[x]`
 
 #### P20.2.3 — Partner indicator arrow
 - **Description**: Show partner direction when off-screen
@@ -1739,10 +1739,10 @@ make         # MUST PASS - zero warnings
   3. Show distance in meters (world units / 100)
   4. Arrow color matches partner's player color
 - **Verification**:
-  - [ ] Arrow appears when partner is off-screen
-  - [ ] Arrow points in correct direction
-  - [ ] Distance updates in real-time
-- **Status**: `[ ]`
+  - [x] Arrow appears when partner is off-screen
+  - [x] Arrow points in correct direction
+  - [x] Distance updates in real-time
+- **Status**: `[x]`
 
 ---
 
@@ -1757,10 +1757,10 @@ make         # MUST PASS - zero warnings
   3. Both players benefit from shared level
   4. Magnet radius uses max of both players' magnet stats
 - **Verification**:
-  - [ ] XP moves toward nearest player
-  - [ ] XP adds to shared pool
-  - [ ] Both players show same level
-- **Status**: `[ ]`
+  - [x] XP moves toward nearest player
+  - [x] XP adds to shared pool
+  - [x] Both players show same level
+- **Status**: `[x]`
 
 #### P20.3.2 — Alternating upgrade selection
 - **Description**: Players take turns choosing upgrades
@@ -1772,10 +1772,10 @@ make         # MUST PASS - zero warnings
   4. Only active selector can choose (1/2/3 or D-pad)
   5. Alternate upgradeSelector after each selection
 - **Verification**:
-  - [ ] Only one player can select at a time
-  - [ ] Selection alternates correctly
-  - [ ] Visual feedback shows whose turn it is
-- **Status**: `[ ]`
+  - [x] Only one player can select at a time
+  - [x] Selection alternates correctly
+  - [x] Visual feedback shows whose turn it is
+- **Status**: `[x]`
 
 #### P20.3.3 — Upgrades apply to both players
 - **Description**: Shared upgrade benefits
@@ -1786,10 +1786,10 @@ make         # MUST PASS - zero warnings
   3. Player stat upgrades apply to both players
   4. Special upgrades (vampirism, etc.) apply to both
 - **Verification**:
-  - [ ] Both players get damage boost from damage upgrade
-  - [ ] Both players get speed boost from speed upgrade
-  - [ ] All upgrade types work for both players
-- **Status**: `[ ]`
+  - [x] Both players get damage boost from damage upgrade
+  - [x] Both players get speed boost from speed upgrade
+  - [x] All upgrade types work for both players
+- **Status**: `[x]`
 
 ---
 
@@ -1804,10 +1804,10 @@ make         # MUST PASS - zero warnings
   3. Render ghost at deathPos: semi-transparent, pulsing
   4. Display "REVIVE ME" text above ghost
 - **Verification**:
-  - [ ] Dead player shows as ghost
-  - [ ] Ghost appears at death location
-  - [ ] Ghost is visually distinct (transparent, pulsing)
-- **Status**: `[ ]`
+  - [x] Dead player shows as ghost
+  - [x] Ghost appears at death location
+  - [x] Ghost is visually distinct (transparent, pulsing)
+- **Status**: `[x]`
 
 #### P20.4.2 — Revive proximity detection
 - **Description**: Living player can revive partner
@@ -1818,10 +1818,10 @@ make         # MUST PASS - zero warnings
   3. If within range, increment reviveProgress
   4. If living player takes damage, reset reviveProgress to 0
 - **Verification**:
-  - [ ] Revive progress increases when near ghost
-  - [ ] Progress resets on damage
-  - [ ] Must stay in range to continue reviving
-- **Status**: `[ ]`
+  - [x] Revive progress increases when near ghost
+  - [x] Progress resets on damage
+  - [x] Must stay in range to continue reviving
+- **Status**: `[x]`
 
 #### P20.4.3 — Revive progress bar
 - **Description**: Visual feedback for revive progress
@@ -1832,10 +1832,10 @@ make         # MUST PASS - zero warnings
   3. Fill based on reviveProgress / REVIVE_TIME
   4. Add revive sound effect when progress > 0
 - **Verification**:
-  - [ ] Progress bar visible above ghost
-  - [ ] Bar fills as revive progresses
-  - [ ] Audio feedback during revive
-- **Status**: `[ ]`
+  - [x] Progress bar visible above ghost
+  - [x] Bar fills as revive progresses
+  - [x] Audio feedback during revive
+- **Status**: `[x]`
 
 #### P20.4.4 — Respawn with invincibility and HP decay
 - **Description**: Complete revive and respawn player
@@ -1850,11 +1850,11 @@ make         # MUST PASS - zero warnings
      - Reset needsRevive, reviveProgress
   3. Spawn respawn particles
 - **Verification**:
-  - [ ] Player respawns after 3 seconds of reviving
-  - [ ] HP decreases with each revive (50% → 40% → 30% → 25%)
-  - [ ] 25% is the minimum respawn HP
-  - [ ] Invincibility prevents immediate re-death
-- **Status**: `[ ]`
+  - [x] Player respawns after 3 seconds of reviving
+  - [x] HP decreases with each revive (50% → 40% → 30% → 25%)
+  - [x] 25% is the minimum respawn HP
+  - [x] Invincibility prevents immediate re-death
+- **Status**: `[x]`
 
 #### P20.4.5 — Total party kill detection
 - **Description**: Game over when both players dead
@@ -1865,10 +1865,10 @@ make         # MUST PASS - zero warnings
   3. If both dead after grace period → STATE_GAMEOVER
   4. Display "TOTAL PARTY KILL" on game over screen
 - **Verification**:
-  - [ ] Game continues if one player alive
-  - [ ] Game over when both dead
-  - [ ] Grace period prevents unfair instant game over
-- **Status**: `[ ]`
+  - [x] Game continues if one player alive
+  - [x] Game over when both dead
+  - [x] Grace period prevents unfair instant game over
+- **Status**: `[x]`
 
 ---
 
@@ -1883,10 +1883,10 @@ make         # MUST PASS - zero warnings
   3. Apply multipliers in spawn and enemy init
   4. Boss health multiplier: 1.5x in co-op
 - **Verification**:
-  - [ ] More enemies spawn in co-op
-  - [ ] Enemies have more health in co-op
-  - [ ] Bosses are tankier in co-op
-- **Status**: `[ ]`
+  - [x] More enemies spawn in co-op
+  - [x] Enemies have more health in co-op
+  - [x] Bosses are tankier in co-op
+- **Status**: `[x]`
 
 #### P20.5.2 — Boss AI targeting adjustments
 - **Description**: Boss targets nearest player
@@ -1897,10 +1897,10 @@ make         # MUST PASS - zero warnings
   3. Switch target if other player becomes closer
   4. Add sweep attack that moves between both players
 - **Verification**:
-  - [ ] Boss chases nearest player
-  - [ ] Boss switches targets appropriately
-  - [ ] Both players feel threatened by boss
-- **Status**: `[ ]`
+  - [x] Boss chases nearest player
+  - [x] Boss switches targets appropriately
+  - [x] Both players feel threatened by boss
+- **Status**: `[x]`
 
 #### P20.5.3 — P2 keyboard controls
 - **Description**: Second player can use keyboard
@@ -1914,10 +1914,10 @@ make         # MUST PASS - zero warnings
      - 7/8/9: upgrade selection
   2. Allow keyboard if no gamepad detected
 - **Verification**:
-  - [ ] P2 can play with arrow keys
-  - [ ] IJKL aims in 8 directions
-  - [ ] All P2 controls work via keyboard
-- **Status**: `[ ]`
+  - [x] P2 can play with arrow keys
+  - [x] IJKL aims in 8 directions
+  - [x] All P2 controls work via keyboard
+- **Status**: `[x]`
 
 #### P20.5.4 — Co-op specific tutorials
 - **Description**: Tutorial hints for co-op mode
@@ -1927,10 +1927,10 @@ make         # MUST PASS - zero warnings
   2. Show revive tutorial on first death: "Stand near partner to revive"
   3. Show upgrade turn indicator: "Player 1's turn to choose"
 - **Verification**:
-  - [ ] Co-op controls shown in tutorial
-  - [ ] Revive mechanic explained on first death
-  - [ ] Upgrade selection turn is clear
-- **Status**: `[ ]`
+  - [x] Co-op controls shown in tutorial
+  - [x] Revive mechanic explained on first death
+  - [x] Upgrade selection turn is clear
+- **Status**: `[x]`
 
 #### P20.5.5 — Menu: "1 PLAYER" / "2 PLAYERS" selection
 - **Description**: Mode selection from main menu
@@ -1942,10 +1942,10 @@ make         # MUST PASS - zero warnings
   4. ENTER confirms selection
   5. 2 PLAYERS → character select for both, then game
 - **Verification**:
-  - [ ] Can select 1 or 2 player mode from menu
-  - [ ] 2 player mode starts co-op correctly
-  - [ ] Both players can select characters
-- **Status**: `[ ]`
+  - [x] Can select 1 or 2 player mode from menu
+  - [x] 2 player mode starts co-op correctly
+  - [x] Both players can select characters
+- **Status**: `[x]`
 
 ---
 
@@ -1975,8 +1975,8 @@ make         # MUST PASS - zero warnings
 | 17 | Permanent Unlocks | 1 | 1 ✓ |
 | 18 | Leaderboard System | 1 | 1 ✓ |
 | 19 | Character Select | 1 | 1 ✓ |
-| 20 | Co-op Split Screen | 18 | 0 |
-| **Total** | | **117** | **99** |
+| 20 | Co-op Split Screen | 18 | 18 ✓ |
+| **Total** | | **117** | **117** |
 
 ### Estimated Time
 
